@@ -40,6 +40,20 @@
 
 **Status:** Review.
 
+**Contracts exported:**
+- D06-D12: `hasFeature(org, flag)` gate before any plan-gated operation
+- D06 (Offers): offer creation gated by active subscription (not starter unless free trial)
+- D07 (Interviews): AI scorecard summarization gated by `ai_matching` feature flag
+- D08 (Candidate Portal): no billing-gated features on candidate-facing pages
+- D09 (Communications): `webhook_outbound` flag gates outbound webhook delivery; email templates available on all plans
+- D10 (Search & AI): `ai_matching` + `ai_resume_parsing` flags gate AI operations; `consumeAiCredits()` called before every AI action; 402 on exhaustion
+- D11 (Talent Pools): `nurture_sequences` flag gates CRM automation features
+- D12 (Analytics): `advanced_analytics` flag gates advanced reports; basic metrics on all plans
+- D13 (Observability): billing metrics from `ai_usage_logs` + `organizations.plan`; Stripe webhook success rate
+- D19 (Migration): new organizations default to `starter` plan; `ai_credits_limit = 10`
+
+**[PLAYBOOK]** Extractable patterns: plan-tier feature matrix, Stripe-as-truth architecture, seat-based pricing with overage, AI credit metering, dunning flow, downgrade graceful degradation.
+
 **Next:** D04 remaining STACK ADRs (non-blocking) or begin Batch 2 feature modules (D06-D12).
 
 ---
@@ -70,6 +84,19 @@
 - W3: Added missing ADR-006/007/008 to front matter
 - W4: Standardized `signing_secret` → `secret` throughout
 
+**Contracts exported:**
+- D06-D12: all module endpoints follow `/api/v1/{resource}` pattern, cursor pagination, RFC 9457 errors
+- D06 (Offers): `POST /api/v1/offers` + approval chain endpoints; idempotency key required
+- D07 (Interviews): `POST /api/v1/interviews`, `POST /api/v1/scorecard-submissions`; blind review enforced at API layer
+- D08 (Candidate Portal): public endpoints at `/api/v1/careers/` — no JWT, rate limited
+- D09 (Communications): webhook outbound delivery via `POST /api/v1/webhook-endpoints`; HMAC-SHA256 signing with `secret` column
+- D10 (Search & AI): `GET /api/v1/search` delegates to Typesense; `POST /api/v1/ai/match` consumes credits
+- D03 (Billing): rate limit tiers (starter 500/min → enterprise 10,000/min); Stripe webhook at `/api/webhooks/stripe`
+- D13 (Observability): all endpoints emit structured logs; rate limit headers in every response
+- D19 (Migration): API versioning via URL prefix `/api/v1/`; no breaking changes within version
+
+**[PLAYBOOK]** Extractable patterns: dual API layer (Server Actions + Route Handlers), cursor pagination, RFC 9457 errors, rate limiting by plan tier, idempotency keys, webhook HMAC signing, Zod→OpenAPI generation.
+
 **Status:** Review.
 
 **Next:** D03 (Billing & Subscription Architecture).
@@ -93,6 +120,19 @@
 - Tenant branding limited to career pages only (internal UI stays consistent)
 
 **Post-build audit:** 7 FAILs identified, all resolved (2 were false positives from wrong CLAUDE.md scope). Fixes: added D01 dependency, fixed STACK-1 mislabel, bumped primary contrast, pinned library versions, fixed spring syntax.
+
+**Contracts exported:**
+- D06-D12: all UI uses shadcn/ui components with HSL color tokens; no custom color values
+- D06 (Offers): offer status badges use semantic status colors (success/warning/destructive)
+- D07 (Interviews): `KanbanBoard` + `KanbanCard` components for pipeline view; `ScoreRubric` for scorecard UI; `InterviewScheduler` for calendar
+- D08 (Candidate Portal): `branding_config` drives career page theming (maps to D01); 16px body text; accessible contrast
+- D09 (Communications): `TimelineActivity` component for candidate activity feed; toast notifications via sonner
+- D10 (Search & AI): `FilterBar` component for faceted search UI
+- D11 (Talent Pools): `CandidateDrawer` for quick-view; `StageIndicator` for pipeline position
+- D12 (Analytics): `MetricCard` for dashboard KPIs; chart colors from semantic palette
+- D13 (Observability): dark mode via `next-themes` cookie strategy; `OrgSwitcher` component
+
+**[PLAYBOOK]** Extractable patterns: HSL token system, warm-white backgrounds, data-dense 14px dashboard, dark mode from day one, shadcn/ui customization approach, ATS-specific component library.
 
 **Status:** Review.
 
@@ -129,6 +169,24 @@
 **39 tables total across 8 clusters.** All S3 errata corrected (HNSW not IVFFlat, deleted_at on all tables, full RLS on all tables, proxy.ts not middleware.ts references removed).
 
 **New tables not in S3 (26):** application_stage_history, talent_pools, talent_pool_members, candidate_sources, rejection_reasons, skills, candidate_skills, job_required_skills, interviews, scorecard_templates, scorecard_categories, scorecard_attributes, scorecard_submissions, scorecard_ratings, offer_templates, offers, offer_approvals, email_templates, notification_preferences, files, custom_field_definitions, custom_field_values, audit_logs, ai_usage_logs, api_keys, webhook_endpoints, candidate_dei_data, candidate_encryption_keys, gdpr_erasure_log.
+
+**Contracts exported (master list — all downstream docs depend on D01):**
+- **Tables (39):** exact names, column types, constraints. All module specs MUST use these names verbatim.
+- **CHECK constraints:** `organizations.plan` (starter/growth/pro/enterprise), `organization_members.role` (owner/admin/recruiter/hiring_manager/interviewer), `job_openings.status` (draft/open/paused/closed/archived), `applications.status` (active/hired/rejected/withdrawn), `interviews.status` (scheduled/confirmed/completed/cancelled/no_show), `offers.status` (8 states: draft→withdrawn), `scorecard_submissions.overall_recommendation` (strong_no/no/yes/strong_yes)
+- **JSONB interfaces (11):** BrandingConfig, FeatureFlags, UserPreferences, CustomPermissions, JobMetadata, CandidateLocation, ResumeParsed, SourceDetails, AutoActions, OfferCompensation, DeiData — ground-truth types for all modules
+- **RLS helpers:** `current_user_org_id()`, `is_org_member()`, `has_org_role()` — every module's RLS policies use these
+- **Functions:** `match_candidates_for_job()` → D10; `erase_candidate()` → D19/GDPR; `custom_access_token_hook()` → JWT claims for auth
+- **Patterns:** soft delete (`deleted_at IS NULL` in all SELECTs), audit trigger on every table, HNSW vector indexes (m=16, ef_construction=64)
+- **Realtime channels:** `org:{id}:applications`, `org:{id}:notes`, `org:{id}:interviews`, `org:{id}:scorecard_submissions`, `org:{id}:offers`, `org:{id}:notification_preferences`
+- **D06 (Offers):** `offers.status` 8-state machine, `offer_approvals.sequence_order`, `OfferCompensation` interface, `offers.esign_provider` CHECK
+- **D07 (Interviews):** `interviews.*`, `scorecard_templates/categories/attributes/submissions/ratings.*`, blind review RLS on scorecard_submissions
+- **D08 (Candidate Portal):** `candidates.*`, `applications.*`, `job_openings.*` (public-facing subset)
+- **D09 (Communications):** `notes.*` (polymorphic via entity_type/entity_id), `email_templates.*`, `files.*` (ADR-009), `notification_preferences.*`, `webhook_endpoints.*`
+- **D10 (Search & AI):** `candidate_embedding`/`job_embedding` vector(1536), `match_candidates_for_job()`, `ai_usage_logs.*`
+- **D11 (Talent Pools):** `talent_pools.*`, `talent_pool_members.*`, `candidate_sources.*`
+- **D12 (Analytics):** `candidate_dei_data.*` (restricted RLS), `audit_logs.*` (partitioned), `custom_field_definitions/values.*`
+
+**[PLAYBOOK]** Extractable patterns: multi-tenant RLS with JWT claims hook, soft-delete-everywhere policy, polymorphic entity pattern, HNSW vector indexes for AI matching, crypto-shredding for GDPR, audit trigger architecture.
 
 **Status:** Draft. Pending post-build audit (AI-RULES §13) before marking as Review.
 
