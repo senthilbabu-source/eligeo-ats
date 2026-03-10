@@ -30,6 +30,7 @@ Four tiers. The `organizations.plan` CHECK constraint enforces: `starter`, `grow
 | **Active jobs** | 5 | 25 | Unlimited | Unlimited |
 | **AI resume parsing** | ❌ | ✅ | ✅ | ✅ |
 | **AI candidate matching** | ❌ | ❌ | ✅ | ✅ |
+| **AI scorecard summarize** | ❌ | ❌ | ✅ | ✅ |
 | **AI credits/month** | 10 | 500 | 2,000 | 10,000 |
 | **Custom fields** | ❌ | ✅ | ✅ | ✅ |
 | **Bulk import** | ❌ | ✅ | ✅ | ✅ |

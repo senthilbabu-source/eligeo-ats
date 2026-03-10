@@ -71,7 +71,7 @@
 **Key decisions:**
 - Server Actions for UI mutations (form submissions, state changes), Route Handlers for external/M2M integrations
 - API keys stored as SHA-256 hash in `api_keys` table, raw key shown once at creation
-- Rate limit tiers match D01 plan_tier CHECK constraint: starter (100/min), growth (300/min), pro (600/min), enterprise (1200/min)
+- Rate limit tiers match D01 plan_tier CHECK constraint: starter (500/min), growth (2,000/min), pro (5,000/min), enterprise (10,000/min)
 - Webhook signing uses `secret` column (not `signing_secret`) — matches D01 DDL
 - Cursor pagination chosen over offset for stable performance on large datasets
 - Idempotency keys required for all POST mutations, optional for PUT/PATCH

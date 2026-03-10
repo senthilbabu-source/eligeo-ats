@@ -241,6 +241,7 @@ interface BrandingConfig {
 interface FeatureFlags {
   ai_matching?: boolean;
   ai_resume_parsing?: boolean;
+  ai_scorecard_summarize?: boolean;
   bulk_import?: boolean;
   api_access?: boolean;
   custom_fields?: boolean;

@@ -26,9 +26,7 @@
 
 | # | Source | Target | Gap | Severity | Status |
 |---|--------|--------|-----|----------|--------|
-| G-001 | D03 | D01 | `FeatureFlags` interface may need `ai_scorecard_summarize` flag — D07 (Interviews) will likely need to gate AI-powered scorecard summarization separately from general `ai_matching` | P2 | OPEN |
 | G-002 | D03 | D01 | `ai_credits_limit` default (10) matches starter tier now, but if starter allocation changes, the DB default won't auto-update. Consider: should the default be 0 with plan setup always setting the real value? | P3 | OPEN |
-| G-003 | D03 | D02 | D02 rate limit table shows different values (100/300/600/1200 per min) than D03 feature matrix (500/2000/5000/10000 per min). These are different rate limit categories (API key auth vs browser auth) but this is not documented — could cause confusion. | P1 | OPEN |
 
 ### Forward Gaps (future docs need these)
 
@@ -69,7 +67,8 @@
 
 | # | Resolved Date | Commit | Resolution |
 |---|--------------|--------|------------|
-| *(none yet)* | | | |
+| G-001 | 2026-03-10 | (this commit) | Added `ai_scorecard_summarize` to D01 FeatureFlags + D03 feature matrix |
+| G-003 | 2026-03-10 | (this commit) | DEVLOG D02 entry had stale rate limit values (100/300/600/1200) — corrected to match D02 spec (500/2000/5000/10000) |
 
 ---
 
