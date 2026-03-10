@@ -33,8 +33,8 @@
 | # | Discovered In | Target Doc | What's Needed | Severity | Status |
 |---|---------------|-----------|---------------|----------|--------|
 | G-010 | D01 | D06 (Offers) | Define what happens when e-sign provider (Dropbox Sign) is unavailable — retry via Inngest? Manual fallback? Offer stuck in `sent` state? | P1 | RESOLVED |
-| G-011 | D01 | D07 (Interviews) | Blind review RLS on `scorecard_submissions` is defined in D01 but the exact UX flow (when does the "reveal" happen? after all interviewers submit? after panel lead clicks?) needs to be specified in D07 | P1 | OPEN |
-| G-012 | D01 | D07 (Interviews) | `scorecard_templates` has `categories` and `attributes` as child tables, but no spec on template versioning — what happens to existing scorecards when a template is updated mid-hiring? | P1 | OPEN |
+| G-011 | D01 | D07 (Interviews) | Blind review RLS on `scorecard_submissions` is defined in D01 but the exact UX flow (when does the "reveal" happen? after all interviewers submit? after panel lead clicks?) needs to be specified in D07 | P1 | RESOLVED |
+| G-012 | D01 | D07 (Interviews) | `scorecard_templates` has `categories` and `attributes` as child tables, but no spec on template versioning — what happens to existing scorecards when a template is updated mid-hiring? | P1 | RESOLVED |
 | G-013 | D03 | D08 (Candidate Portal) | Candidate portal is explicitly billing-free (no plan gating). But should there be rate limiting on public job listing/application endpoints to prevent scraping? D02 mentions public endpoints but no specific limits. | P2 | OPEN |
 | G-014 | D01 | D09 (Communications) | `notes.mentions` is `UUID[]` for @mentions, but no spec on how mention notifications are triggered — Supabase Realtime? Inngest event? Direct insert to notification queue? | P1 | OPEN |
 | G-015 | D01 | D09 (Communications) | `email_templates` has a `body` TEXT column but no spec on template variable syntax — Handlebars `{{candidate.name}}`? Liquid? Custom? Must be consistent with D20 (i18n). | P2 | OPEN |
@@ -45,6 +45,9 @@
 | G-020 | D05 | D08 (Candidate Portal) | Design System specifies `branding_config` drives career page theming, but doesn't define fallback behavior when `branding_config` fields are null/empty. D08 must specify defaults. | P2 | OPEN |
 | G-021 | D02 | D09 (Communications) | Webhook outbound auto-disables after 10 consecutive failures (D02 §8). But no spec on re-enablement — manual only? Auto-retry after 24h? Admin notification before disable? | P2 | OPEN |
 | G-022 | D01 | D06 (Offers) | `offer_approvals.sequence_order` defines approval chain, but no spec on what happens when an approver is removed from the organization mid-approval flow. Skip? Reassign? Block? | P1 | RESOLVED |
+| G-023 | D07 | D08 (Candidate Portal) | Self-scheduling UI: candidate time slot picker, confirmation flow, 3-reschedule limit, 7-day link expiry. D08 must implement the candidate-facing side of D07 §4.3. | P1 | OPEN |
+| G-024 | D07 | D09 (Communications) | Interview notification emails: scheduled confirmation, cancellation, feedback reminder (overdue), scorecard submitted (to recruiter). 4 email triggers from D07. | P1 | OPEN |
+| G-025 | D07 | D12 (Workflow) | Auto-advance from interview stage: when all scheduled interviews for an application reach `completed` and all scorecards are submitted, workflow engine should optionally auto-advance to next pipeline stage. | P2 | OPEN |
 
 ### [VERIFY] Markers (third-party claims needing validation)
 
@@ -60,6 +63,8 @@
 | V-008 | D02 | Nylas webhook signature verification (HMAC) | OPEN |
 | V-009 | D05 | `next-themes` v0.4+ cookie strategy (no white flash) | OPEN |
 | V-010 | D05 | Motion (Framer Motion) v11+ — drag-and-drop API for kanban | OPEN |
+| V-011 | D07 | Nylas `events.create()` — event creation with participants, conferencing, and when.startTime/endTime shape | OPEN |
+| V-012 | D07 | Nylas `calendars.getFreeBusy()` — free/busy query with email-based lookup and time range | OPEN |
 
 ---
 
@@ -72,6 +77,8 @@
 | G-003 | 2026-03-10 | (this commit) | DEVLOG D02 entry had stale rate limit values (100/300/600/1200) — corrected to match D02 spec (500/2000/5000/10000) |
 | G-010 | 2026-03-10 | (this commit) | D06 §4.2: Inngest retry (5 attempts), then manual PDF fallback. Offer stays `approved` (not stuck in `sent`). |
 | G-022 | 2026-03-10 | (this commit) | D06 §4.1: Auto-skip departed approver with system note in audit log. Chain continues. |
+| G-011 | 2026-03-10 | (this commit) | D07 §3.4: Auto-reveal after own submission. No manual reveal button. RLS-enforced at DB level. |
+| G-012 | 2026-03-10 | (this commit) | D07 §3.3: Snapshot-on-assign. Append-only attributes mean old submissions always valid. No versioning table needed. |
 
 ---
 

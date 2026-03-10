@@ -16,6 +16,40 @@
 
 ---
 
+### 2026-03-10 — [D07] Interview Scheduling & Scorecards — complete first draft
+
+**Files created:**
+- `docs/modules/INTERVIEW-SCHEDULING.md` — 11 sections (461 lines): 5-state interview machine (scheduled → confirmed → completed, plus cancelled/no_show), manual + panel + self-scheduling, Nylas calendar two-way sync, scorecard templates with snapshot-on-assign versioning, blind review (auto-reveal after own submission), AI scorecard summarization (Pro+), weighted score aggregation, feedback deadline reminders, 18 API endpoints with Zod schemas, 7 Inngest functions, 8 UI components.
+
+**Files updated:**
+- `docs/INDEX.md` — D07 status: `⬜ Not Started` → `✅ Complete (Review)`.
+- `docs/GAPS.md` — G-011 and G-012 resolved. G-023, G-024, G-025 added. V-011, V-012 added.
+
+**Key decisions:**
+- Blind review reveal: auto-reveal after own submission (no manual button, no wait-for-all). Prevents bias while enabling collaboration. RLS-enforced at DB.
+- Template versioning: snapshot-on-assign via D01 append-only design. No versioning table. Old attributes soft-deleted, new ones created. Existing submissions always reference valid (soft-deleted) attributes.
+- Panel interviews: modeled as N individual `interviews` rows with matching `scheduled_at` + `interview_type = 'panel'`. No separate panel table.
+- Self-scheduling: candidate selects from Nylas free/busy slots, interview created as `confirmed` (skips `scheduled`). 3 reschedule limit, 7-day link expiry.
+- Feedback deadlines: advisory, not hard-enforced. Late submissions always accepted. Rationale: better late feedback than none.
+- Candidate signs after expiry of self-scheduling link: slot no longer available, must request new link.
+
+**Post-build audit:** 7/7 categories PASS. No fixes needed. 2 strategic [VERIFY] markers for Nylas API (V-011, V-012).
+
+**Contracts exported:**
+- D08 (Candidate Portal): self-scheduling UI — time slot picker, confirmation flow, 3-reschedule limit, link expiry display.
+- D09 (Communications): 4 interview email triggers — scheduled, cancelled, feedback reminder, scorecard submitted.
+- D12 (Workflow): optional auto-advance when all interviews completed + all scorecards submitted.
+- D17 (Analytics): scorecard aggregation data (weighted scores, recommendation distribution, time-to-feedback).
+- D10 (Search & AI): AI scorecard summarization consumes 1 credit with `action = 'feedback_summarize'`.
+
+**[PLAYBOOK]** Extractable patterns: blind review with auto-reveal RLS, snapshot-on-assign versioning (no version table), panel-as-individual-rows modeling, self-scheduling with calendar free/busy, weighted multi-criteria scoring aggregation.
+
+**Status:** Review.
+
+**Next:** D09 (Communications / Notification System) — per production order.
+
+---
+
 ### 2026-03-10 — [D06] Offer Management — complete first draft
 
 **Files created:**
