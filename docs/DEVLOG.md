@@ -16,6 +16,34 @@
 
 ---
 
+### 2026-03-10 — [D03] Billing & Subscription Architecture — complete first draft
+
+**Files created:**
+- `docs/modules/BILLING.md` — 13 sections (500 lines): 4 plan tiers with 16-feature matrix, Stripe Checkout + Customer Portal integration, subscription lifecycle (trialing → active → canceling → canceled, plus past_due → unpaid dunning path), seat-based pricing with overage proration, AI credit metering with atomic consumption + monthly overage reporting, 6 Inngest functions for webhook processing, downgrade graceful degradation rules, 5 billing API endpoints with Zod schemas.
+
+**Files updated:**
+- `docs/DATABASE-SCHEMA.md` — Added `webhook_outbound` and `sso_saml` to `FeatureFlags` interface (audit fix F2: D03 feature matrix referenced flags not in D01).
+- `docs/INDEX.md` — D03 status: `⬜ Not Started` → `✅ Complete (Review)`.
+
+**Key decisions:**
+- Stripe is source of truth for subscriptions/invoices. ATS stores minimal billing state (`plan`, `stripe_customer_id`, `ai_credits_*` on organizations table).
+- No separate billing/subscription tables — Stripe API queried on demand for portal/invoice views.
+- Seat sync via Stripe API lookup (not a stored `stripe_subscription_item_id` column) to avoid schema bloat.
+- Plan config in code (`lib/billing/plans.ts`) not database — changes deploy, not migrate.
+- Starter plan is free, no Stripe Customer required until upgrade.
+- Enterprise plan is custom pricing, manual Stripe Dashboard setup.
+
+**Post-build audit:** 8 PASS, 3 FAIL, 2 WARNINGS — all fixes applied:
+- F1: Removed non-existent `stripe_subscription_item_id` column reference → Stripe API lookup
+- F2: Added `webhook_outbound` and `sso_saml` to D01 FeatureFlags interface
+- F3: Added [VERIFY] markers to Stripe API calls per §18
+
+**Status:** Review.
+
+**Next:** D04 remaining STACK ADRs (non-blocking) or begin Batch 2 feature modules (D06-D12).
+
+---
+
 ### 2026-03-10 — [D02] API Specification — complete first draft
 
 **Files created:**

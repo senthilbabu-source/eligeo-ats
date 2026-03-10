@@ -247,6 +247,8 @@ interface FeatureFlags {
   white_label?: boolean;
   advanced_analytics?: boolean;
   nurture_sequences?: boolean;
+  webhook_outbound?: boolean;
+  sso_saml?: boolean;
 }
 
 // user_profiles.preferences
