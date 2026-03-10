@@ -8,6 +8,7 @@
 - **Status key:** `✅ Complete` · `🟡 In Progress` · `⬜ Not Started` · `🔴 Blocked`
 - **Priority:** `P0` = Blocks all development · `P1` = Blocks feature area · `P2` = Pre-launch · `P3` = Post-MVP
 - Every document change MUST be logged in [DEVLOG.md](DEVLOG.md)
+- Cross-document gaps tracked in [GAPS.md](GAPS.md) — check before starting any doc
 - Writing standards are in [AI-RULES.md](AI-RULES.md)
 
 ---
