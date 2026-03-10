@@ -26,10 +26,10 @@
 
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
-| D01 | **Complete Database Schema** | `docs/DATABASE-SCHEMA.md` | P0 | ⬜ Not Started | S3, ADR-001, ADR-002, ADR-003 | ✅ **Unblocked** — all 3 prerequisite ADRs resolved. Full DDL for ALL tables (S3 has 6 of ~16). All RLS policies, indexes, triggers. |
+| D01 | **Complete Database Schema** | `docs/DATABASE-SCHEMA.md` | P0 | ⬜ Not Started | S3, ADR-001→010 | ✅ **Fully unblocked** — all 10 prerequisite ADRs resolved (AC-1→6, soft delete, audit, enums, files, GDPR). Full DDL for ALL tables. All RLS policies, indexes, triggers, functions. |
 | D02 | **API Specification** | `docs/API-SPECIFICATION.md` | P0 | ⬜ Not Started | D01 | OpenAPI 3.1 draft. Pagination contract (cursor-based). Error format (RFC 7807). Rate limiting tiers. Auth (JWT + API key). Idempotency. Webhook outbound. |
 | D03 | **Billing & Subscription Architecture** | `docs/modules/BILLING.md` | P0 | ⬜ Not Started | D01 | Plan tier feature matrix. Stripe integration flow. Feature flag enforcement. Metered billing (AI credits). Seat-based pricing. Webhook handling. |
-| D04 | **Architecture Decision Records** | `docs/ADRs/` | P0 | 🟡 In Progress | S3 | ✅ ADR-001 (AC-1), ADR-002 (AC-2/AC-3), ADR-003 (AC-6) complete — D01 unblocked. Remaining: ADR-004→009 for STACK-1→6. |
+| D04 | **Architecture Decision Records** | `docs/ADRs/` | P0 | 🟡 In Progress | S3 | ✅ ADR-001→010 complete (all blocking decisions resolved). Remaining: formal ADRs for STACK-1→6 (non-blocking, for team alignment). |
 | D05 | **Design System** | `docs/DESIGN-SYSTEM.md` | P0 | ⬜ Not Started | — | Color palette, typography, spacing, component specs (shadcn/ui customization), responsive breakpoints, accessibility targets (WCAG 2.1 AA), kanban board UX. |
 
 ---

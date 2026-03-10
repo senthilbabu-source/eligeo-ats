@@ -103,10 +103,15 @@ Single source of truth for all architecture decisions. Check here FIRST before a
 | AC-1 | Prisma vs Supabase client — pick one ORM | `Resolved → ADR-001` | ADR-001 | **Supabase client everywhere.** Prisma bypasses RLS. Background jobs use service role + `SET LOCAL` for tenant context. |
 | AC-2 | Next.js version (15 vs 16) | `Resolved → ADR-002` | ADR-002 | **Next.js 16.** CLAUDE.md is authority. S3 references are errata. |
 | AC-3 | Middleware file naming (`proxy.ts` vs `middleware.ts`) | `Resolved → ADR-002` | ADR-002 | **`proxy.ts`** — Next.js 16 convention. |
-| AC-4 | Missing `deleted_at` on applications + `application_stage_history` table | `Open` | — | Add in D01. |
-| AC-5 | Multi-org JWT switching mechanism | `Open` | — | Needs design in D01/D04. |
+| AC-4 | Missing `deleted_at` on applications + `application_stage_history` table | `Resolved → ADR-006` | ADR-006 | **All tables get `deleted_at`.** Only exception: `audit_logs` (append-only). `application_stage_history` defined in D01. |
+| AC-5 | Multi-org JWT switching mechanism | `Resolved → ADR-005` | ADR-005 | **`last_active_org_id` on `organization_members` + JWT refresh on switch.** No re-auth needed. |
 | AC-6 | IVFFlat vs HNSW for vector indexes on empty tables | `Resolved → ADR-003` | ADR-003 | **HNSW.** IVFFlat useless on empty tables. HNSW builds incrementally from row 0. |
 | TEST-1 | Testing strategy: what's built when | `Resolved → ADR-004` | ADR-004 | Day 1: unit, RLS, API, job, E2E. Per-feature: smoke, contract, a11y. Pre-launch: perf, load, security. |
+| SCHEMA-1 | Soft delete policy | `Resolved → ADR-006` | ADR-006 | All tables get `deleted_at`. Exception: `audit_logs` (append-only). |
+| SCHEMA-2 | Audit log architecture | `Resolved → ADR-007` | ADR-007 | Trigger-based, append-only, partitioned by month. Trigger on every table except audit_logs. |
+| SCHEMA-3 | Enum strategy | `Resolved → ADR-008` | ADR-008 | CHECK for system values, lookup tables for tenant-customizable, JSONB for config. No PG ENUMs. |
+| SCHEMA-4 | File storage pattern | `Resolved → ADR-009` | ADR-009 | Supabase Storage + centralized `files` metadata table. Virus scan gate. |
+| SCHEMA-5 | GDPR erasure architecture | `Resolved → ADR-010` | ADR-010 | Crypto-shredding for audit logs + selective anonymization for entity tables. |
 | STACK-1 | Auth provider: Supabase Auth | `Decided (S3)` | S3 §3 | Supabase Auth exclusively — no Clerk, no Auth.js |
 | STACK-2 | Background jobs: Inngest | `Decided (S3)` | S3 §5 | Inngest (serverless) — not Bull/Redis |
 | STACK-3 | Search: pgvector + Typesense | `Decided (S3)` | S3 §6 | Dual-layer: pgvector for semantic, Typesense for faceted |
