@@ -16,6 +16,27 @@
 
 ---
 
+### 2026-03-10 — [META] AI-RULES expanded: audit protocol, security gates, schema evolution, and 8 new best-practice sections
+
+**Files updated:**
+- `docs/AI-RULES.md` — Added §13-§20 (rules 59-87):
+  - §13 Post-Build Audit Protocol (rules 59-63): mandatory audit triggers, 7-category checklist (A1-A7), structured report format, dependency-ordered fixes
+  - §14 Downstream Impact Protocol (rules 64-66): mandatory impact check when any document changes, special rules for D01 schema changes
+  - §15 Breaking Change Protocol (rules 67-68): definition, requirements, mandatory post-fix audit
+  - §16 Security Review Gates (rules 69-71): RLS completeness, auth flow, data exposure checklists
+  - §17 Schema Evolution Rules (rules 72-76): migration strategy, idempotency, 2-step deprecation
+  - §18 Third-Party Integration Verification (rules 77-80): [VERIFY] lifecycle, version-pinned claims
+  - §19 Performance and Scalability Considerations (rules 81-84): row volume estimates, query budgets, partitioning
+  - §20 Dependency and Ordering Discipline (rules 85-87): upstream-first fix ordering, priority/blast-radius classification
+
+**Why:** The manual audit before D01 revealed the need for a repeatable, documented audit process. Additionally, security review gates, schema evolution rules, and performance considerations were missing best practices that would cause rework if not established now.
+
+**Total rules:** 87 (up from 58).
+
+**Next:** D01 (Complete Database Schema).
+
+---
+
 ### 2026-03-10 — [D04] ADR-005→010 — All blocking decisions resolved, D01 fully unblocked
 
 **Files created:**

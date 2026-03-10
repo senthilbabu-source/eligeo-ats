@@ -141,3 +141,132 @@
 - [ ] All relevant module interactions covered
 - [ ] Consistency with D01 schema verified (column names, types, constraints match)
 - [ ] Integration points with third-party services marked `[VERIFY]` until confirmed against official docs
+
+## §13 — Post-Build Audit Protocol
+
+Every major deliverable (document, feature, sprint, hotfix) MUST end with a structured audit before the work is considered complete.
+
+59. **Audit triggers** — an audit is mandatory after:
+- Completing any D01-D21 document
+- Completing a batch of related ADRs
+- Completing a sprint or milestone
+- Any hotfix that touches schema, RLS, or auth
+- Any refactor that touches 3+ files
+
+60. **Audit scope** — every audit checks these 7 categories:
+
+| # | Category | What to check |
+|---|----------|---------------|
+| A1 | Cross-reference consistency | Do all references (ADR numbers, doc IDs, table names) in every file point to things that actually exist? |
+| A2 | Decision contradictions | Do any two documents disagree on a fact, pattern, or decision? |
+| A3 | Schema consistency | Do column names, types, constraints, and table names match across all docs that reference them? |
+| A4 | Completeness | Are there any TODO, TBD, [VERIFY], or placeholder markers left unresolved? |
+| A5 | Tracking file accuracy | Do INDEX.md statuses, PLAN.md decisions, and DEVLOG.md entries accurately reflect reality? |
+| A6 | Template compliance | Do all documents follow their respective templates and AI-RULES? |
+| A7 | Regression check | Did this change break anything that previously passed? |
+
+61. **Audit output format** — every audit produces a structured report:
+
+```
+## Audit Report — [scope description]
+### PASS (N items) — brief list
+### FAIL (N items) — detailed, with file paths, line numbers, and exact issue
+### WARNINGS (N items) — not wrong but could cause confusion
+### FIXES REQUIRED — prioritized by:
+  1. Dependency order (fix upstream before downstream)
+  2. Severity (security > correctness > consistency > style)
+  3. Blast radius (fixes affecting many docs before isolated fixes)
+```
+
+62. All FAIL items must be fixed before the deliverable is marked complete. WARNINGS must be acknowledged (fixed or explicitly accepted with reason).
+
+63. Fixes must be applied in dependency order: if Fix A changes something that Fix B depends on, Fix A goes first. Never batch fixes that have ordering dependencies.
+
+## §14 — Downstream Impact Protocol
+
+64. **When any document changes**, the author must:
+- Check the "Depended on by" field in the document's front matter
+- For each downstream doc: verify the change doesn't invalidate it
+- If it does: either update the downstream doc in the same commit, or add `⚠️ Needs revalidation` to INDEX.md
+
+65. **When an ADR changes or is superseded**, the author must:
+- Update the Decisions Registry in PLAN.md
+- Search all docs for references to the old decision
+- Update or flag every reference
+
+66. **When D01 (schema) changes after initial completion**, the author must:
+- Verify all module specs (D06-D12) still reference correct table/column names
+- Verify D02 (API spec) request/response schemas still match
+- Verify D10 (Search) collection schema still matches
+- Run the full audit protocol (rule 60)
+
+## §15 — Breaking Change Protocol
+
+67. A "breaking change" is any change to a completed document that invalidates assumptions in downstream documents. Examples:
+- Renaming a table or column in D01
+- Changing an ADR decision
+- Modifying an API contract in D02
+- Changing RLS policy patterns
+
+68. Breaking changes require:
+- A DEVLOG entry explaining what changed and why
+- An impact list of all affected downstream documents
+- All affected documents updated or flagged in the same commit batch
+- A post-fix audit (rule 60) to verify nothing was missed
+
+## §16 — Security Review Gates
+
+69. **RLS completeness review** — before any table is marked "done" in D01:
+- [ ] All 4 operations (SELECT/INSERT/UPDATE/DELETE) have explicit policies
+- [ ] `deleted_at IS NULL` included in SELECT policies (per ADR-006)
+- [ ] `organization_id = current_user_org_id()` in every policy
+- [ ] Tested with 2-tenant fixture: Tenant A cannot access Tenant B's data
+- [ ] Role-based restrictions verified against RBAC matrix
+
+70. **Auth flow review** — before any auth-related code is marked done:
+- [ ] No client-provided `organization_id` accepted (derive server-side)
+- [ ] JWT expiry and refresh handled
+- [ ] Org-switch flow tested (per ADR-005)
+- [ ] Service role usage limited to background jobs with explicit `SET LOCAL`
+
+71. **Data exposure review** — before any API endpoint is marked done:
+- [ ] Response does not leak fields from other tenants
+- [ ] Pagination cannot be used to enumerate records across tenants
+- [ ] Error messages do not reveal existence of resources in other tenants (return 404, not 403)
+- [ ] File download URLs are scoped and expire
+
+## §17 — Schema Evolution Rules
+
+72. All schema changes after D01 completion use Supabase migrations (`supabase migration new <name>`).
+73. Every migration file has a corresponding reverse migration documented (even if not automated).
+74. Migrations must be idempotent where possible (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`).
+75. No migration may drop a column or table without a 2-step deprecation: (1) stop writing to it, (2) drop in a later migration after confirming no reads.
+76. Every migration must be tested against `supabase db reset` with seed data before merging.
+
+## §18 — Third-Party Integration Verification
+
+77. Every claimed capability of a third-party service (Supabase, Inngest, Stripe, Nylas, Typesense, Merge.dev) must be verified against official documentation before the document is marked complete.
+78. `[VERIFY]` markers are acceptable in Draft status but must be resolved before Review status.
+79. Version-specific behavior must note the version: "Supabase JS v2.x supports..." not just "Supabase supports...".
+80. When a third-party service has breaking changes in a new version, treat it as a breaking change (rule 67) and follow the protocol.
+
+## §19 — Performance and Scalability Considerations
+
+81. Every table in D01 must document estimated row volume at 1-year and 3-year scale (per tenant and total).
+82. Indexes must be justified by query patterns documented in comments. No speculative indexes.
+83. Any query expected to run in a user-facing request must target <100ms response time. Document the expected query plan.
+84. Tables expected to exceed 1M rows must have a partitioning strategy documented (or explicitly state why partitioning is not needed).
+
+## §20 — Dependency and Ordering Discipline
+
+85. When multiple fixes or changes are identified, they must be resolved in dependency order:
+- Upstream documents before downstream documents
+- Schema changes before API changes before UI changes
+- Security fixes before feature fixes before style fixes
+
+86. When creating a prioritized fix list, assign each fix:
+- **Priority:** P0 (security/data integrity) > P1 (correctness) > P2 (consistency) > P3 (style/clarity)
+- **Dependency:** list which other fixes must complete first
+- **Blast radius:** number of documents/files affected
+
+87. No fix with unresolved upstream dependencies may be started. Verify the dependency is resolved before beginning downstream work.
