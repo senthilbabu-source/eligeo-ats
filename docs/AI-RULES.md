@@ -54,7 +54,7 @@
 30. Every endpoint must specify: method, path, auth requirement, request schema, response schema, error codes
 31. Pagination: document cursor format, default page size, max page size
 32. All request/response schemas defined as Zod schemas (not just TypeScript interfaces)
-33. Error responses follow RFC 7807 format: `{ type, title, status, detail, instance }`
+33. Error responses follow RFC 9457 (Problem Details) format: `{ type, title, status, detail, instance }`
 
 ## §7 — Architecture Decision Records (ADRs)
 

@@ -16,6 +16,38 @@
 
 ---
 
+### 2026-03-10 — [D02] API Specification — complete first draft
+
+**Files created:**
+- `docs/API-SPECIFICATION.md` — 13 sections (486 lines): auth model (JWT + API key), RBAC enforcement (`can(role, permission)` helper + RLS), URL conventions (`/api/v1/`, kebab-case plural), cursor pagination (base64-encoded `{sort_value, id}`, 25 default / 100 max), RFC 9457 error responses, rate limiting (4 plan tiers via @upstash/ratelimit), idempotency (Redis-backed, 24h TTL), webhook outbound (HMAC-SHA256 signing, Inngest retry with exponential backoff, auto-disable after 10 failures), webhook inbound (Merge.dev, Nylas, Stripe, Dropbox Sign), Zod→OpenAPI 3.1 via @asteasolutions/zod-to-openapi.
+- `docs/api/ENDPOINTS.md` — 50+ endpoints across 4 categories: Core CRUD (auth, organizations, jobs, candidates, applications, pipeline, notes, files), Module-Specific (interviews, scorecards, offers, talent pools, skills, custom fields), Search & AI (Typesense search, AI matching), Settings & Admin (webhooks, API keys, notification preferences, audit logs, DEI reports).
+
+**Files updated:**
+- `docs/AI-RULES.md` — Rule 33: updated RFC 7807 reference to RFC 9457 (Problem Details) for consistency with D02.
+- `docs/INDEX.md` — D02 status: `⬜ Not Started` → `✅ Complete (Review)`.
+
+**Key decisions:**
+- Server Actions for UI mutations (form submissions, state changes), Route Handlers for external/M2M integrations
+- API keys stored as SHA-256 hash in `api_keys` table, raw key shown once at creation
+- Rate limit tiers match D01 plan_tier CHECK constraint: starter (100/min), growth (300/min), pro (600/min), enterprise (1200/min)
+- Webhook signing uses `secret` column (not `signing_secret`) — matches D01 DDL
+- Cursor pagination chosen over offset for stable performance on large datasets
+- Idempotency keys required for all POST mutations, optional for PUT/PATCH
+
+**Post-build audit:** 8 PASS, 5 FAIL, 4 WARNINGS — all fixes applied:
+- F2: Removed non-existent `api_keys.is_active` (RLS handles via `deleted_at`)
+- F3: Fixed `api_keys.scopes` → `permissions`, `rate_limit_tier` → derived from org plan
+- F4: Corrected plan tier values (free/starter/professional/enterprise → starter/growth/pro/enterprise) to match D01 DDL CHECK
+- F5: Updated AI-RULES.md rule 33 from RFC 7807 to RFC 9457
+- W3: Added missing ADR-006/007/008 to front matter
+- W4: Standardized `signing_secret` → `secret` throughout
+
+**Status:** Review.
+
+**Next:** D03 (Billing & Subscription Architecture).
+
+---
+
 ### 2026-03-10 — [D05] Design System — complete first draft
 
 **File created:**
