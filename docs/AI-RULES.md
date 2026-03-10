@@ -270,3 +270,31 @@ Every major deliverable (document, feature, sprint, hotfix) MUST end with a stru
 - **Blast radius:** number of documents/files affected
 
 87. No fix with unresolved upstream dependencies may be started. Verify the dependency is resolved before beginning downstream work.
+
+## §21 — Pre-Start Gate (mandatory before beginning any deliverable)
+
+88. **Before starting any document, feature, or task**, run this gate checklist:
+
+| # | Check | How to verify | Fail action |
+|---|-------|---------------|-------------|
+| G1 | All upstream dependencies are complete | Check INDEX.md "Depends On" column — every listed dependency must have status ✅ Complete or 🟡 In Progress with the specific sections you need already done | Stop. Complete the upstream dependency first. |
+| G2 | All referenced ADRs are Accepted | Check PLAN.md Decisions Registry — every decision your work assumes must be `Resolved → ADR-NNN` or `Decided (S3)`, never `Open` | Stop. Write the missing ADR first. |
+| G3 | No unresolved [VERIFY] markers in dependencies | Grep upstream docs for `[VERIFY]` — any unresolved marker in a doc you depend on is a landmine | Resolve the [VERIFY] or accept the risk explicitly in your doc. |
+| G4 | DEVLOG has no pending audit fixes | Check the most recent audit report — all FAIL items must be resolved | Fix outstanding FAILs first. |
+| G5 | Git working tree is clean | `git status` shows no uncommitted changes | Commit or stash before starting new work. |
+| G6 | You can state the deliverable's Definition of Done | Reference the specific checklist from §12 (rules 54-58) for your document type | Clarify scope before starting. |
+
+89. The pre-start gate output is a brief confirmation block logged at the top of the work session:
+
+```
+## Pre-Start Gate — [deliverable name]
+- G1 Dependencies: ✅ [list checked]
+- G2 ADRs: ✅ [list referenced]
+- G3 No [VERIFY] in deps: ✅
+- G4 No pending audit fixes: ✅
+- G5 Clean git: ✅
+- G6 DoD identified: ✅ [rule number]
+→ GATE PASSED — proceeding
+```
+
+90. If any gate fails, the work does not start. Fix the blocker first, re-run the gate, then proceed. No exceptions.
