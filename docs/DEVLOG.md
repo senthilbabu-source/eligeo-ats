@@ -16,6 +16,20 @@
 
 ---
 
+### 2026-03-10 — [D04] ADR-004 Testing Strategy — what's built when
+
+**Files created:**
+- `docs/ADRs/004-testing-strategy.md` — 3-tier testing strategy: Day 1 (unit, RLS, API, jobs, E2E), per-feature (smoke, contract, a11y, search relevance), pre-launch (perf, load, security, DR). 5 "never retrofit" items identified.
+
+**Files updated:**
+- `docs/PLAN.md` — Decisions Registry: added TEST-1 entry
+
+**Why:** Testing strategy must be decided before D01 because golden tenant fixtures are defined alongside the schema, and RLS integration tests are mandatory from the first table.
+
+**Next:** D01 (Complete Database Schema) with golden tenant fixtures defined inline.
+
+---
+
 ### 2026-03-10 — [D04] ADR-001, ADR-002, ADR-003 written — D01 unblocked
 
 **Files created:**

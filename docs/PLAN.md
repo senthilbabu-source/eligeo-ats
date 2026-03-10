@@ -106,6 +106,7 @@ Single source of truth for all architecture decisions. Check here FIRST before a
 | AC-4 | Missing `deleted_at` on applications + `application_stage_history` table | `Open` | — | Add in D01. |
 | AC-5 | Multi-org JWT switching mechanism | `Open` | — | Needs design in D01/D04. |
 | AC-6 | IVFFlat vs HNSW for vector indexes on empty tables | `Resolved → ADR-003` | ADR-003 | **HNSW.** IVFFlat useless on empty tables. HNSW builds incrementally from row 0. |
+| TEST-1 | Testing strategy: what's built when | `Resolved → ADR-004` | ADR-004 | Day 1: unit, RLS, API, job, E2E. Per-feature: smoke, contract, a11y. Pre-launch: perf, load, security. |
 | STACK-1 | Auth provider: Supabase Auth | `Decided (S3)` | S3 §3 | Supabase Auth exclusively — no Clerk, no Auth.js |
 | STACK-2 | Background jobs: Inngest | `Decided (S3)` | S3 §5 | Inngest (serverless) — not Bull/Redis |
 | STACK-3 | Search: pgvector + Typesense | `Decided (S3)` | S3 §6 | Dual-layer: pgvector for semantic, Typesense for faceted |
