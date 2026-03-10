@@ -1,0 +1,140 @@
+# itecbrains ATS — Documentation Dev Log
+
+> Chronological record of all documentation work. Newest entries at top.
+> Every change to any document in `docs/` gets an entry here.
+
+---
+
+## Format
+
+```
+### YYYY-MM-DD — [Document ID] Summary
+- What changed
+- Why
+- What's next
+```
+
+---
+
+### 2026-03-10 — [D04] ADR-001, ADR-002, ADR-003 written — D01 unblocked
+
+**Files created:**
+- `docs/ADRs/001-supabase-client-only.md` — AC-1 resolved: Supabase client everywhere, no Prisma. RLS enforced on every query including background jobs.
+- `docs/ADRs/002-nextjs-16-proxy-middleware.md` — AC-2 + AC-3 resolved: Next.js 16 with `proxy.ts`. CLAUDE.md is authority, S3 references are errata.
+- `docs/ADRs/003-hnsw-vector-indexes.md` — AC-6 resolved: HNSW indexes (not IVFFlat). Works from row 0, no rebuild needed.
+
+**Files updated:**
+- `docs/PLAN.md` — Decisions Registry: AC-1, AC-2, AC-3, AC-6 status changed from `Open` to `Resolved → ADR-NNN`
+- `docs/INDEX.md` — D01 status: `🔴 Blocked` → `⬜ Not Started` (unblocked). D04 status: `⬜ Not Started` → `🟡 In Progress`
+
+**Also:**
+- `.gitignore` created
+- Git repository initialized
+
+**Why:** D01 (Complete Database Schema) was blocked by 3 open architecture decisions. These ADRs resolve the blockers so D01 can proceed.
+
+**Next:** Write D01 (Complete Database Schema) — the critical path item that unblocks 12 downstream documents.
+
+---
+
+### 2026-03-10 — [META] Pre-commit protocol and governance rules established
+
+**Files updated:**
+- `CLAUDE.md` (ATS) — Added: task-based reading tiers (5 task types), S3 errata table (6 known errors), pre-commit protocol (4 commit types with checklists), commit message convention with scopes
+- `CLAUDE.md` (Playbook) — Added: pre-commit protocol (3 commit types), commit message convention for playbook scopes
+- `docs/PLAN.md` — Added: Decisions Registry (6 open + 6 decided), parallel work coordination rule
+- `docs/AI-RULES.md` — Added: §11 Document Front Matter standard (rules 51-53), §12 Definition of Done by document type (rules 54-58)
+- `SaaS-Playbook/JOURNEY-LOG.md` — Added: Battle-Test Log section
+
+**Why:** Seven governance gaps closed: decision re-opening, premature doc completion, S3 error propagation, token waste, downstream staleness, parallel work conflicts, untested prompt shipping.
+
+**Key rule:** Parallel docs (D01, D04, D05) must NOT assume `Open` decisions — resolve as ADRs first.
+
+**Next:** Begin D01, but first resolve AC-1 and AC-2 as standalone ADRs since D01 depends on both.
+
+---
+
+### 2026-03-10 — [META] Session handoff protocol created
+
+**Files created:**
+- `CLAUDE.md` (ATS root) — 3-step handoff: read state → confirm context → follow rules
+- `CLAUDE.md` (SaaS-Playbook root) — Same pattern, product-specific rules
+
+**Why:** Prevent drift and hallucination when moving between Claude Code sessions.
+
+---
+
+### 2026-03-10 — [PLAYBOOK] SaaS Accelerator Playbook elevated to marketable product
+
+**New files created in `/Users/senthilbabu/Downloads/SaaS-Playbook/product/`:**
+- `PRODUCT-SPEC.md` — Full product specification: what customers buy, value chain, pricing tiers (Starter $49 / Professional $149 / Team $299 / Enterprise $499+), technical architecture (static site + Stripe), content pipeline, legal/IP
+- `WIZARD-IA.md` — Complete wizard: 9 steps, 51 questions, branching logic, cross-step validation, pre-population rules by product category, placeholder mapping for every question
+- `OUTPUT-MAP.md` — Template engine spec: 35 placeholder resolutions, conditional file inclusion rules, section-level toggles, output package structure, zero-hallucination validation pass
+
+**Key product decision:** The product is a deterministic template engine, NOT an AI wrapper. No LLM runs in our product. Wizard collects context → placeholders filled via string substitution → customized prompts delivered. The AI runs downstream in the customer's Claude Code session. This gives us: zero hallucination risk, predictable output, platform agnosticism.
+
+**Two parallel tracks confirmed:**
+1. ATS (product being built) — battle-tests the prompts
+2. SaaS Accelerator Playbook (product being sold) — packages the prompts
+
+---
+
+### 2026-03-10 — [PLAYBOOK] SaaS Accelerator Playbook created
+
+**Location:** `/Users/senthilbabu/Downloads/SaaS-Playbook/` (separate from ATS repo)
+
+**Purpose:** Generic, product-agnostic playbook of executable Claude Code prompts for building any SaaS product. Lessons from the ATS build feed into this playbook (abstracted, product details stripped).
+
+**Created:**
+- 4 core files: README, PRINCIPLES (15 principles seeded), JOURNEY-LOG, GLOSSARY
+- 7 phase skeletons (00-validate through 06-scale) with entry/exit criteria
+- 7 deep prompts for Phase 01-Architect (multi-tenancy, auth, schema, API, background-jobs, documentation-system, ADR generator, tech-stack-evaluator)
+- 9 role entry-points (architect, backend, frontend, security, SDET, devops, PM, marketing, sales)
+- 5 cross-cutting concerns (multi-tenancy, billing, data-isolation, GDPR, observability)
+- 4 output templates (ADR, module spec, API endpoint, runbook)
+
+**Bridge mechanism:** ATS DEVLOG entries tagged `[PLAYBOOK]` get abstracted and added to `SaaS-Playbook/JOURNEY-LOG.md`. Lessons flow one-way: ATS → Playbook.
+
+**Next:** When we write ATS docs (D01, D02, etc.), we'll simultaneously use and refine the corresponding playbook prompts. The prompts become battle-tested.
+
+---
+
+### 2026-03-10 — [META] Documentation tracking system created
+
+**Documents created:**
+- `docs/INDEX.md` — Master documentation registry with 21 planned documents across 4 phases
+- `docs/DEVLOG.md` — This changelog
+- `docs/AI-RULES.md` — 50 rules for documentation standards
+- `docs/PLAN.md` — Pre-build assessment and gap analysis (19 identified gaps)
+- `docs/templates/MODULE-TEMPLATE.md` — Boilerplate for feature module specs
+- `docs/templates/ADR-TEMPLATE.md` — Boilerplate for architecture decision records
+
+**Directories created:**
+- `docs/ADRs/` — Architecture Decision Records
+- `docs/modules/` — Feature module specifications
+- `docs/runbooks/` — Operational runbooks
+- `docs/templates/` — Document boilerplates
+
+**Source documents inventoried:**
+- `S1` — Phase 1 Expert Review (48KB docx, 118 issues) — reference input
+- `S2` — Phase 2 Architecture Blueprint (49KB docx) — reference input
+- `S3` — Principal Architect's Pre-Plan (86KB md, 1813 lines) — active reference
+
+**Assessment completed:**
+- 19 documentation gaps identified across 4 severity tiers
+- 6 architectural corrections flagged in existing S3 document
+- Dependency graph mapped: D01 (Schema) is the critical path blocker
+- Recommended production order: Phase 0 → Phase 1 → Phase 2 → Phase 3
+
+**Architecture concerns logged (to resolve in D01/D04):**
+1. Prisma vs Supabase client — pick one ORM strategy
+2. Next.js version — lock 15 or 16
+3. Middleware file naming — `proxy.ts` vs `middleware.ts`
+4. Missing `deleted_at` on applications table
+5. `current_user_org_id()` multi-org sync with JWT hook
+6. IVFFlat index on empty table — consider HNSW or deferred creation
+
+**Next steps:**
+- Begin D01 (Complete Database Schema) — highest priority, unblocks 12 other documents
+- Begin D04 (ADRs) — can run in parallel with D01
+- Begin D05 (Design System) — independent, can run in parallel
