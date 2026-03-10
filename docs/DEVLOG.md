@@ -16,6 +16,30 @@
 
 ---
 
+### 2026-03-10 — [D05] Design System — complete first draft
+
+**File created:**
+- `docs/DESIGN-SYSTEM.md` — 11 sections covering: design principles (7), color system (brand palette + semantic status + dark mode in HSL/CSS variables), typography (Inter + Geist Mono, 8-point type scale with 14px dashboard base), spacing scale, layout grid (sidebar + topnav + content), responsive breakpoints (5 tiers, desktop-first), shadcn/ui component customizations (16 base components + 10 ATS-specific), WCAG 2.1 AA accessibility (contrast ratios verified, keyboard nav, screen reader, reduced motion), animation tokens (4 durations, 8 interaction patterns using Motion/Framer Motion v11+), Lucide React iconography, career page tenant theming (maps to D01 branding_config), component file organization.
+
+**Competitive research conducted:** Analyzed Ashby (analytics-first design, clean aesthetic), Greenhouse (brand guidelines, left sidebar redesign, stage colors), Lever (UI praise), shadcn/ui theming conventions, WCAG 2.1 AA requirements, 2025-2026 SaaS design trends.
+
+**Key decisions:**
+- 14px body base for dashboard (data-dense), 16px for candidate portal
+- Inter as primary font (highest x-height, used by Linear/Vercel)
+- Warm white background (#FEFDFB) not pure white (reduces eye strain)
+- Primary blue (#145FD9) at 5.3:1 contrast ratio (safely above 4.5:1 WCAG AA)
+- Dark mode from day one via next-themes cookie strategy
+- Motion library for drag-and-drop (kanban), CSS transitions for simple states
+- Tenant branding limited to career pages only (internal UI stays consistent)
+
+**Post-build audit:** 7 FAILs identified, all resolved (2 were false positives from wrong CLAUDE.md scope). Fixes: added D01 dependency, fixed STACK-1 mislabel, bumped primary contrast, pinned library versions, fixed spring syntax.
+
+**Status:** Review.
+
+**Next:** D02 (API Specification).
+
+---
+
 ### 2026-03-10 — [D01] Post-build audit fixes applied (6/6)
 
 **Files updated:**

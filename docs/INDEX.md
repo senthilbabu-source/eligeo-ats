@@ -30,7 +30,7 @@
 | D02 | **API Specification** | `docs/API-SPECIFICATION.md` | P0 | ⬜ Not Started | D01 | OpenAPI 3.1 draft. Pagination contract (cursor-based). Error format (RFC 7807). Rate limiting tiers. Auth (JWT + API key). Idempotency. Webhook outbound. |
 | D03 | **Billing & Subscription Architecture** | `docs/modules/BILLING.md` | P0 | ⬜ Not Started | D01 | Plan tier feature matrix. Stripe integration flow. Feature flag enforcement. Metered billing (AI credits). Seat-based pricing. Webhook handling. |
 | D04 | **Architecture Decision Records** | `docs/ADRs/` | P0 | 🟡 In Progress | S3 | ✅ ADR-001→010 complete (all blocking decisions resolved). Remaining: formal ADRs for STACK-1→6 (non-blocking, for team alignment). |
-| D05 | **Design System** | `docs/DESIGN-SYSTEM.md` | P0 | ⬜ Not Started | — | Color palette, typography, spacing, component specs (shadcn/ui customization), responsive breakpoints, accessibility targets (WCAG 2.1 AA), kanban board UX. |
+| D05 | **Design System** | `docs/DESIGN-SYSTEM.md` | P0 | ✅ Complete (Review) | D01 | Color palette (HSL tokens, light + dark), Inter + Geist Mono typography, spacing scale, shadcn/ui component specs (16 base + 10 ATS-specific), responsive breakpoints, WCAG 2.1 AA (all contrasts verified), animation tokens, career page theming, file organization. Post-build audit passed. |
 
 ---
 
