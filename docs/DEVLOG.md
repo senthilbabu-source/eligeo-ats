@@ -16,6 +16,50 @@
 
 ---
 
+### 2026-03-10 — [D08] Notification System — complete first draft
+
+**Files created:**
+- `docs/modules/NOTIFICATIONS.md` — 11 sections (417 lines): unified notification dispatch (in-app + email + webhook), event catalog (22 event types), Supabase Realtime for in-app, React Email + Resend for transactional email, Handlebars-style template variables, @mention notification via Inngest, webhook outbound with HMAC signing + health management + auto-disable, notification preferences per user per event, digest mode, 17 API endpoints with Zod schemas, 7 Inngest functions, 7 UI components.
+
+**Files updated:**
+- `docs/INDEX.md` — D08 status: `⬜ Not Started` → `✅ Complete (Review)`.
+- `docs/GAPS.md` — G-014, G-015, G-021, G-024 resolved. G-026, G-027 added. V-013 added. Fixed D08/D09 mislabeling (GAPS had Notifications as D09 and Candidate Portal as D08 — corrected to match INDEX.md).
+- `docs/modules/INTERVIEW-SCHEDULING.md` — Fixed D08/D09 references in "Depended on by" front matter.
+- `docs/DEVLOG.md` — Fixed D07 contracts exported section (D08/D09 swap) and "Next" line.
+
+**Key decisions:**
+- No dedicated `notifications` table — in-app notifications via Supabase Realtime broadcast (ephemeral), persistent history derived from source tables (audit_logs, notes, scorecards). Avoids data duplication.
+- @Mention notifications via Inngest event (not Realtime, not direct insert). Reason: mentions need email delivery for offline users; Inngest handles retries + preference routing.
+- Email template syntax: Handlebars-style `{{variable.path}}` with strict allowlist from `merge_fields` column. No Liquid/custom. Consistent for future D20 i18n.
+- Webhook re-enablement: manual only. Warning at 5 failures, auto-disable at 10, admin notification both times. No auto-retry — failed endpoints need human investigation.
+- Self-notification suppression: users never notified of their own actions (`actor_id !== recipient_id`).
+- Digest mode: daily batched email at 8 AM UTC for users who opt in. In-app stays immediate.
+
+**Post-build audit:** 7/7 categories PASS. No fixes needed. 1 strategic [VERIFY] marker for Resend API (V-013).
+
+**Contracts exported:**
+- D09 (Candidate Portal): candidate-facing email delivery (5 event types) defined in D08 §4.3 but delivery via D09 candidate auth context.
+- D11 (Real-Time): Supabase Realtime channel naming convention for org-scoped + user-filtered notification broadcast.
+- D12 (Workflow): `application.stage_changed` event available for notification + webhook dispatch on stage transitions.
+- D20 (i18n): template variable syntax is `{{variable.path}}` — i18n must use same syntax for translated templates.
+
+**[PLAYBOOK]** Extractable patterns: preference-aware notification routing (in-app/email/both/none), webhook outbound with health tracking + auto-disable, ephemeral in-app via Realtime (no notification table), Handlebars merge fields with allowlist, digest batching via cron.
+
+**Status:** Review.
+
+**Next:** D10 (Search Architecture) or D09 (Candidate Portal) — per user direction.
+
+---
+
+### 2026-03-10 — [META] Fix D08/D09 doc number mislabeling in GAPS.md
+
+**Files updated:**
+- `docs/GAPS.md` — GAPS.md had Notifications labeled as D09 and Candidate Portal as D08, opposite to INDEX.md. Corrected: D08 = Notifications, D09 = Candidate Portal. Affected gaps: G-013, G-014, G-015, G-020, G-021, G-023, G-024.
+- `docs/modules/INTERVIEW-SCHEDULING.md` — "Depended on by" front matter corrected.
+- `docs/DEVLOG.md` — D07 "Contracts exported" and "Next" corrected.
+
+---
+
 ### 2026-03-10 — [D07] Interview Scheduling & Scorecards — complete first draft
 
 **Files created:**
@@ -36,8 +80,8 @@
 **Post-build audit:** 7/7 categories PASS. No fixes needed. 2 strategic [VERIFY] markers for Nylas API (V-011, V-012).
 
 **Contracts exported:**
-- D08 (Candidate Portal): self-scheduling UI — time slot picker, confirmation flow, 3-reschedule limit, link expiry display.
-- D09 (Communications): 4 interview email triggers — scheduled, cancelled, feedback reminder, scorecard submitted.
+- D09 (Candidate Portal): self-scheduling UI — time slot picker, confirmation flow, 3-reschedule limit, link expiry display.
+- D08 (Notifications): 4 interview email triggers — scheduled, cancelled, feedback reminder, scorecard submitted.
 - D12 (Workflow): optional auto-advance when all interviews completed + all scorecards submitted.
 - D17 (Analytics): scorecard aggregation data (weighted scores, recommendation distribution, time-to-feedback).
 - D10 (Search & AI): AI scorecard summarization consumes 1 credit with `action = 'feedback_summarize'`.
@@ -46,7 +90,7 @@
 
 **Status:** Review.
 
-**Next:** D09 (Communications / Notification System) — per production order.
+**Next:** D08 (Notification System) — per production order.
 
 ---
 

@@ -5,7 +5,7 @@
 > **Priority:** P1
 > **Last updated:** 2026-03-10
 > **Depends on:** D01 (schema — `interviews`, `scorecard_templates`, `scorecard_categories`, `scorecard_attributes`, `scorecard_submissions`, `scorecard_ratings`, `nylas_grants`), D02 (API patterns), D03 (billing — AI credit gating), D05 (design — components)
-> **Depended on by:** D06 (pipeline ordering — interviews before offers), D08 (Candidate Portal — self-scheduling), D09 (Communications — interview notifications), D12 (Workflow — stage auto-advance), D17 (Analytics — interview metrics)
+> **Depended on by:** D06 (pipeline ordering — interviews before offers), D09 (Candidate Portal — self-scheduling), D08 (Notifications — interview notifications), D12 (Workflow — stage auto-advance), D17 (Analytics — interview metrics)
 > **Last validated against deps:** 2026-03-10
 > **Architecture decisions assumed:** ADR-001 (Supabase client), ADR-006 (soft delete), ADR-007 (audit), ADR-008 (enums)
 
