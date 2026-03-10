@@ -4,6 +4,7 @@
 > **Date:** 2026-03-10
 > **Deciders:** Principal Architect
 > **INDEX ID:** D04
+> **Resolves:** AC-4, SCHEMA-1 (Decisions Registry in PLAN.md)
 
 ---
 
@@ -30,7 +31,9 @@ Some tables should never be deleted by application code (only soft-deleted):
 - `audit_logs` — append-only, never deleted (no `deleted_at` on this table — the sole exception)
 - `organizations` — deactivated, never deleted
 
-**The one exception:** `audit_logs` has no `deleted_at`. Audit records are immutable and append-only. GDPR erasure of audit logs is handled by crypto-shredding (ADR-010), not deletion.
+**Append-only exceptions (no `deleted_at`):**
+- `audit_logs` — immutable audit trail. GDPR erasure handled by crypto-shredding (ADR-010).
+- `gdpr_erasure_log` — compliance record of erasure actions. Must be retained for regulatory proof.
 
 ### RLS Pattern
 

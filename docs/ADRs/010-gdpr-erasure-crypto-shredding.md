@@ -4,6 +4,7 @@
 > **Date:** 2026-03-10
 > **Deciders:** Principal Architect
 > **INDEX ID:** D04
+> **Resolves:** SCHEMA-5 (Decisions Registry in PLAN.md)
 
 ---
 
@@ -34,12 +35,13 @@ CREATE TABLE candidate_encryption_keys (
 
 When a DSAR (Data Subject Access Request) for erasure is received:
 
-1. **Anonymize `candidates`:** Replace PII fields (first_name, last_name, email, phone, resume_url, resume_text, resume_embedding) with anonymized values. Set `is_anonymized = TRUE`.
+1. **Anonymize `candidates`:** Replace PII fields (first_name, last_name, email, phone, resume_text, resume_embedding) with anonymized values. Set `is_anonymized = TRUE`.
 2. **Soft-delete `applications`:** Set `deleted_at = NOW()` on all applications for this candidate.
-3. **Soft-delete related records:** notes, interview scorecards, files, custom field values — all soft-deleted.
-4. **Delete files from Storage:** Remove actual files (resumes, photos) from Supabase Storage buckets.
+3. **Soft-delete all candidate-linked records:** notes, scorecard_submissions, scorecard_ratings, offers, application_stage_history, custom_field_values, candidate_skills, talent_pool_members, notification history — all soft-deleted.
+4. **Soft-delete files metadata:** Mark all `files` records for this candidate as deleted (per ADR-009). Inngest function handles actual Storage bucket cleanup.
 5. **Delete encryption key:** Remove row from `candidate_encryption_keys` — crypto-shreds all audit entries.
 6. **Retain anonymized analytics:** Hire/reject/source data remains for aggregate reporting but is no longer linked to a real person.
+7. **Log erasure:** Insert record into `gdpr_erasure_log` (append-only, no `deleted_at` — exempt like `audit_logs`).
 
 ### Erasure Function
 
@@ -47,35 +49,65 @@ When a DSAR (Data Subject Access Request) for erasure is received:
 CREATE OR REPLACE FUNCTION erase_candidate(p_candidate_id UUID, p_org_id UUID)
 RETURNS VOID AS $$
 BEGIN
-  -- Anonymize candidate record
+  -- 1. Anonymize candidate record (PII nullified, embedding cleared)
   UPDATE candidates SET
     first_name = 'REDACTED',
     last_name = 'REDACTED',
     email = 'redacted-' || id || '@erased.invalid',
     phone = NULL,
-    resume_url = NULL,
     resume_text = NULL,
     resume_embedding = NULL,
     is_anonymized = TRUE,
     updated_at = NOW()
   WHERE id = p_candidate_id AND organization_id = p_org_id;
 
-  -- Soft-delete applications
+  -- 2. Soft-delete applications
   UPDATE applications SET deleted_at = NOW()
-  WHERE candidate_id = p_candidate_id AND organization_id = p_org_id;
+  WHERE candidate_id = p_candidate_id AND organization_id = p_org_id
+    AND deleted_at IS NULL;
 
-  -- Soft-delete notes
+  -- 3. Soft-delete notes
   UPDATE notes SET deleted_at = NOW()
-  WHERE candidate_id = p_candidate_id AND organization_id = p_org_id;
+  WHERE candidate_id = p_candidate_id AND organization_id = p_org_id
+    AND deleted_at IS NULL;
 
-  -- Delete files metadata (Storage cleanup via Inngest function)
+  -- 4. Soft-delete scorecard submissions and ratings
+  UPDATE scorecard_submissions SET deleted_at = NOW()
+  WHERE application_id IN (
+    SELECT id FROM applications WHERE candidate_id = p_candidate_id AND organization_id = p_org_id
+  ) AND deleted_at IS NULL;
+
+  -- 5. Soft-delete offers
+  UPDATE offers SET deleted_at = NOW()
+  WHERE application_id IN (
+    SELECT id FROM applications WHERE candidate_id = p_candidate_id AND organization_id = p_org_id
+  ) AND deleted_at IS NULL;
+
+  -- 6. Soft-delete custom field values
+  UPDATE custom_field_values SET deleted_at = NOW()
+  WHERE entity_type = 'candidate' AND entity_id = p_candidate_id
+    AND deleted_at IS NULL;
+
+  -- 7. Soft-delete candidate skills and talent pool memberships
+  UPDATE candidate_skills SET deleted_at = NOW()
+  WHERE candidate_id = p_candidate_id AND deleted_at IS NULL;
+
+  UPDATE talent_pool_members SET deleted_at = NOW()
+  WHERE candidate_id = p_candidate_id AND deleted_at IS NULL;
+
+  -- 8. Soft-delete files metadata (Storage cleanup via Inngest function)
   UPDATE files SET deleted_at = NOW()
   WHERE entity_type = 'candidate' AND entity_id = p_candidate_id
-    AND organization_id = p_org_id;
+    AND organization_id = p_org_id AND deleted_at IS NULL;
 
-  -- Crypto-shred audit logs
+  -- 9. Crypto-shred audit logs (delete key, records become unreadable)
   DELETE FROM candidate_encryption_keys
   WHERE candidate_id = p_candidate_id AND organization_id = p_org_id;
+
+  -- 10. Log the erasure (append-only, compliance record)
+  INSERT INTO gdpr_erasure_log (organization_id, candidate_id, erased_at, reason, performed_by)
+  VALUES (p_org_id, p_candidate_id, NOW(), 'dsar_request',
+    COALESCE(auth.uid(), current_setting('app.performed_by', true)::UUID));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 ```

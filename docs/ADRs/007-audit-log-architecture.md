@@ -4,6 +4,7 @@
 > **Date:** 2026-03-10
 > **Deciders:** Principal Architect
 > **INDEX ID:** D04
+> **Resolves:** SCHEMA-2 (Decisions Registry in PLAN.md)
 
 ---
 
@@ -70,12 +71,17 @@ BEGIN
     TG_OP,
     CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN to_jsonb(OLD) ELSE NULL END,
     CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN to_jsonb(NEW) ELSE NULL END,
-    auth.uid(),
+    COALESCE(auth.uid(), current_setting('app.performed_by', true)::UUID),
     NOW()
   );
   RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Note: In API routes, auth.uid() resolves from JWT.
+-- In Inngest background jobs, SET LOCAL app.performed_by = '{user_id}'
+-- before mutations so audit logs capture the acting user.
+-- performed_by is nullable for system-initiated operations (cron jobs).
 
 -- Applied to each table:
 CREATE TRIGGER audit_trigger

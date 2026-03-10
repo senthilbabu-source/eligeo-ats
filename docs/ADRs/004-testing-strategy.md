@@ -4,6 +4,7 @@
 > **Date:** 2026-03-10
 > **Deciders:** Principal Architect
 > **INDEX ID:** D04
+> **Resolves:** TEST-1 (Decisions Registry in PLAN.md)
 
 ---
 

@@ -100,9 +100,16 @@ docs/
 ├── PERFORMANCE.md                    ← Caching, load targets
 │
 ├── ADRs/                             ← Architecture Decision Records
-│   ├── 001-supabase-auth-only.md
-│   ├── 002-inngest-not-bull.md
-│   ├── ...
+│   ├── 001-supabase-client-only.md
+│   ├── 002-nextjs-16-proxy-middleware.md
+│   ├── 003-hnsw-vector-indexes.md
+│   ├── 004-testing-strategy.md
+│   ├── 005-multi-org-switching.md
+│   ├── 006-soft-delete-policy.md
+│   ├── 007-audit-log-architecture.md
+│   ├── 008-enum-strategy.md
+│   ├── 009-file-storage-pattern.md
+│   └── 010-gdpr-erasure-crypto-shredding.md
 │
 ├── modules/                          ← Feature module specifications
 │   ├── BILLING.md

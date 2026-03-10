@@ -140,7 +140,8 @@ Single source of truth for all architecture decisions. Check here FIRST before a
   and AC-6 (vector index type is DDL in D01). Writing D01 without these resolved means
   building on assumptions that may get overturned — causing rework across 12 downstream docs.
 
-  AC-4 and AC-5 are RESOLVED WITHIN D01 (they are schema additions, not choices).
+  AC-4 resolved in ADR-006 (soft delete policy). AC-5 resolved in ADR-005 (multi-org switching).
+  ADR-006→010 resolve remaining schema strategy decisions (audit, enums, files, GDPR).
 
 Week 1 (prerequisite ADRs + parallel independent work):
   Track A: ADR-001, ADR-002, ADR-003 ──────────────► unblocks D01
