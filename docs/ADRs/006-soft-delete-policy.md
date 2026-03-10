@@ -34,6 +34,7 @@ Some tables should never be deleted by application code (only soft-deleted):
 **Append-only exceptions (no `deleted_at`):**
 - `audit_logs` — immutable audit trail. GDPR erasure handled by crypto-shredding (ADR-010).
 - `gdpr_erasure_log` — compliance record of erasure actions. Must be retained for regulatory proof.
+- `candidate_encryption_keys` — destroyed (hard-deleted) during GDPR erasure. No soft-delete needed; the key's absence *is* the erasure mechanism (ADR-010).
 
 ### RLS Pattern
 

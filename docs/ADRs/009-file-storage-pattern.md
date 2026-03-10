@@ -39,7 +39,7 @@ CREATE TABLE files (
   mime_type TEXT NOT NULL,
   file_size_bytes BIGINT NOT NULL,
   scan_status TEXT NOT NULL DEFAULT 'pending' CHECK (scan_status IN ('pending', 'clean', 'infected')),
-  uploaded_by UUID REFERENCES user_profiles(id),
+  uploaded_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMPTZ DEFAULT NULL
 );

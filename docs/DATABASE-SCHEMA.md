@@ -1,7 +1,7 @@
 # Complete Database Schema
 
 > **ID:** D01
-> **Status:** Draft
+> **Status:** Review
 > **Priority:** P0
 > **Last updated:** 2026-03-10
 > **Depends on:** S3, ADR-001→010
@@ -20,7 +20,7 @@ These are enforced by ADRs. Violating any of them requires a new ADR.
 | Supabase client everywhere, no Prisma | ADR-001 | All queries go through RLS. Background jobs use service role + `SET LOCAL`. |
 | UUID v4 primary keys | STACK-4 | `gen_random_uuid()` default on every PK. No CUID, SERIAL, or ULID. |
 | Shared schema + RLS | STACK-6 | `organization_id` on every tenant-scoped table. RLS enforced. |
-| Soft delete on all tables | ADR-006 | `deleted_at TIMESTAMPTZ DEFAULT NULL`. Exceptions: `audit_logs`, `gdpr_erasure_log` (append-only). |
+| Soft delete on all tables | ADR-006 | `deleted_at TIMESTAMPTZ DEFAULT NULL`. Exceptions: `audit_logs`, `gdpr_erasure_log` (append-only), `candidate_encryption_keys` (hard-deleted on erasure). |
 | Trigger-based audit logging | ADR-007 | `audit_trigger_func()` on every table except `audit_logs`. |
 | HNSW vector indexes | ADR-003 | No IVFFlat. `USING hnsw ... WITH (m = 16, ef_construction = 64)`. |
 | CHECK for system enums, lookup tables for tenant values | ADR-008 | No PostgreSQL ENUM types. |
@@ -135,7 +135,7 @@ All other tables stay below 1M at 3-year scale and do not require partitioning.
 
 All database functions, triggers, and extensions are defined in a dedicated sub-document:
 
-- **Extensions:** `uuid-ossp`, `pgcrypto`, `vector`
+- **Extensions:** `uuid-ossp`, `pgcrypto`, `vector`, `pg_trgm`
 - **RLS helpers:** `is_org_member()`, `has_org_role()`, `current_user_org_id()`
 - **JWT hook:** `custom_access_token_hook()` (updated for ADR-005 multi-org)
 - **Triggers:** `set_updated_at()`, `audit_trigger_func()`
@@ -262,31 +262,17 @@ interface CustomPermissions {
   [permission: string]: boolean;  // Override RBAC matrix for specific permissions
 }
 
-// job_openings.location
-interface JobLocation {
-  city?: string;
-  state?: string;
-  country: string;
-  remote_type: 'remote' | 'hybrid' | 'onsite';
-}
-
-// job_openings.salary_range
-interface SalaryRange {
-  min: number;
-  max: number;
-  currency: string;          // ISO 4217, e.g. "USD"
-  period: 'annual' | 'monthly' | 'hourly';
-  equity_pct?: number;
-  equity_type?: 'options' | 'rsu' | 'phantom';
-  sign_on_bonus?: number;
-}
-
-// job_openings.external_ids
-interface ExternalIds {
-  linkedin_id?: string;
-  indeed_id?: string;
-  merge_job_id?: string;
-  [provider: string]: string | undefined;
+// job_openings.metadata (generic JSONB — location, salary use scalar columns)
+interface JobMetadata {
+  external_ids?: {
+    linkedin_id?: string;
+    indeed_id?: string;
+    merge_job_id?: string;
+    [provider: string]: string | undefined;
+  };
+  application_form_id?: string;
+  internal_notes?: string;
+  [key: string]: unknown;
 }
 
 // candidates.location
@@ -337,17 +323,14 @@ interface SourceDetails {
   agency_name?: string;
 }
 
-// pipeline_stages.required_actions
-type RequiredActions = Array<'feedback_required' | 'scorecard_required' | 'approval_required'>;
-
-// pipeline_stages.auto_triggers
-interface AutoTrigger {
-  type: 'send_email' | 'create_task' | 'notify_team' | 'move_stage';
+// pipeline_stages.auto_actions (matches DDL column name)
+interface AutoAction {
+  type: 'send_email' | 'create_task' | 'notify_team' | 'move_stage' | 'require_scorecard' | 'require_feedback' | 'require_approval';
   template?: string;
   delay_hours?: number;
   conditions?: Record<string, unknown>;
 }
-type AutoTriggers = AutoTrigger[];
+type AutoActions = AutoAction[];
 
 // offers.compensation
 interface OfferCompensation {

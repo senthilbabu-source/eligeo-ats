@@ -16,6 +16,18 @@
 
 ---
 
+### 2026-03-10 — [D01] Post-build audit fixes applied (6/6)
+
+**Files updated:**
+- `docs/schema/00-functions.md` — Fix 1: erase_candidate() expanded with 4 missing soft-delete steps (scorecard_ratings, interviews, application_stage_history, candidate_dei_data). Fix 5: Added `pg_trgm` extension.
+- `docs/ADRs/006-soft-delete-policy.md` — Fix 2: Added `candidate_encryption_keys` to append-only exceptions list.
+- `docs/DATABASE-SCHEMA.md` — Fix 3: Renamed `RequiredActions`/`AutoTriggers` interfaces to `AutoActions` matching DDL column `auto_actions`. Fix 6: Removed orphaned `JobLocation`/`SalaryRange`/`ExternalIds` interfaces (DDL uses scalar columns), replaced with `JobMetadata` for the actual `metadata JSONB` column. Updated extensions list and soft-delete exceptions.
+- `docs/ADRs/009-file-storage-pattern.md` — Fix 4: Changed `uploaded_by` FK from `user_profiles(id)` to `auth.users(id) ON DELETE SET NULL`.
+
+**Status:** All 6 audit FAIL items resolved. D01 ready for Review status.
+
+---
+
 ### 2026-03-10 — [D01] Complete Database Schema — first draft (39 tables)
 
 **Files created:**

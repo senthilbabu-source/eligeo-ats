@@ -9,7 +9,8 @@
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "vector";  -- pgvector for AI embeddings
+CREATE EXTENSION IF NOT EXISTS "vector";   -- pgvector for AI embeddings
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";  -- trigram indexes for fuzzy text search
 ```
 
 ---
@@ -250,39 +251,61 @@ BEGIN
   UPDATE notes SET deleted_at = NOW()
   WHERE candidate_id = p_candidate_id AND organization_id = p_org_id AND deleted_at IS NULL;
 
-  -- 4. Soft-delete scorecard submissions
+  -- 4. Soft-delete scorecard submissions and ratings
+  UPDATE scorecard_ratings SET deleted_at = NOW()
+  WHERE submission_id IN (
+    SELECT ss.id FROM scorecard_submissions ss
+    JOIN applications a ON a.id = ss.application_id
+    WHERE a.candidate_id = p_candidate_id AND a.organization_id = p_org_id
+  ) AND deleted_at IS NULL;
+
   UPDATE scorecard_submissions SET deleted_at = NOW()
   WHERE application_id IN (
     SELECT id FROM applications WHERE candidate_id = p_candidate_id AND organization_id = p_org_id
   ) AND deleted_at IS NULL;
 
-  -- 5. Soft-delete offers
+  -- 5. Soft-delete interviews
+  UPDATE interviews SET deleted_at = NOW()
+  WHERE application_id IN (
+    SELECT id FROM applications WHERE candidate_id = p_candidate_id AND organization_id = p_org_id
+  ) AND deleted_at IS NULL;
+
+  -- 6. Soft-delete offers
   UPDATE offers SET deleted_at = NOW()
   WHERE application_id IN (
     SELECT id FROM applications WHERE candidate_id = p_candidate_id AND organization_id = p_org_id
   ) AND deleted_at IS NULL;
 
-  -- 6. Soft-delete custom field values
+  -- 7. Soft-delete application stage history
+  UPDATE application_stage_history SET deleted_at = NOW()
+  WHERE application_id IN (
+    SELECT id FROM applications WHERE candidate_id = p_candidate_id AND organization_id = p_org_id
+  ) AND deleted_at IS NULL;
+
+  -- 8. Soft-delete custom field values
   UPDATE custom_field_values SET deleted_at = NOW()
   WHERE entity_type = 'candidate' AND entity_id = p_candidate_id AND deleted_at IS NULL;
 
-  -- 7. Soft-delete candidate skills and talent pool memberships
+  -- 9. Soft-delete candidate skills, talent pool memberships, and DEI data
   UPDATE candidate_skills SET deleted_at = NOW()
   WHERE candidate_id = p_candidate_id AND deleted_at IS NULL;
 
   UPDATE talent_pool_members SET deleted_at = NOW()
   WHERE candidate_id = p_candidate_id AND deleted_at IS NULL;
 
-  -- 8. Soft-delete files metadata
+  UPDATE candidate_dei_data SET deleted_at = NOW()
+  WHERE candidate_id = p_candidate_id AND organization_id = p_org_id AND deleted_at IS NULL;
+
+  -- 10. Soft-delete files metadata
   UPDATE files SET deleted_at = NOW()
   WHERE entity_type = 'candidate' AND entity_id = p_candidate_id
     AND organization_id = p_org_id AND deleted_at IS NULL;
 
-  -- 9. Crypto-shred audit logs
+  -- 11. Crypto-shred audit logs
   DELETE FROM candidate_encryption_keys
   WHERE candidate_id = p_candidate_id AND organization_id = p_org_id;
 
-  -- 10. Log erasure
+  -- 12. Log erasure
   INSERT INTO gdpr_erasure_log (organization_id, candidate_id, erased_at, reason, performed_by)
   VALUES (p_org_id, p_candidate_id, NOW(), 'dsar_request',
     COALESCE(auth.uid(), current_setting('app.performed_by', true)::UUID));
