@@ -50,7 +50,7 @@
 - D11 (Talent Pools): `nurture_sequences` flag gates CRM automation features
 - D12 (Analytics): `advanced_analytics` flag gates advanced reports; basic metrics on all plans
 - D13 (Observability): billing metrics from `ai_usage_logs` + `organizations.plan`; Stripe webhook success rate
-- D19 (Migration): new organizations default to `starter` plan; `ai_credits_limit = 10`
+- D19 (Migration): new organizations default to `starter` plan; `ai_credits_limit = 0` (plan setup sets real value)
 
 **[PLAYBOOK]** Extractable patterns: plan-tier feature matrix, Stripe-as-truth architecture, seat-based pricing with overage, AI credit metering, dunning flow, downgrade graceful degradation.
 

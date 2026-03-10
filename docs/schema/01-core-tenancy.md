@@ -20,7 +20,7 @@ CREATE TABLE organizations (
   feature_flags    JSONB       NOT NULL DEFAULT '{}',  -- see FeatureFlags interface
   timezone         TEXT        NOT NULL DEFAULT 'UTC',
   ai_credits_used  INTEGER     NOT NULL DEFAULT 0,
-  ai_credits_limit INTEGER     NOT NULL DEFAULT 10,
+  ai_credits_limit INTEGER     NOT NULL DEFAULT 0,  -- plan setup sets real value; 0 = no credits until plan assigned
   data_region      TEXT        NOT NULL DEFAULT 'us-east-1',
   billing_email    TEXT,
   stripe_customer_id TEXT      UNIQUE,

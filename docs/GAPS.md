@@ -26,7 +26,7 @@
 
 | # | Source | Target | Gap | Severity | Status |
 |---|--------|--------|-----|----------|--------|
-| G-002 | D03 | D01 | `ai_credits_limit` default (10) matches starter tier now, but if starter allocation changes, the DB default won't auto-update. Consider: should the default be 0 with plan setup always setting the real value? | P3 | OPEN |
+| *(none — all upstream gaps resolved)* | | | | | |
 
 ### Forward Gaps (future docs need these)
 
@@ -68,6 +68,7 @@
 | # | Resolved Date | Commit | Resolution |
 |---|--------------|--------|------------|
 | G-001 | 2026-03-10 | (this commit) | Added `ai_scorecard_summarize` to D01 FeatureFlags + D03 feature matrix |
+| G-002 | 2026-03-10 | (this commit) | Changed `ai_credits_limit` default from 10 to 0 in D01 schema — plan setup now always sets the real value explicitly |
 | G-003 | 2026-03-10 | (this commit) | DEVLOG D02 entry had stale rate limit values (100/300/600/1200) — corrected to match D02 spec (500/2000/5000/10000) |
 
 ---
