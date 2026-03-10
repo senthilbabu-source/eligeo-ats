@@ -32,7 +32,7 @@
 
 | # | Discovered In | Target Doc | What's Needed | Severity | Status |
 |---|---------------|-----------|---------------|----------|--------|
-| G-010 | D01 | D06 (Offers) | Define what happens when e-sign provider (Dropbox Sign) is unavailable — retry via Inngest? Manual fallback? Offer stuck in `sent` state? | P1 | OPEN |
+| G-010 | D01 | D06 (Offers) | Define what happens when e-sign provider (Dropbox Sign) is unavailable — retry via Inngest? Manual fallback? Offer stuck in `sent` state? | P1 | RESOLVED |
 | G-011 | D01 | D07 (Interviews) | Blind review RLS on `scorecard_submissions` is defined in D01 but the exact UX flow (when does the "reveal" happen? after all interviewers submit? after panel lead clicks?) needs to be specified in D07 | P1 | OPEN |
 | G-012 | D01 | D07 (Interviews) | `scorecard_templates` has `categories` and `attributes` as child tables, but no spec on template versioning — what happens to existing scorecards when a template is updated mid-hiring? | P1 | OPEN |
 | G-013 | D03 | D08 (Candidate Portal) | Candidate portal is explicitly billing-free (no plan gating). But should there be rate limiting on public job listing/application endpoints to prevent scraping? D02 mentions public endpoints but no specific limits. | P2 | OPEN |
@@ -44,7 +44,7 @@
 | G-019 | D01 | D12 (Analytics) | `candidate_dei_data` has restricted RLS (only owner/admin), but D12 needs to define aggregation rules — minimum cohort size for statistical reporting to prevent de-identification. | P1 | OPEN |
 | G-020 | D05 | D08 (Candidate Portal) | Design System specifies `branding_config` drives career page theming, but doesn't define fallback behavior when `branding_config` fields are null/empty. D08 must specify defaults. | P2 | OPEN |
 | G-021 | D02 | D09 (Communications) | Webhook outbound auto-disables after 10 consecutive failures (D02 §8). But no spec on re-enablement — manual only? Auto-retry after 24h? Admin notification before disable? | P2 | OPEN |
-| G-022 | D01 | D06 (Offers) | `offer_approvals.sequence_order` defines approval chain, but no spec on what happens when an approver is removed from the organization mid-approval flow. Skip? Reassign? Block? | P1 | OPEN |
+| G-022 | D01 | D06 (Offers) | `offer_approvals.sequence_order` defines approval chain, but no spec on what happens when an approver is removed from the organization mid-approval flow. Skip? Reassign? Block? | P1 | RESOLVED |
 
 ### [VERIFY] Markers (third-party claims needing validation)
 
@@ -70,6 +70,8 @@
 | G-001 | 2026-03-10 | (this commit) | Added `ai_scorecard_summarize` to D01 FeatureFlags + D03 feature matrix |
 | G-002 | 2026-03-10 | (this commit) | Changed `ai_credits_limit` default from 10 to 0 in D01 schema — plan setup now always sets the real value explicitly |
 | G-003 | 2026-03-10 | (this commit) | DEVLOG D02 entry had stale rate limit values (100/300/600/1200) — corrected to match D02 spec (500/2000/5000/10000) |
+| G-010 | 2026-03-10 | (this commit) | D06 §4.2: Inngest retry (5 attempts), then manual PDF fallback. Offer stays `approved` (not stuck in `sent`). |
+| G-022 | 2026-03-10 | (this commit) | D06 §4.1: Auto-skip departed approver with system note in audit log. Chain continues. |
 
 ---
 

@@ -16,6 +16,38 @@
 
 ---
 
+### 2026-03-10 — [D06] Offer Management — complete first draft
+
+**Files created:**
+- `docs/modules/OFFERS.md` — 11 sections (302 lines): 8-state machine (draft → pending_approval → approved → sent → signed/declined/expired/withdrawn), sequential approval chain with auto-skip for departed approvers, Dropbox Sign e-sign integration with Inngest retry + manual PDF fallback, offer templates with compensation editor, hourly expiry cron, 14 API endpoints with Zod schemas, 6 Inngest functions, 7 UI components.
+
+**Files updated:**
+- `docs/INDEX.md` — D06 status: `⬜ Not Started` → `✅ Complete (Review)`. Path corrected from `OFFER-WORKFLOW.md` to `OFFERS.md`.
+- `docs/GAPS.md` — G-010 and G-022 resolved.
+
+**Key decisions:**
+- Approver removed mid-chain → auto-skip (not block). Logged in audit. Rationale: blocking offers on departed employees is worse than auto-advancing.
+- E-sign unavailability → Inngest retries, offer stays `approved` (not stuck in `sent`). Manual PDF fallback available.
+- Candidate signs after expiry → accept signature. `signed` trumps `expired`. Expiry cron only targets `status = 'sent'`.
+- Two offers per application allowed but UI warns. Only one can be in `sent`/`signed` state.
+- Rejection resets entire chain to `draft` — recruiter edits and resubmits.
+
+**Post-build audit:** 7/7 categories PASS. No fixes needed. 2 strategic [VERIFY] markers for Dropbox Sign API (expected).
+
+**Contracts exported:**
+- D08 (Candidate Portal): offer acceptance is via Dropbox Sign signing link, not ATS UI. Candidate never sees compensation in ATS.
+- D09 (Communications): 4 email triggers — approval request, offer sent to candidate, signed notification, declined notification.
+- D07 (Interviews): no direct dependency, but interviews must be `completed` before offer stage (pipeline stage ordering).
+- D19 (Migration): offer import format matches `OfferCompensation` interface + 8 status values.
+
+**[PLAYBOOK]** Extractable patterns: multi-step approval chain with auto-skip, e-sign integration with retry + manual fallback, state machine with terminal states, cron-based expiry detection.
+
+**Status:** Review.
+
+**Next:** D07 (Interview & Scorecard Module).
+
+---
+
 ### 2026-03-10 — [D03] Billing & Subscription Architecture — complete first draft
 
 **Files created:**

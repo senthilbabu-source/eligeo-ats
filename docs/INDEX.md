@@ -39,7 +39,7 @@
 
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
-| D06 | **Offer Workflow** | `docs/modules/OFFER-WORKFLOW.md` | P1 | ⬜ Not Started | D01 | State machine (draft→approved→sent→signed). Approval chain engine. Dropbox Sign integration. Compensation bands. Template system. |
+| D06 | **Offer Management** | `docs/modules/OFFERS.md` | P1 | ✅ Complete (Review) | D01, D02, D03, D05 | 8-state machine (draft→withdrawn), sequential approval chain with auto-skip for departed approvers, Dropbox Sign e-sign integration with manual fallback, offer templates, expiry cron, compensation editor. Post-build audit: all 7 categories passed. |
 | D07 | **Interview Scheduling** | `docs/modules/INTERVIEW-SCHEDULING.md` | P1 | ⬜ Not Started | D01 | Scheduling algorithm. Panel/sequential/loop types. Self-scheduling flow. Scorecard schema. Blind review RLS. Nylas deep integration. |
 | D08 | **Notification System** | `docs/modules/NOTIFICATIONS.md` | P1 | ⬜ Not Started | D01 | In-app (Supabase Realtime). Email triggers. Preferences per user. React Email templates. Digest mode. Candidate vs recruiter events. |
 | D09 | **Candidate Portal** | `docs/modules/CANDIDATE-PORTAL.md` | P1 | ⬜ Not Started | D01, D05 | Candidate auth (magic link). Career page theming. Application form builder. Status tracking. GDPR consent. File upload flow. |
