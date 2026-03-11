@@ -16,6 +16,23 @@
 
 ---
 
+### 2026-03-11 — [D00] Competitive Analysis & Market Positioning — complete first draft
+
+**Scope:** 17 ATS products analyzed across 3 segments: modern (Ashby, Lever, Greenhouse, Teamtailor, Workable), legacy (Taleo, iCIMS, Workday, SAP SuccessFactors, BambooHR), mid-market/niche (JazzHR, Breezy HR, Recruitee, SmartRecruiters, Zoho Recruit, Bullhorn).
+
+**Research method:** 5 parallel web research agents across G2, Capterra, TrustRadius, Trustpilot, Reddit, industry reports. Real user complaints, not marketing copy.
+
+**Key findings:**
+- 20 pain points mapped to our architecture (PA-01 through PA-20). Every major competitor weakness traces to a specific doc, ADR, or principle in our system.
+- 7 gaps identified (G-01 through G-07): career site builder (Teamtailor's moat), sourcing database (Workable's 260M), AI notetaker (Ashby), hiring predictions (Greenhouse), AI job descriptions, video interviewing, fraud detection. All flagged as post-MVP.
+- Pricing validated: our Starter ($29) undercuts all non-free competitors. Enterprise ($499/mo) is 1/10th the cost of Greenhouse/Ashby equivalent.
+- 4 highest-value migration targets identified: BambooHR graduates, Greenhouse refugees, Workday supplementers, legacy escapees.
+- Positioning statement, battlecards (vs Greenhouse, Ashby, Workday, BambooHR), and landing page messaging framework.
+
+**What's next:** D25 (User Personas) → D22 (Security Threat Model) → D23 (Data Migration) → D24 (Testing Strategy) → D26 (Error Taxonomy).
+
+---
+
 ### 2026-03-10 — [META] Documentation gap analysis — 6 new docs + deferred registry
 
 **Gap analysis:** Audited all pre-code documentation needs for a best-in-class enterprise SaaS. Identified 6 missing documents and 6 intentionally deferred items.

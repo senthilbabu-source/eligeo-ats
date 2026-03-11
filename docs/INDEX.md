@@ -76,7 +76,7 @@
 
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
-| D00 | **Competitive Analysis & Market Positioning** | `docs/COMPETITIVE-ANALYSIS.md` | P0 | ⬜ Not Started | — | Major ATS products (modern + legacy), pain points from real user reviews, feature gap analysis, pricing validation, positioning strategy. Informs UX priorities and marketing. |
+| D00 | **Competitive Analysis & Market Positioning** | `docs/COMPETITIVE-ANALYSIS.md` | P0 | ✅ Complete (Review) | — | 17 products analyzed (5 modern, 5 legacy, 7 mid-market/niche). 20 pain points mapped to architecture. Pricing validated against market. 7 gaps identified (2 post-MVP flags). Positioning strategy with battlecards. |
 | D22 | **Security Threat Model** | `docs/SECURITY-THREAT-MODEL.md` | P1 | ⬜ Not Started | D01, D02, D13 | STRIDE threat analysis, attack-vector-to-control mapping, PII data flow diagram, penetration test plan. Validates our security architecture for enterprise sales. |
 | D23 | **Data Migration & Import Strategy** | `docs/DATA-MIGRATION.md` | P1 | ⬜ Not Started | D01, D19 | Competitor-to-itecbrains migration paths (Greenhouse, Lever, Ashby, BambooHR), staging tables, field mapping, validation rules, error handling, rollback strategy. Day-one customer need. |
 | D24 | **Consolidated Testing Strategy** | `docs/TESTING-STRATEGY.md` | P1 | ⬜ Not Started | D04 (ADR-004), D01 | Coverage targets, MSW mock registry, golden tenant fixture spec, test database reset strategy, E2E scenario registry, CI parallelization. Consolidates scattered test sections from D06–D12. |
