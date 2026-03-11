@@ -17,9 +17,9 @@
 
 | # | Document | Path | Status | Notes |
 |---|----------|------|--------|-------|
-| S1 | Phase 1 Expert Review (118 issues) | `docs/itecbrains_ATS_Phase1_Expert_Review.docx` | ✅ Complete | Input document — 118 issues identified |
-| S2 | Phase 2 Architecture Blueprint v2.0 | `docs/itecbrains_ATS_Phase2_Architecture_Blueprint.docx` | ✅ Complete | Input document — enhanced blueprint |
-| S3 | Principal Architect's Pre-Plan | `docs/Enterprise-Multi-Tenant-ATS-Princi.md` | ✅ Complete | Consolidated architectural decisions, core schema, RBAC, RLS, modules |
+| S1 | Phase 1 Expert Review (118 issues) | `docs/source/itecbrains_ATS_Phase1_Expert_Review.docx` | ✅ Complete | Input document — 118 issues identified |
+| S2 | Phase 2 Architecture Blueprint v2.0 | `docs/source/itecbrains_ATS_Phase2_Architecture_Blueprint.docx` | ✅ Complete | Input document — enhanced blueprint |
+| S3 | Principal Architect's Pre-Plan | `docs/source/Enterprise-Multi-Tenant-ATS-Princi.md` | ✅ Complete | Consolidated architectural decisions, core schema, RBAC, RLS, modules |
 
 ---
 
@@ -136,7 +136,7 @@ docs/
 │   ├── MODULE-TEMPLATE.md
 │   └── ADR-TEMPLATE.md
 │
-└── (source documents)
+└── source/                              ← Provenance (reference only, not for implementation)
     ├── Enterprise-Multi-Tenant-ATS-Princi.md
     ├── itecbrains_ATS_Phase1_Expert_Review.docx
     └── itecbrains_ATS_Phase2_Architecture_Blueprint.docx

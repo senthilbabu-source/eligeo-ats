@@ -44,7 +44,7 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 ## Architecture Authority
 
 - **Schema truth:** `supabase/prod_schema.sql` (when exists) > `docs/schema/*.md` > S3
-- **Source docs:** S1 (Phase 1 Review), S2 (Phase 2 Blueprint), S3 (Architect Pre-Plan) in `docs/`
+- **Source docs:** S1 (Phase 1 Review), S2 (Phase 2 Blueprint), S3 (Architect Pre-Plan) in `docs/source/` (provenance only — D01–D21 is the authority)
 - **S3 has 6 known errors** (AC-1→AC-6) — all resolved via ADRs above. Never propagate S3 patterns that contradict the ADR table.
 
 ## SaaS Accelerator Playbook (separate product)
