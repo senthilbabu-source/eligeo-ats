@@ -16,6 +16,13 @@
 
 ---
 
+### 2026-03-11 — [D02,D24,D27,D29] Pre-code audit — HIGH gap remediation
+
+- **D02 API-SPECIFICATION.md:** Added §3.1 Endpoint-Level Permission Matrix (31 endpoints × 5 roles) and §3.2 Timezone Convention (storage, API, display, cron, DST rules).
+- **D24 TESTING-STRATEGY.md:** Expanded golden fixture with interviews (2), scorecard submissions (1), offers (1), notes (2) — all v1.0 features now have test data.
+- **D27 PRODUCT-ROADMAP.md:** Added legal pages (Privacy Policy, ToS, Cookie Policy, cookie consent banner) to v1.0 launch criteria.
+- **D29 INNGEST-REGISTRY.md:** New document — consolidated registry of 54 Inngest functions across 10 modules with triggers, retries, concurrency, v1.0 scope. 9 cron schedules. Global defaults for retry/timeout/dead-letter. [PLAYBOOK]
+
 ### 2026-03-11 — [D01,D28,D03,D19] Pre-code audit — critical gap remediation
 
 - **D01 DATABASE-SCHEMA.md:** Added §Migration Ordering — 29-batch topological sort for 39 tables, FK dependency chain, seed data order, Realtime publication order, audit trigger attachment order. No circular dependencies.

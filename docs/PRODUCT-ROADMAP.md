@@ -201,6 +201,8 @@ All must be true before launch:
 - [ ] Sentry configured and capturing errors
 - [ ] Health endpoints responding
 - [ ] GDPR consent checkbox on all application forms
+- [ ] Privacy Policy, Terms of Service, and Cookie Policy pages live
+- [ ] Cookie consent banner on career pages
 - [ ] Mobile-responsive career page and application form
 - [ ] Email notifications deliver within 30 seconds
 - [ ] No P1 or P2 bugs open

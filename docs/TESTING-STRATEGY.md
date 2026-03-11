@@ -231,6 +231,71 @@ export const TENANT_A = {
       { id: '11111111-6002-0001-0001-000000000003', name: 'Culture Fit', weight: 30 },
     ],
   },
+  interviews: {
+    aliceScreening: {
+      id: '11111111-7001-0001-0001-000000000001',
+      application_id: '11111111-5001-0001-0001-000000000001', // aliceToEngineer
+      job_opening_id: '11111111-3001-0001-0001-000000000001', // engineer
+      interviewer_id: '11111111-0001-0001-0001-000000000005', // interviewer
+      scorecard_template_id: '11111111-6001-0001-0001-000000000001',
+      status: 'completed',
+      scheduled_at: '2026-03-12T10:00:00Z',
+      completed_at: '2026-03-12T11:00:00Z',
+    },
+    aliceTechnical: {
+      id: '11111111-7001-0001-0001-000000000002',
+      application_id: '11111111-5001-0001-0001-000000000001',
+      job_opening_id: '11111111-3001-0001-0001-000000000001',
+      interviewer_id: '11111111-0001-0001-0001-000000000004', // hiringManager
+      scorecard_template_id: '11111111-6001-0001-0001-000000000001',
+      status: 'scheduled',
+      scheduled_at: '2026-03-15T14:00:00Z',
+    },
+  },
+  scorecardSubmissions: {
+    screeningFeedback: {
+      id: '11111111-7002-0001-0001-000000000001',
+      interview_id: '11111111-7001-0001-0001-000000000001', // aliceScreening
+      application_id: '11111111-5001-0001-0001-000000000001',
+      submitted_by: '11111111-0001-0001-0001-000000000005', // interviewer
+      recommendation: 'strong_yes',
+      overall_score: 4.2,
+      submitted_at: '2026-03-12T11:30:00Z',
+    },
+  },
+  offers: {
+    aliceDraft: {
+      id: '11111111-8001-0001-0001-000000000001',
+      application_id: '11111111-5001-0001-0001-000000000001',
+      candidate_id: '11111111-4001-0001-0001-000000000001', // Alice
+      job_opening_id: '11111111-3001-0001-0001-000000000001',
+      status: 'draft',
+      created_by: '11111111-0001-0001-0001-000000000003', // recruiter
+      compensation: {
+        base_salary: 120000,
+        currency: 'USD',
+        equity: '0.05%',
+        signing_bonus: 5000,
+      },
+    },
+  },
+  notes: {
+    onAlice: {
+      id: '11111111-9001-0001-0001-000000000001',
+      candidate_id: '11111111-4001-0001-0001-000000000001', // Alice
+      author_id: '11111111-0001-0001-0001-000000000003', // recruiter
+      body: 'Strong technical background. Passed screening with flying colors. @hiring-manager please review.',
+      created_at: '2026-03-12T12:00:00Z',
+    },
+    replyToAlice: {
+      id: '11111111-9001-0001-0001-000000000002',
+      candidate_id: '11111111-4001-0001-0001-000000000001',
+      author_id: '11111111-0001-0001-0001-000000000004', // hiringManager
+      parent_id: '11111111-9001-0001-0001-000000000001', // threaded reply
+      body: 'Agreed, moving to technical interview.',
+      created_at: '2026-03-12T14:00:00Z',
+    },
+  },
 };
 
 export const TENANT_B = {

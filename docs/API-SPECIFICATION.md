@@ -116,6 +116,67 @@ export async function createJob(formData: FormData) {
 
 **Cross-tenant defense:** Never accept `organization_id` from the client. Always derive from JWT claims or API key record. Return `404` (not `403`) for cross-tenant access attempts — don't reveal resource existence.
 
+### 3.1 Endpoint-Level Permission Matrix
+
+Every API endpoint maps to one or more RBAC permissions from D01. Roles: **O** = Owner, **A** = Admin, **R** = Recruiter, **H** = Hiring Manager, **I** = Interviewer.
+
+| Endpoint | O | A | R | H | I | Permission | Notes |
+|----------|---|---|---|---|---|-----------|-------|
+| `GET /v1/job-openings` | Y | Y | Y | Y* | — | `jobs:view` | *HM: assigned jobs only |
+| `POST /v1/job-openings` | Y | Y | Y | — | — | `jobs:create` | |
+| `PATCH /v1/job-openings/:id` | Y | Y | Y | — | — | `jobs:edit` | |
+| `DELETE /v1/job-openings/:id` | Y | Y | — | — | — | `jobs:delete` | Soft delete |
+| `GET /v1/candidates` | Y | Y | Y | Y* | Y* | `candidates:view` | *Assigned only |
+| `POST /v1/candidates` | Y | Y | Y | — | — | `candidates:create` | |
+| `PATCH /v1/candidates/:id` | Y | Y | Y | — | — | `candidates:edit` | |
+| `DELETE /v1/candidates/:id` | Y | Y | — | — | — | `candidates:delete` | Soft delete |
+| `GET /v1/applications` | Y | Y | Y | Y* | Y* | `applications:view` | *Assigned jobs only |
+| `POST /v1/applications` | Y | Y | Y | — | — | `applications:create` | |
+| `POST /v1/applications/:id/move-stage` | Y | Y | Y | Y | — | `applications:move` | |
+| `GET /v1/interviews` | Y | Y | Y | Y* | Y* | `interviews:view` | *Own interviews only for I |
+| `POST /v1/interviews` | Y | Y | Y | — | — | `interviews:create` | |
+| `PATCH /v1/interviews/:id` | Y | Y | Y | — | — | `interviews:edit` | |
+| `POST /v1/scorecards` | Y | Y | Y | Y | Y | `scorecards:submit` | Own interview only |
+| `GET /v1/scorecards` | Y | Y | Y | Y | Y* | `scorecards:view` | *Own only (blind review) |
+| `GET /v1/offers` | Y | Y | Y | Y* | — | `offers:view` | *Assigned jobs only |
+| `POST /v1/offers` | Y | Y | Y | — | — | `offers:create` | |
+| `POST /v1/offers/:id/submit` | Y | Y | Y | — | — | `offers:submit` | Starts approval chain |
+| `POST /v1/offers/:id/approve` | Y | Y | — | Y | — | `offers:approve` | Approver in chain only |
+| `POST /v1/notes` | Y | Y | Y | Y | Y | `notes:create` | |
+| `GET /v1/notes` | Y | Y | Y | Y* | Y* | `notes:view` | *Assigned entity only |
+| `GET /v1/pipelines` | Y | Y | Y | — | — | `pipelines:view` | |
+| `POST /v1/pipelines` | Y | Y | — | — | — | `pipelines:create` | |
+| `PATCH /v1/organization` | Y | Y | — | — | — | `org:manage` | |
+| `GET /v1/organization/members` | Y | Y | Y | Y | Y | `org:view_members` | |
+| `POST /v1/organization/invite` | Y | Y | — | — | — | `org:invite` | |
+| `GET /v1/billing/*` | Y | — | — | — | — | `billing:manage` | Owner only |
+| `GET /v1/audit-logs` | Y | Y | — | — | — | `audit:view` | |
+| `GET /v1/api-keys` | Y | Y | — | — | — | `api_keys:manage` | |
+| `GET /v1/analytics/*` | Y | Y | Y | — | — | `analytics:view` | R: limited scope |
+
+**Conditional access patterns:**
+- **"Assigned only"**: HM and I see only candidates/applications/interviews for jobs where they are assigned as hiring manager or interviewer.
+- **"Blind review"**: Interviewers cannot view other scorecards until they submit their own for the same interview.
+- **"Approver in chain"**: Only the current pending approver in the offer approval chain can approve/reject.
+
+### 3.2 Timezone Convention
+
+All timestamps follow these rules:
+
+| Layer | Rule |
+|-------|------|
+| **Storage** | All columns use `TIMESTAMPTZ`. PostgreSQL stores in UTC. |
+| **API responses** | Always ISO 8601 with `Z` suffix (UTC). Example: `2026-03-12T10:00:00Z` |
+| **API requests** | Accept any valid ISO 8601 with timezone offset. Server converts to UTC before storage. |
+| **Display (UI)** | Convert from UTC to **user's timezone** (`user_profiles.timezone`). Fall back to **org timezone** (`organizations.timezone`). Fall back to UTC. |
+| **Scheduling input** | When a user schedules an interview for "2pm tomorrow", the UI sends the user's local time as ISO 8601 with offset. Server stores as UTC. |
+| **Cron jobs** | All Inngest cron schedules run in **UTC**. Timezone-aware delivery (e.g., digest emails) must query `organizations.timezone` to determine org-local time. |
+| **Date range filters** | API accepts UTC. UI converts user's local date range to UTC before sending. |
+| **Reporting** | Analytics materialized views store dates in UTC. Reporting UI converts to org timezone for display. |
+| **DST handling** | No special handling needed — `TIMESTAMPTZ` stores absolute instants. Display conversion uses `Intl.DateTimeFormat` which handles DST automatically. |
+
+**Precedence:** User timezone > Org timezone > UTC.
+
 ---
 
 ## 4. URL Conventions
