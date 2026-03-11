@@ -5,40 +5,49 @@
  *   - XXXXXXXX: tenant prefix (11111111 = TENANT_A, 22222222 = TENANT_B)
  *   - TTTT: type code (1001 = user, 2001 = org, 3001 = job, 4001 = candidate, etc.)
  *
+ * TENANT_A = itecbrains (real company, staffing & consulting)
+ * TENANT_B = Globex Inc (fictional competitor for cross-tenant RLS tests)
+ *
  * See D24 Testing Strategy for full specification.
  */
 
 export const TENANT_A = {
   org: {
     id: "11111111-2001-4000-a000-000000000001",
-    name: "Acme Corp",
-    slug: "acme-corp",
+    name: "itecbrains",
+    slug: "itecbrains",
     plan: "pro" as const,
+    custom_domain: "itecbrains.com",
   },
   users: {
     owner: {
       id: "11111111-1001-4000-a000-000000000001",
-      email: "owner@acme-test.com",
+      email: "senthil@itecbrains.com",
+      full_name: "Senthil Kumar Babu",
       role: "owner" as const,
     },
     admin: {
       id: "11111111-1001-4000-a000-000000000002",
-      email: "admin@acme-test.com",
+      email: "prem@itecbrains.com",
+      full_name: "Premkumar Govindarajulu",
       role: "admin" as const,
     },
     recruiter: {
       id: "11111111-1001-4000-a000-000000000003",
-      email: "recruiter@acme-test.com",
+      email: "roshelle@itecbrains.com",
+      full_name: "Roshelle Merandez",
       role: "recruiter" as const,
     },
     hiringManager: {
       id: "11111111-1001-4000-a000-000000000004",
-      email: "hm@acme-test.com",
+      email: "hm@itecbrains.com",
+      full_name: "Jordan Rivera",
       role: "hiring_manager" as const,
     },
     interviewer: {
       id: "11111111-1001-4000-a000-000000000005",
-      email: "interviewer@acme-test.com",
+      email: "interviewer@itecbrains.com",
+      full_name: "Taylor Chen",
       role: "interviewer" as const,
     },
   },
@@ -149,11 +158,13 @@ export const TENANT_B = {
     owner: {
       id: "22222222-1001-4000-a000-000000000001",
       email: "owner@globex-test.com",
+      full_name: "Morgan Globex",
       role: "owner" as const,
     },
     recruiter: {
       id: "22222222-1001-4000-a000-000000000002",
       email: "recruiter@globex-test.com",
+      full_name: "Casey Globex",
       role: "recruiter" as const,
     },
   },
