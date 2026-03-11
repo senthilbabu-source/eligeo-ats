@@ -16,6 +16,38 @@
 
 ---
 
+### 2026-03-10 — [D09] Candidate Portal — complete first draft
+
+**Files created:**
+- `docs/modules/CANDIDATE-PORTAL.md` — 16 sections (530+ lines): magic link authentication (stateless signed JWT with 3 scopes: status/schedule/offer), career page with org branding + system defaults, Typesense-powered public job search with scoped API keys, application form with resume upload + candidate dedup + GDPR consent, status tracker with adaptive polling (30s→60s backoff), interview self-scheduling UI (TimeSlotPicker, Nylas free/busy, 30-min slots), candidate email delivery (5 templates with scoped magic links), rate limiting (7 endpoint-specific limits), GDPR erasure with 48-hour cooling period, 12 API endpoints, 3 Inngest functions.
+
+**Files updated:**
+- `docs/INDEX.md` — D09 status: `⬜ Not Started` → `✅ Complete (Review)`.
+- `docs/GAPS.md` — G-013 resolved (rate limiting). G-020 resolved (branding defaults). G-023 resolved (self-scheduling UI). G-026 resolved (candidate email delivery). G-029 resolved (Typesense scoped keys). G-030 resolved (polling strategy).
+
+**Key decisions:**
+- Magic links use separate JWT secret from Supabase Auth — candidates never get Supabase user accounts. Stateless verification per request.
+- Token scopes: `status` (30d), `schedule` (7d), `offer` (30d). Scope limits what the token can access.
+- Branding defaults: system foreground color, Inter font, default logo. `resolveTheme()` merges org config with defaults.
+- Typesense scoped API keys: 90-day expiry, daily Inngest cron for rotation, stored in `organizations.metadata`.
+- Polling: adaptive 30s→60s (exponential backoff on no change, reset on change). No WebSocket for candidates.
+- Application submit rate: 5 per hour per IP+email. Job listing: 60/min per IP. Search: 120/min per IP.
+- GDPR erasure: 48-hour cooling period via Inngest delayed event. Candidate can cancel during window.
+- Self-scheduling: Growth+ plans only. First-come-first-served slot conflicts with auto-refresh.
+
+**Post-build audit:** 7/7 categories PASS. 6 gaps resolved (G-013, G-020, G-023, G-026, G-029, G-030).
+
+**Contracts exported:**
+- D20 (White-Label): custom domain routing, email sender identity, branding_config extension.
+
+**[PLAYBOOK]** Extractable patterns: stateless magic link auth for external users, adaptive polling with backoff, branding theming with fallback defaults, Typesense scoped API key rotation, GDPR erasure with cooling period.
+
+**Status:** Review.
+
+**Next:** Phase 1 complete. Phase 2 starts with D13 (GDPR & Compliance).
+
+---
+
 ### 2026-03-10 — [D12] Workflow & State Machine — complete first draft
 
 **Files created:**

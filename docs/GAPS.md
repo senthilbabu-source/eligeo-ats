@@ -35,24 +35,24 @@
 | G-010 | D01 | D06 (Offers) | Define what happens when e-sign provider (Dropbox Sign) is unavailable — retry via Inngest? Manual fallback? Offer stuck in `sent` state? | P1 | RESOLVED |
 | G-011 | D01 | D07 (Interviews) | Blind review RLS on `scorecard_submissions` is defined in D01 but the exact UX flow (when does the "reveal" happen? after all interviewers submit? after panel lead clicks?) needs to be specified in D07 | P1 | RESOLVED |
 | G-012 | D01 | D07 (Interviews) | `scorecard_templates` has `categories` and `attributes` as child tables, but no spec on template versioning — what happens to existing scorecards when a template is updated mid-hiring? | P1 | RESOLVED |
-| G-013 | D03 | D09 (Candidate Portal) | Candidate portal is explicitly billing-free (no plan gating). But should there be rate limiting on public job listing/application endpoints to prevent scraping? D02 mentions public endpoints but no specific limits. | P2 | OPEN |
+| G-013 | D03 | D09 (Candidate Portal) | Candidate portal is explicitly billing-free (no plan gating). But should there be rate limiting on public job listing/application endpoints to prevent scraping? D02 mentions public endpoints but no specific limits. | P2 | RESOLVED |
 | G-014 | D01 | D08 (Notifications) | `notes.mentions` is JSONB (array of UUIDs) for @mentions, but no spec on how mention notifications are triggered — Supabase Realtime? Inngest event? Direct insert to notification queue? | P1 | RESOLVED |
 | G-015 | D01 | D08 (Notifications) | `email_templates` has `body_html`/`body_text` columns but no spec on template variable syntax — Handlebars `{{candidate.name}}`? Liquid? Custom? Must be consistent with D20 (i18n). | P2 | RESOLVED |
 | G-016 | D01 | D10 (Search & AI) | `match_candidates_for_job()` returns top 50 by cosine similarity, but no spec on how stale embeddings are handled — what triggers re-embedding when a candidate updates their profile? | P1 | RESOLVED |
 | G-017 | D03 | D10 (Search & AI) | AI credit costs vary by action (resume parse vs. matching vs. summarization). D03 uses flat "1 credit per action" but doesn't define per-action costs. D10 should specify credit weights. | P2 | RESOLVED |
 | G-018 | D01 | D12 (Workflow) | `talent_pool_members` links candidates to pools, but no spec on automatic pool membership rules (e.g., "all silver medalists auto-added to 'Strong Rejects' pool"). D12 must decide — this is workflow automation, not real-time. | P2 | RESOLVED |
 | G-019 | D01 | D17 (Analytics) | `candidate_dei_data` has restricted RLS (only owner/admin), but D17 needs to define aggregation rules — minimum cohort size for statistical reporting to prevent de-identification. | P1 | OPEN |
-| G-020 | D05 | D09 (Candidate Portal) | Design System specifies `branding_config` drives career page theming, but doesn't define fallback behavior when `branding_config` fields are null/empty. D09 must specify defaults. | P2 | OPEN |
+| G-020 | D05 | D09 (Candidate Portal) | Design System specifies `branding_config` drives career page theming, but doesn't define fallback behavior when `branding_config` fields are null/empty. D09 must specify defaults. | P2 | RESOLVED |
 | G-021 | D02 | D08 (Notifications) | Webhook outbound auto-disables after 10 consecutive failures (D02 §8). But no spec on re-enablement — manual only? Auto-retry after 24h? Admin notification before disable? | P2 | RESOLVED |
 | G-022 | D01 | D06 (Offers) | `offer_approvals.sequence_order` defines approval chain, but no spec on what happens when an approver is removed from the organization mid-approval flow. Skip? Reassign? Block? | P1 | RESOLVED |
-| G-023 | D07 | D09 (Candidate Portal) | Self-scheduling UI: candidate time slot picker, confirmation flow, 3-reschedule limit, 7-day link expiry. D09 must implement the candidate-facing side of D07 §4.3. | P1 | OPEN |
+| G-023 | D07 | D09 (Candidate Portal) | Self-scheduling UI: candidate time slot picker, confirmation flow, 3-reschedule limit, 7-day link expiry. D09 must implement the candidate-facing side of D07 §4.3. | P1 | RESOLVED |
 | G-024 | D07 | D08 (Notifications) | Interview notification emails: scheduled confirmation, cancellation, feedback reminder (overdue), scorecard submitted (to recruiter). 4 email triggers from D07. | P1 | RESOLVED |
 | G-025 | D07 | D12 (Workflow) | Auto-advance from interview stage: when all scheduled interviews for an application reach `completed` and all scorecards are submitted, workflow engine should optionally auto-advance to next pipeline stage. | P2 | RESOLVED |
-| G-026 | D08 | D09 (Candidate Portal) | Candidate-facing email delivery (application_received, interview_scheduled/cancelled, offer_sent, rejection) — defined in D08 §4.3 but delivery must be implemented in D09's candidate auth context (magic link, no ATS login). | P1 | OPEN |
+| G-026 | D08 | D09 (Candidate Portal) | Candidate-facing email delivery (application_received, interview_scheduled/cancelled, offer_sent, rejection) — defined in D08 §4.3 but delivery must be implemented in D09's candidate auth context (magic link, no ATS login). | P1 | RESOLVED |
 | G-027 | D08 | D11 (Real-Time) | Supabase Realtime channel naming convention for notification broadcast: org-scoped + user-filtered channels. D11 must define the channel schema and subscription pattern. | P2 | RESOLVED |
 | G-028 | D10 | D03 (Billing) | D03 uses inline `ai_credits_used + 1` SQL. D10 introduces `consume_ai_credits(p_org_id, p_amount)` function with variable weights. D03 should adopt function at code time. Non-blocking. | P3 | OPEN |
-| G-029 | D10 | D09 (Candidate Portal) | Public career page job search requires Typesense scoped API key per organization. D09 must define key generation, rotation, and client-side embedding. | P2 | OPEN |
-| G-030 | D11 | D09 (Candidate Portal) | Candidate-side real-time: candidates don't have persistent WebSocket connections. Application status updates should use polling (not Realtime). D09 must define polling interval + endpoints. | P2 | OPEN |
+| G-029 | D10 | D09 (Candidate Portal) | Public career page job search requires Typesense scoped API key per organization. D09 must define key generation, rotation, and client-side embedding. | P2 | RESOLVED |
+| G-030 | D11 | D09 (Candidate Portal) | Candidate-side real-time: candidates don't have persistent WebSocket connections. Application status updates should use polling (not Realtime). D09 must define polling interval + endpoints. | P2 | RESOLVED |
 
 ### [VERIFY] Markers (third-party claims needing validation)
 
@@ -96,6 +96,12 @@
 | G-027 | 2026-03-10 | (this commit) | D11 §4: Channel naming `{scope}:{org_id}:{resource}[:{id}]`. 7 channel patterns defined. Tenant isolation via RLS + JWT-derived org_id. |
 | G-018 | 2026-03-10 | (this commit) | D12 §6: Talent pool auto-membership via `add_to_pool` auto-action on pipeline stages. Condition-based (`always` or `if_rejected`). Idempotent insert. |
 | G-025 | 2026-03-10 | (this commit) | D12 §5: Auto-advance via `auto_advance` auto-action + Inngest `workflow-auto-advance` function. Triggered on `interview/scorecard-submitted`. Loop prevention: auto-advance doesn't cascade. |
+| G-013 | 2026-03-10 | (this commit) | D09 §10: Rate limiting per endpoint — 60 req/min for listings, 5 req/hr for apply (IP+email), 30 req/min for polling, 120 req/min for search. @upstash/ratelimit. |
+| G-020 | 2026-03-10 | (this commit) | D09 §4.2: Branding defaults — system foreground color, Inter font, default logo/favicon. `resolveTheme()` function applies defaults for null/empty fields. |
+| G-023 | 2026-03-10 | (this commit) | D09 §7: Full self-scheduling UI — TimeSlotPicker component, Nylas free/busy query, 30-min slots, 15-min buffer, 7-day window, 3-reschedule limit, first-come-first-served conflict resolution. |
+| G-026 | 2026-03-10 | (this commit) | D09 §9: Candidate emails use stateless signed JWT magic links (separate secret from Supabase). 5 email templates with scoped tokens. No unsubscribe (transactional only). |
+| G-029 | 2026-03-10 | (this commit) | D09 §8: Typesense scoped API key per org, 90-day expiry, daily Inngest cron for rotation, client-side InstantSearch adapter. Fallback to PostgreSQL ILIKE if Typesense unavailable. |
+| G-030 | 2026-03-10 | (this commit) | D09 §6.3: Adaptive polling — 30s default, exponential backoff to 60s on no change, reset on change. Lightweight endpoint (~200 bytes). No WebSocket. |
 
 ---
 
