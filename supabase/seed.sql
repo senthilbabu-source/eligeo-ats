@@ -1,0 +1,1 @@
+-- Seed data will be generated from golden-tenant fixture

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+
+  <!-- Icon only — for favicon, app icon, avatar use -->
+  <rect width="120" height="120" fill="#ffffff"/>
+
+  <!-- Rounded square -->
+  <rect x="0" y="0" width="120" height="120" rx="24" fill="#0F172A"/>
+
+  <!-- Left candidate (unselected) -->
+  <circle cx="26" cy="52" r="9.5" fill="white" opacity="0.28"/>
+  <path d="M 12 78 Q 26 68 40 78" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" opacity="0.28"/>
+
+  <!-- Right candidate (unselected) -->
+  <circle cx="94" cy="52" r="9.5" fill="white" opacity="0.28"/>
+  <path d="M 80 78 Q 94 68 108 78" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" opacity="0.28"/>
+
+  <!-- Center selected candidate -->
+  <circle cx="60" cy="50" r="26" fill="#6366F1" opacity="0.12"/>
+  <circle cx="60" cy="50" r="23" fill="none" stroke="#6366F1" stroke-width="2.8"/>
+  <circle cx="60" cy="50" r="14" fill="white"/>
+  <path d="M 40 78 Q 60 66 80 78" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Checkmark badge -->
+  <circle cx="77" cy="67" r="9" fill="#0F172A"/>
+  <circle cx="77" cy="67" r="7.5" fill="#6366F1"/>
+  <path d="M 73.5 67 L 76 69.5 L 81.5 63.5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+</svg>

@@ -1,7 +1,6 @@
-# Eligeo — Documentation Dev Log
+# Eligeo — Dev Log
 
-> Chronological record of all documentation work. Newest entries at top.
-> Every change to any document in `docs/` gets an entry here.
+> Chronological record of all work. Newest entries at top.
 
 ---
 
@@ -15,6 +14,21 @@
 ```
 
 ---
+
+### 2026-03-11 — [INFRA] Phase 0: Project Initialization
+
+- **Next.js 16.1.6** scaffolded with React 19.2.3, TypeScript strict mode, Tailwind v4
+- **20 production deps** installed: Supabase SSR, Stripe, Inngest, Resend, Sentry, Upstash, Pino, Zod, date-fns, jose, lucide-react, next-themes, clsx, tailwind-merge
+- **8 dev deps** installed: Vitest 4.0, Playwright 1.58, MSW 2.12, Prettier, Husky
+- **Config files:** vitest.config.ts, playwright.config.ts, proxy.ts (ADR-002), .env.example (D28), .prettierrc, globals.css (D05 design tokens)
+- **Supabase** initialized (`supabase init`), migrations/ dir ready
+- **Scaffold files:** Supabase browser + server + service-role clients (ADR-001), Inngest client, Pino logger with PII redaction, cn() utility, ground-truth types, auth callback route, health endpoint, Inngest serve route
+- **Testing:** Golden tenant fixture (TENANT_A + TENANT_B), MSW mock handlers (Stripe, Resend, Inngest), 3 smoke tests passing
+- **CI/CD:** GitHub Actions workflow (lint → typecheck → test → build)
+- **Husky:** pre-commit hook runs lint + typecheck
+- **Verification:** `npm run lint` ✅ | `npm run typecheck` ✅ | `npm run test` ✅ (3/3) | `npm run build` ✅
+- **CLAUDE.md** updated for build phase (removed "no code" rule, updated task-based reading table)
+- **Next:** Phase 1 — Auth + Core Tenancy (Supabase Auth, RLS policies, org creation)
 
 ### 2026-03-11 — [PLAYBOOK] Documentation audit lessons → SaaS Accelerator Playbook
 

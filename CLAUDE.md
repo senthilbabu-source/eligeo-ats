@@ -21,10 +21,9 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 
 ## Current State
 
-- **Phase:** Pre-build documentation (NO CODE until all 21 docs done)
-- **D01 (Schema):** ✅ Complete (Review) — 39 tables, 8 clusters, 10 ADRs
-- **D04 (ADRs):** 🟡 In Progress — ADR-001→010 done, STACK ADRs remaining
-- **D02-D03, D05-D21:** ⬜ Not Started
+- **Phase:** Build — Phase 0 (Infrastructure) complete. Phase 1 (Auth + Core Tenancy) next.
+- **Documentation:** ALL 30 documents complete (Review). Pre-code audit passed (14 gaps resolved).
+- **Project:** Next.js 16.1.6, React 19, Tailwind v4, Supabase initialized, Vitest + Playwright configured.
 - **Rules:** 90 rules in `docs/AI-RULES.md` (§1-§21)
 - **Governance:** Post-build audit (§13), pre-start gate (§21), downstream impact (§14)
 
@@ -60,28 +59,25 @@ ATS is the source of real-world lessons. Tag DEVLOG entries with `[PLAYBOOK]` wh
 
 | Task | Read | Optional |
 |------|------|----------|
-| Writing D02-D05 (foundational) | DEVLOG, INDEX, D01 schema, PLAN | AI-RULES |
-| Writing D06-D21 (modules) | DEVLOG, INDEX, D01, relevant ADRs | S3 §relevant |
-| Writing ADRs | DEVLOG, PLAN Decisions Registry | S3 §relevant |
+| Building features | DEVLOG, relevant module doc, D01 schema, ADRs | AI-RULES |
+| Database migrations | D01 schema, ADRs, `supabase/migrations/` | Migration ordering (D01 §) |
+| API endpoints | D02, relevant module doc | Error taxonomy (D26) |
+| Testing | D24, golden-tenant fixture, relevant module | AI-RULES §4 |
 | Meta/tracking | DEVLOG, INDEX | — |
 
 ## Pre-Commit Protocol
 
 Every commit:
-- [ ] DEVLOG.md — new entry at top
-- [ ] INDEX.md — status updated if doc state changed
-- [ ] Commit message: `docs(<scope>): <summary>` with `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
+- [ ] DEVLOG.md — new entry at top (for significant changes)
+- [ ] Commit message format: `<type>(<scope>): <summary>` with `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
 
-When writing docs: front matter (AI-RULES §11), cross-refs use INDEX IDs, [VERIFY] markers resolved.
-When resolving ADRs: PLAN.md Decisions Registry updated, downstream docs flagged.
-
-Scopes: `schema`, `api`, `billing`, `adr`, `design`, `module/<name>`, `compliance`, `observability`, `cicd`, `perf`, `analytics`, `runbook`, `onboarding`, `whitelabel`, `i18n`, `meta`
+Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`
+Scopes: `auth`, `jobs`, `candidates`, `pipeline`, `interviews`, `offers`, `billing`, `notifications`, `search`, `workflow`, `compliance`, `infra`, `meta`
 
 ## Anti-Drift Rules
 
 - Do NOT re-debate resolved ADRs — table above is final
 - Do NOT change stack choices without explicit user approval
-- Do NOT start coding — documentation phase
-- Do NOT commit without DEVLOG + INDEX updates
+- Do NOT commit without DEVLOG update for significant changes
 - Run pre-start gate (AI-RULES §21) before any new deliverable
 - Run post-build audit (AI-RULES §13) after completing any document
