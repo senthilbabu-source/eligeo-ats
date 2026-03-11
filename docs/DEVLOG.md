@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] W1: Pipeline Builder (Settings Page + DnD Editor)
+
+**Phase:** Build — Phase 2.7 (UX Polish), deliverable 1 of 6
+**Scope:** User story W1 — No-code drag-and-drop pipeline builder
+
+### Changes
+- **New: Settings infrastructure** — `/settings` layout with sidebar nav, redirect to `/settings/pipelines`
+- **New: Pipeline list page** — displays all templates with stage counts, default badge, create/edit/delete actions
+- **New: Pipeline editor** — drag-and-drop stage reordering via @dnd-kit, inline edit (name/type/terminal), add/remove stages
+- **New: Server actions** — `pipelines.ts`: createTemplate, updateTemplate, deleteTemplate, addStage, updateStage, removeStage, reorderStages
+- **New: Delete guards** — prevents deleting templates with active jobs, prevents removing stages with active applications
+- **New: Nav + command bar** — Settings link in app-nav, "pipelines" / "manage pipelines" quick pattern in command bar
+- **Bug fix:** `sort_order` → `stage_order` column name mismatch in pipeline page + board (was causing empty stage lists)
+- **Dependencies:** @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
+
+### Tests
+- +11 pipeline action tests (validation, create, delete guard, add stage, remove guard, reorder)
+- +6 intent pattern tests (pipeline navigation patterns)
+- **Total: 537 Vitest + 26 E2E = 563**
+
+### Files
+- `src/lib/actions/pipelines.ts` (new)
+- `src/app/(app)/settings/` (new — layout, page, pipelines/page, pipelines/[id]/page, pipelines/[id]/pipeline-editor, pipelines/new/page, delete-template-button)
+- `src/app/(app)/app-nav.tsx` (modified — added Settings)
+- `src/app/(app)/jobs/[id]/pipeline/page.tsx` (fixed sort_order → stage_order)
+- `src/app/(app)/jobs/[id]/pipeline/pipeline-board.tsx` (fixed sort_order → stage_order)
+- `src/lib/ai/intent.ts` (added pipeline navigation pattern)
+- `src/components/command-bar.tsx` (added pipelines to page map)
+
+[PLAYBOOK] Settings page pattern: sidebar layout with feature-specific sub-pages. Settings nav as const array for easy extension. Pipeline editor as reusable DnD pattern.
+
+### What's next
+- W1 complete. Next: **M1 — Drag-drop Kanban** (reuse dnd-kit for candidate cards on pipeline board)
+
+---
+
 ## Format
 
 ```
