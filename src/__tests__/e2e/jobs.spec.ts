@@ -37,9 +37,25 @@ test.describe("Job Management", () => {
     await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/);
   });
 
-  // TODO: "new job page" and "create job" tests require fixing session extraction
-  // to read JWT claims (from custom_access_token_hook) instead of app_metadata.
-  // The hook injects org_role into the JWT, but getUser() reads from auth.users DB.
-  // orgRole defaults to "interviewer" which lacks jobs:create permission.
-  // Fix tracked for Phase 2.7: update extractSession to decode JWT access_token.
+  test("new job page loads with form", async ({ page }) => {
+    await page.goto("/jobs/new");
+    await expect(page.getByText(/new job/i).first()).toBeVisible();
+    await expect(page.getByLabel(/job title/i)).toBeVisible();
+    await expect(page.getByLabel(/description/i)).toBeVisible();
+    await expect(page.getByLabel(/pipeline/i)).toBeVisible();
+  });
+
+  test("can create a new job", async ({ page }) => {
+    await page.goto("/jobs/new");
+
+    await page.getByLabel(/job title/i).fill("QA Automation Engineer");
+    await page.getByLabel(/description/i).fill("Seeking a QA automation engineer with Playwright experience.");
+    await page.getByLabel(/department/i).fill("Engineering");
+    await page.getByLabel(/location$/i).fill("Remote");
+
+    await page.getByRole("button", { name: /create job/i }).click();
+
+    // Should redirect to the new job's detail page
+    await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/, { timeout: 10000 });
+  });
 });

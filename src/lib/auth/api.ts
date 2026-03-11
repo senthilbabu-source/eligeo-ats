@@ -3,24 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { OrgRole } from "@/lib/constants/roles";
 import { problemResponse } from "@/lib/utils/problem";
 import type { ProblemDetail } from "@/lib/utils/problem";
+import { extractSession, decodeJwtPayload } from "./session";
 import type { Session } from "./session";
-
-/**
- * Extract org claims from Supabase JWT app_metadata.
- */
-function extractSession(user: {
-  id: string;
-  app_metadata?: Record<string, unknown>;
-}): Session {
-  const meta = user.app_metadata ?? {};
-  return {
-    userId: user.id,
-    orgId: (meta.org_id as string) ?? "",
-    orgRole: ((meta.org_role as string) ?? "interviewer") as OrgRole,
-    plan: (meta.plan as string) ?? "starter",
-    featureFlags: (meta.feature_flags as Record<string, boolean>) ?? {},
-  };
-}
 
 type AuthResult =
   | { session: Session; error: null }
@@ -30,12 +14,17 @@ type AuthResult =
  * Require auth in API Route Handlers.
  * Returns RFC 9457 error response (not redirect) for unauthenticated requests.
  *
+ * Two-step auth: getUser() validates JWT server-side (secure),
+ * getSession() reads decoded JWT claims (has hook-injected org data).
+ *
  * Usage:
  *   const { session, error } = await requireAuthAPI();
  *   if (error) return error;
  */
 export async function requireAuthAPI(): Promise<AuthResult> {
   const supabase = await createClient();
+
+  // Step 1: Verify auth (server-side JWT validation)
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -47,7 +36,16 @@ export async function requireAuthAPI(): Promise<AuthResult> {
     };
   }
 
-  return { session: extractSession(user), error: null };
+  // Step 2: Read JWT claims (contains hook-injected org_id, org_role, etc.)
+  const {
+    data: { session: authSession },
+  } = await supabase.auth.getSession();
+
+  const jwtClaims = authSession?.access_token
+    ? decodeJwtPayload(authSession.access_token)
+    : {};
+
+  return { session: extractSession(user.id, jwtClaims), error: null };
 }
 
 /**
