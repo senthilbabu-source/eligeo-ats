@@ -38,8 +38,8 @@
 | G-013 | D03 | D09 (Candidate Portal) | Candidate portal is explicitly billing-free (no plan gating). But should there be rate limiting on public job listing/application endpoints to prevent scraping? D02 mentions public endpoints but no specific limits. | P2 | OPEN |
 | G-014 | D01 | D08 (Notifications) | `notes.mentions` is JSONB (array of UUIDs) for @mentions, but no spec on how mention notifications are triggered — Supabase Realtime? Inngest event? Direct insert to notification queue? | P1 | RESOLVED |
 | G-015 | D01 | D08 (Notifications) | `email_templates` has `body_html`/`body_text` columns but no spec on template variable syntax — Handlebars `{{candidate.name}}`? Liquid? Custom? Must be consistent with D20 (i18n). | P2 | RESOLVED |
-| G-016 | D01 | D10 (Search & AI) | `match_candidates_for_job()` returns top 50 by cosine similarity, but no spec on how stale embeddings are handled — what triggers re-embedding when a candidate updates their profile? | P1 | OPEN |
-| G-017 | D03 | D10 (Search & AI) | AI credit costs vary by action (resume parse vs. matching vs. summarization). D03 uses flat "1 credit per action" but doesn't define per-action costs. D10 should specify credit weights. | P2 | OPEN |
+| G-016 | D01 | D10 (Search & AI) | `match_candidates_for_job()` returns top 50 by cosine similarity, but no spec on how stale embeddings are handled — what triggers re-embedding when a candidate updates their profile? | P1 | RESOLVED |
+| G-017 | D03 | D10 (Search & AI) | AI credit costs vary by action (resume parse vs. matching vs. summarization). D03 uses flat "1 credit per action" but doesn't define per-action costs. D10 should specify credit weights. | P2 | RESOLVED |
 | G-018 | D01 | D11 (Talent Pools) | `talent_pool_members` links candidates to pools, but no spec on automatic pool membership rules (e.g., "all silver medalists auto-added to 'Strong Rejects' pool"). D11 must decide. | P2 | OPEN |
 | G-019 | D01 | D12 (Analytics) | `candidate_dei_data` has restricted RLS (only owner/admin), but D12 needs to define aggregation rules — minimum cohort size for statistical reporting to prevent de-identification. | P1 | OPEN |
 | G-020 | D05 | D09 (Candidate Portal) | Design System specifies `branding_config` drives career page theming, but doesn't define fallback behavior when `branding_config` fields are null/empty. D09 must specify defaults. | P2 | OPEN |
@@ -50,6 +50,8 @@
 | G-025 | D07 | D12 (Workflow) | Auto-advance from interview stage: when all scheduled interviews for an application reach `completed` and all scorecards are submitted, workflow engine should optionally auto-advance to next pipeline stage. | P2 | OPEN |
 | G-026 | D08 | D09 (Candidate Portal) | Candidate-facing email delivery (application_received, interview_scheduled/cancelled, offer_sent, rejection) — defined in D08 §4.3 but delivery must be implemented in D09's candidate auth context (magic link, no ATS login). | P1 | OPEN |
 | G-027 | D08 | D11 (Real-Time) | Supabase Realtime channel naming convention for notification broadcast: org-scoped + user-filtered channels. D11 must define the channel schema and subscription pattern. | P2 | OPEN |
+| G-028 | D10 | D03 (Billing) | D03 uses inline `ai_credits_used + 1` SQL. D10 introduces `consume_ai_credits(p_org_id, p_amount)` function with variable weights. D03 should adopt function at code time. Non-blocking. | P3 | OPEN |
+| G-029 | D10 | D09 (Candidate Portal) | Public career page job search requires Typesense scoped API key per organization. D09 must define key generation, rotation, and client-side embedding. | P2 | OPEN |
 
 ### [VERIFY] Markers (third-party claims needing validation)
 
@@ -68,6 +70,8 @@
 | V-011 | D07 | Nylas `events.create()` — event creation with participants, conferencing, and when.startTime/endTime shape | OPEN |
 | V-012 | D07 | Nylas `calendars.getFreeBusy()` — free/busy query with email-based lookup and time range | OPEN |
 | V-013 | D08 | Resend `resend.emails.send()` — transactional email delivery API with React Email template support | OPEN |
+| V-014 | D10 | OpenAI `text-embedding-3-small` — 1536-dimension embedding model, `openai.embeddings.create()` API shape | OPEN |
+| V-015 | D10 | Typesense collection schema API — `CollectionSchema`, `documents().upsert()`, `documents().search()` | OPEN |
 
 ---
 
@@ -86,6 +90,8 @@
 | G-015 | 2026-03-10 | (this commit) | D08 §3.3: Handlebars-style `{{variable.path}}` syntax. Strict allowlist via `merge_fields` column. Consistent for D20 i18n. |
 | G-021 | 2026-03-10 | (this commit) | D08 §5.2: Manual re-enablement only. Warning at 5 failures, auto-disable at 10, admin notification both times. No auto-retry. |
 | G-024 | 2026-03-10 | (this commit) | D08 §4.1: All 4 interview email triggers in event catalog — scheduled, cancelled, feedback_overdue, scorecard.submitted. |
+| G-016 | 2026-03-10 | (this commit) | D10 §6.3: Re-embed on content change (resume_text, skills, title, company). No TTL. Stale if no credits — keeps old embedding. |
+| G-017 | 2026-03-10 | (this commit) | D10 §6.4: Differentiated weights — resume_parse=2, candidate_match=1, job_desc_generate=3, email_draft=1, feedback_summarize=1. `consume_ai_credits()` function. |
 
 ---
 

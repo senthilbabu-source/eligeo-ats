@@ -16,6 +16,38 @@
 
 ---
 
+### 2026-03-10 — [D10] Search Architecture — complete first draft
+
+**Files created:**
+- `docs/modules/SEARCH.md` — 12 sections (495 lines): two-engine design (Typesense full-text + pgvector semantic), Typesense collection schemas (candidates + jobs), Postgres→Typesense sync pipeline via Inngest, AI matching with composite scoring (semantic + skill overlap), embedding lifecycle (generate/invalidate/re-embed on content change), differentiated AI credit weights per action, full-reindex, sync health monitoring, 6 API endpoints with Zod schemas, 4 Inngest functions, 6 UI components.
+
+**Files updated:**
+- `docs/INDEX.md` — D10 status: `⬜ Not Started` → `✅ Complete (Review)`.
+- `docs/GAPS.md` — G-016 and G-017 resolved. G-028, G-029 added. V-014, V-015 added.
+
+**Key decisions:**
+- Stale embeddings: re-embed on content change (resume_text, skills, title, company). No TTL-based expiry. If no credits, keep old embedding (stale but functional).
+- AI credit weights: differentiated per action — `resume_parse`=2, `candidate_match`=1, `job_description_generate`=3, `email_draft`=1, `feedback_summarize`=1. New `consume_ai_credits(p_org_id, p_amount)` SQL function.
+- Composite matching score: 60% semantic (cosine) + 40% skill overlap.
+- Typesense tenant isolation: `organization_id` filter applied server-side on every query.
+- Typesense fallback: if down, degrade to PostgreSQL `pg_trgm`. Inngest events queue + replay.
+
+**Post-build audit:** 7/7 categories PASS. No fixes needed. 2 strategic [VERIFY] markers (V-014, V-015).
+
+**Contracts exported:**
+- D09 (Candidate Portal): public job search via Typesense scoped API key per organization.
+- D16 (Performance): Typesense search caching + pgvector query optimization targets.
+- D17 (Analytics): search usage metrics (queries/day, AI match requests, credit consumption by action).
+- D03 (Billing): `consume_ai_credits()` function with variable weights — adopt at code time (G-028).
+
+**[PLAYBOOK]** Extractable patterns: two-engine search (full-text + vector), event-driven sync pipeline, composite scoring (semantic + structured), embedding lifecycle with credit-gated re-generation, tenant isolation at search layer.
+
+**Status:** Review.
+
+**Next:** D09, D11, D12 — remaining Phase 1.
+
+---
+
 ### 2026-03-10 — [D08] Notification System — complete first draft
 
 **Files created:**
