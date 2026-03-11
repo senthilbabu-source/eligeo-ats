@@ -16,6 +16,24 @@
 
 ---
 
+### 2026-03-10 — [D19, D20, D21] Phase 3 complete — Onboarding, White-Label, i18n
+
+**Files created:**
+- `docs/modules/ONBOARDING.md` (D19) — 9 sections: signup flow, 5-step onboarding wizard with skip/resume, CSV import (candidates + jobs, batched processing via Inngest), ATS-to-ATS migration via Merge.dev with admin stage mapping UI, demo data seeding (50 candidates, 5 jobs, 100 applications) with cleanup, 8 API endpoints, 3 Inngest functions.
+- `docs/modules/WHITE-LABEL.md` (D20) — 8 sections: custom domain (DNS CNAME + TXT verification, Vercel auto-SSL), custom email sender domain (SPF/DKIM/DMARC via Resend API), extended branding_config for Enterprise (hide badge, custom footer, email logo), proxy.ts routing for custom domains, 6 API endpoints, 2 Inngest functions.
+- `docs/modules/I18N.md` (D21) — 9 sections: next-intl configuration, translation file structure (9 namespaces), locale-aware formatting (dates, currencies, relative time via Intl API), RTL support (CSS logical properties), career page localization, email localization (Handlebars variables + locale strings), candidate locale detection (browser → org default → en-US), plan gating (Pro+ for additional languages, Enterprise for RTL).
+
+**Files updated:**
+- `docs/INDEX.md` — D19, D20, D21 status: `⬜ Not Started` → `✅ Complete (Review)`.
+
+**All 21 documents complete. Pre-build documentation phase finished.**
+
+**Status:** All Review.
+
+**Next:** `supabase init` + `supabase db reset` validation for D01. Then code phase begins.
+
+---
+
 ### 2026-03-10 — [D16] Performance & Caching — complete first draft
 
 **Files created:**

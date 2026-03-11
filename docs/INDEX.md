@@ -66,9 +66,9 @@
 
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
-| D19 | **Data Migration & Onboarding** | `docs/modules/ONBOARDING.md` | P3 | ⬜ Not Started | D01, D02 | CSV bulk import. ATS-to-ATS migration. Onboarding wizard. Demo data. |
-| D20 | **White-Label / Custom Domain** | `docs/modules/WHITE-LABEL.md` | P3 | ⬜ Not Started | D09 | DNS/SSL setup. Email white-labeling. branding_config spec. |
-| D21 | **Internationalization (i18n)** | `docs/modules/I18N.md` | P3 | ⬜ Not Started | D05 | Language support scope. next-intl setup. Locale-aware formatting. RTL. |
+| D19 | **Data Migration & Onboarding** | `docs/modules/ONBOARDING.md` | P3 | ✅ Complete (Review) | D01, D02, D09 | Signup flow, 5-step onboarding wizard, CSV import (candidates + jobs, 10K limit), ATS-to-ATS migration via Merge.dev with stage mapping, demo data seeding + cleanup, plan-gated migration limits, 8 API endpoints, 3 Inngest functions. Post-build audit: 7/7 PASS. |
+| D20 | **White-Label / Custom Domain** | `docs/modules/WHITE-LABEL.md` | P3 | ✅ Complete (Review) | D05, D09 | Custom domain (DNS CNAME + TXT verification, Vercel SSL), custom email sender domain (SPF/DKIM/DMARC via Resend), extended branding_config (Enterprise), proxy.ts routing for custom domains, "Powered by" badge removal, 6 API endpoints, 2 Inngest functions. Post-build audit: 7/7 PASS. |
+| D21 | **Internationalization (i18n)** | `docs/modules/I18N.md` | P3 | ✅ Complete (Review) | D05, D08, D09 | next-intl setup, translation file structure (9 namespaces), locale-aware date/currency/relative-time formatting, RTL support (CSS logical properties), career page + email localization, candidate locale detection, MVP: en-US/en-GB, post-MVP: 6 additional languages. Post-build audit: 7/7 PASS. |
 
 ---
 
