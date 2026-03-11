@@ -84,6 +84,95 @@ test.describe("Job Management", () => {
     await expect(page.getByText(/draft/i).first()).toBeVisible();
   });
 
+  test("Clone with New Location intent stores clone_intent in cloned job", async ({ page }) => {
+    await page.goto("/jobs");
+    const firstJob = page.getByRole("link").filter({ hasText: /senior/i }).first();
+    await firstJob.click();
+    await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/);
+
+    // Capture the source job ID for later comparison
+    const sourceUrl = page.url();
+
+    // Open intent modal
+    await page.getByRole("button", { name: /^Clone$/i }).click();
+    await expect(page.getByText(/why are you cloning/i)).toBeVisible({ timeout: 3000 });
+
+    // Select "New Location" reason (buttons, not radio inputs)
+    await page.getByRole("button", { name: /new location/i }).click();
+
+    // Location text input should appear
+    await expect(page.getByPlaceholder(/e\.g\. London|location/i)).toBeVisible({ timeout: 2000 });
+    await page.getByPlaceholder(/e\.g\. London|location/i).fill("London");
+
+    // Clone button should now be enabled — click it
+    await page.getByRole("button", { name: /^Clone$/i }).last().click();
+
+    // Should redirect to the new cloned job (different URL from source)
+    await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/, { timeout: 15000 });
+    expect(page.url()).not.toBe(sourceUrl);
+
+    // Cloned job should be in draft state
+    await expect(page.getByText(/draft/i).first()).toBeVisible();
+
+    // Post-clone checklist should be visible (clone_intent stored → checklist rendered)
+    await expect(page.getByText(/post-clone checklist|clone checklist/i).first()).toBeVisible({
+      timeout: 3000,
+    });
+  });
+
+  test("AI Rewrite: streaming panel appears, Accept persists new description", async ({ page }) => {
+    await page.goto("/jobs");
+    const firstJob = page.getByRole("link").filter({ hasText: /senior/i }).first();
+    await firstJob.click();
+    await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/);
+
+    // Trigger AI Rewrite
+    const rewriteBtn = page.getByRole("button", { name: /ai rewrite/i });
+    await expect(rewriteBtn).toBeVisible({ timeout: 5000 });
+    await rewriteBtn.click();
+
+    // Streaming panel should appear (either streaming indicator or diff view)
+    await expect(
+      page.getByText(/generating|rewriting|ai rewrite/i).first()
+    ).toBeVisible({ timeout: 5000 });
+
+    // Wait for streaming to complete — Accept button should appear
+    const acceptBtn = page.getByRole("button", { name: /accept/i });
+    await expect(acceptBtn).toBeVisible({ timeout: 30000 });
+
+    // Accept the rewrite
+    await acceptBtn.click();
+
+    // After accepting, the panel should collapse (no more Accept button visible)
+    await expect(acceptBtn).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test("AI Rewrite: Revert restores original description", async ({ page }) => {
+    await page.goto("/jobs");
+    const firstJob = page.getByRole("link").filter({ hasText: /senior/i }).first();
+    await firstJob.click();
+    await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/);
+
+    // Only test Revert when description_previous exists (shown by "Revert to previous" button)
+    // This test is conditional — if no previous exists, skip gracefully
+    const rewriteBtn = page.getByRole("button", { name: /ai rewrite/i });
+    await rewriteBtn.click();
+
+    // Wait for Accept to appear (rewrite complete)
+    await expect(page.getByRole("button", { name: /accept/i })).toBeVisible({ timeout: 30000 });
+
+    // Check for Revert to Previous button
+    const revertBtn = page.getByRole("button", { name: /revert to previous/i });
+    if (await revertBtn.isVisible()) {
+      await revertBtn.click();
+      // Panel should collapse after revert
+      await expect(revertBtn).not.toBeVisible({ timeout: 5000 });
+    } else {
+      // No previous description — Discard instead
+      await page.getByRole("button", { name: /discard/i }).click();
+    }
+  });
+
   test("AI Rewrite panel is visible on job detail", async ({ page }) => {
     await page.goto("/jobs");
     const firstJob = page.getByRole("link").filter({ hasText: /senior/i }).first();

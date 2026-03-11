@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] J3 audit close-out — dashboard label fix, E2E tests, intent pattern tests
+
+**Phase:** Build — Phase 2.7 post-audit fixes (all J3 gaps closed)
+**Scope:** Dashboard P0 label fix, E2E coverage for clone intent + AI rewrite, intent pattern unit tests, USER-STORY-MAP sync
+
+### Changes
+
+#### Dashboard — metric label fix
+- `dashboard/page.tsx` — relabeled `applicationsThisWeek` card from "This Week"/"new applications" to "Received"/"applications this week". Metric counts all applications received (volume metric, not state). Comment added clarifying intent.
+
+#### E2E — J3 gaps closed (`jobs.spec.ts`)
+- Added: "Clone with New Location intent" — selects reason button, enters location, clones, verifies draft state + checklist visible
+- Added: "AI Rewrite: streaming panel appears, Accept persists new description"
+- Added: "AI Rewrite: Revert restores original description" (conditional on description_previous)
+- Fixed: clone intent test used `getByRole("radio")` — corrected to `getByRole("button")` (CloneIntentModal renders `<button>`, not radio inputs)
+- E2E count: 7 → 10
+
+#### Unit tests — intent patterns (`intent-patterns.test.ts`)
+- Added 8 clone intent tests covering: location, multi-word location, level via "for"/"as", repost, hyphenated title, display string, plain "clone" falls through to AI
+- Total test count: 583 → 591 Vitest + 45 → 48 E2E = 639 total
+
+#### Docs
+- `USER-STORY-MAP.md` — J3 row updated: "Waves 4–5 pending" → "All 5 waves ✅ COMPLETE" with per-wave detail
+
+---
+
 ## 2026-03-11 — [Phase 2.7] Phase 2.7 final pass — JI1/JI3, SR6, CP2/4/7/8, CL2, AR4/5, T10, C2/M3
 
 **Phase:** Build — Phase 2.7 (UX Polish) — final horizontal pass

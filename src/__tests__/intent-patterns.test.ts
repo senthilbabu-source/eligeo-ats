@@ -8,7 +8,8 @@ import { describe, it, expect } from "vitest";
  * This tests the fast path (no AI call) of the command bar.
  */
 
-// Re-implement matchQuickPatterns for testing (same logic as intent.ts)
+// Re-implement matchQuickPatterns for testing (same logic as intent.ts).
+// IMPORTANT: Keep this in sync with src/lib/ai/intent.ts matchQuickPatterns.
 function matchQuickPatterns(input: string) {
   const lower = input.toLowerCase().trim();
 
@@ -62,6 +63,45 @@ function matchQuickPatterns(input: string) {
   }
   if (/^(new|create|add) candidate/i.test(lower)) {
     return { action: "create_candidate", params: {}, confidence: 1, display: "Add a new candidate" };
+  }
+
+  // Clone job intent patterns (E2) — most-specific first
+  // "clone [title] for [level] level" → new_level (must match before generic location pattern)
+  const cloneForLevel = /^clone\s+(.+?)\s+(?:for|as)\s+(.+?)\s+level$/i.exec(lower);
+  if (cloneForLevel) {
+    const title = (cloneForLevel[1] ?? "").trim();
+    const level = (cloneForLevel[2] ?? "").trim();
+    return {
+      action: "clone_job",
+      params: { title, reason: "new_level", level },
+      confidence: 0.9,
+      display: `Clone "${title}" at ${level} level`,
+    };
+  }
+
+  // "clone [title] for [location]" → new_location intent
+  const cloneForLocation = /^clone\s+(.+?)\s+for\s+(.+)$/i.exec(lower);
+  if (cloneForLocation) {
+    const title = (cloneForLocation[1] ?? "").trim();
+    const location = (cloneForLocation[2] ?? "").trim();
+    return {
+      action: "clone_job",
+      params: { title, reason: "new_location", location },
+      confidence: 0.95,
+      display: `Clone "${title}" for ${location}`,
+    };
+  }
+
+  // "repost [title]" → repost intent
+  const repost = /^repost\s+(.+)$/i.exec(lower);
+  if (repost) {
+    const title = (repost[1] ?? "").trim();
+    return {
+      action: "clone_job",
+      params: { title, reason: "repost" },
+      confidence: 0.95,
+      display: `Repost "${title}"`,
+    };
   }
 
   return null;
@@ -180,6 +220,65 @@ describe("Intent Quick Pattern Matching", () => {
     it("returns null for empty input", () => {
       expect(matchQuickPatterns("")).toBeNull();
       expect(matchQuickPatterns("   ")).toBeNull();
+    });
+  });
+
+  describe("clone job intents (E2)", () => {
+    it("'clone senior engineer for London' → new_location with correct title and location", () => {
+      const result = matchQuickPatterns("clone senior engineer for London");
+      expect(result?.action).toBe("clone_job");
+      expect(result?.params.reason).toBe("new_location");
+      expect(result?.params.title).toBe("senior engineer");
+      expect(result?.params.location).toBe("london");
+      expect(result?.confidence).toBeGreaterThanOrEqual(0.9);
+    });
+
+    it("'clone senior engineer for New York' extracts multi-word location", () => {
+      const result = matchQuickPatterns("clone senior engineer for New York");
+      expect(result?.action).toBe("clone_job");
+      expect(result?.params.reason).toBe("new_location");
+      expect(result?.params.location).toBe("new york");
+    });
+
+    it("'clone product manager for senior level' → new_level (specific pattern wins)", () => {
+      const result = matchQuickPatterns("clone product manager for senior level");
+      expect(result?.action).toBe("clone_job");
+      expect(result?.params.reason).toBe("new_level");
+      expect(result?.params.title).toBe("product manager");
+      expect(result?.params.level).toBe("senior");
+    });
+
+    it("'clone backend engineer as junior level' → new_level via 'as' variant", () => {
+      const result = matchQuickPatterns("clone backend engineer as junior level");
+      expect(result?.action).toBe("clone_job");
+      expect(result?.params.reason).toBe("new_level");
+      expect(result?.params.level).toBe("junior");
+    });
+
+    it("'repost senior engineer' → repost intent", () => {
+      const result = matchQuickPatterns("repost senior engineer");
+      expect(result?.action).toBe("clone_job");
+      expect(result?.params.reason).toBe("repost");
+      expect(result?.params.title).toBe("senior engineer");
+      expect(result?.confidence).toBeGreaterThanOrEqual(0.9);
+    });
+
+    it("'repost engineering manager - platform' captures hyphenated title", () => {
+      const result = matchQuickPatterns("repost engineering manager - platform");
+      expect(result?.action).toBe("clone_job");
+      expect(result?.params.reason).toBe("repost");
+      expect(result?.params.title).toBe("engineering manager - platform");
+    });
+
+    it("display string describes the action clearly", () => {
+      const result = matchQuickPatterns("clone senior engineer for Berlin");
+      expect(result?.display).toMatch(/senior engineer/i);
+      expect(result?.display).toMatch(/berlin/i);
+    });
+
+    it("plain 'clone' without title falls through to AI (returns null)", () => {
+      // No title after "clone" — regex won't match
+      expect(matchQuickPatterns("clone")).toBeNull();
     });
   });
 });

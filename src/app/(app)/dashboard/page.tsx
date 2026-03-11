@@ -117,7 +117,9 @@ export default async function DashboardPage({
           return myJobIds ? q.in("job_opening_id", myJobIds) : q;
         })(),
 
-    // Applications this week — scoped to recruiter's jobs in mine mode
+    // Applications received this week — all statuses (volume metric, not state metric).
+    // Label on the card is "Received" / "applications this week" to reflect this accurately.
+    // Scoped to recruiter's jobs in mine mode.
     noJobs
       ? Promise.resolve({ count: 0, data: null, error: null })
       : (() => {
@@ -240,9 +242,9 @@ export default async function DashboardPage({
           sub="in pipeline"
         />
         <MetricCard
-          label="This Week"
+          label="Received"
           value={applicationsThisWeek ?? 0}
-          sub="new applications"
+          sub="applications this week"
         />
       </div>
 

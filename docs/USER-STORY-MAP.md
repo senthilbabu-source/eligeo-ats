@@ -32,7 +32,7 @@
 |---|-------|-------|------|-------|
 | J1 | AI generates full job description from title + bullets | 🔶 2.6 | Growth+ | OpenAI structured output. Command bar: "create job Senior Engineer" |
 | J2 | AI suggests required skills based on role title | 🔶 2.6 | Growth+ | Embedding similarity against skills taxonomy |
-| J3 | Clone job + AI auto-updates for new location/level | ✅ BUILT | All | Clone is CRUD, AI rewrite is Growth+. Wave 1: skills/team fields cloned, clean slug. Wave 2: CloneIntentModal (4 reasons), intent stored in metadata.clone_intent. Wave 3: streaming diff panel (RewritePanel), intent-aware rewrite prompt, acceptJobRewrite/revertJobDescription. Waves 4–5 (bias check, AI title/skills delta, checklist) pending. |
+| J3 | Clone job + AI auto-updates for new location/level | ✅ BUILT | All | Clone is CRUD, AI rewrite is Growth+. Wave 1: skills/team fields cloned, clean slug, hiring_manager_id/recruiter_id copied. Wave 2: CloneIntentModal (4 reasons), intent stored in metadata.clone_intent. Wave 3: streaming RewritePanel, intent-aware rewrite prompt, acceptJobRewrite/revertJobDescription, description_previous stored before overwrite. Wave 4: JdQualityPanel (JD1–4), SkillsDeltaPanel, TitleSuggestionBadge, CloneChecklist (6 items, auto-dismiss via metadata). Wave 5: command bar clone intent (intent.ts quick patterns + executeCommand job lookup + navigate). All 5 waves ✅ COMPLETE. E2E: intent selection + accept/revert flows added 2026-03-11. |
 | J4 | Approval workflows for job requisitions | 🟠 v2.0 | Pro+ | Small teams don't need this at launch |
 | J5 | AI warns about biased/exclusionary language | 🔶 2.6 | Growth+ | OpenAI moderation pass before publish |
 
