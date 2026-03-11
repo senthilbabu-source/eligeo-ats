@@ -2,8 +2,12 @@ import { requireAuthAPI } from "@/lib/auth/api";
 import { can } from "@/lib/constants/roles";
 import { streamJobDescription } from "@/lib/ai/generate";
 import { problemResponse } from "@/lib/utils/problem";
+import { checkCsrf } from "@/lib/utils/csrf";
 
 export async function POST(request: Request) {
+  const csrfError = checkCsrf(request);
+  if (csrfError) return csrfError;
+
   const { session, error } = await requireAuthAPI();
   if (error) return error;
 
