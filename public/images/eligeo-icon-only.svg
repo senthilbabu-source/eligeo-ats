@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+
+  <!-- Icon only — for favicon, app icon, avatar use -->
+  <rect width="120" height="120" fill="#ffffff"/>
+
+  <!-- Rounded square -->
+  <rect x="5" y="5" width="110" height="110" rx="24" fill="#0F172A"/>
+
+  <!-- Bar 1 -->
+  <rect x="22" y="34" width="76" height="6" rx="3" fill="white" opacity="0.22"/>
+  <!-- Bar 2 -->
+  <rect x="22" y="57" width="54" height="6" rx="3" fill="white" opacity="0.5"/>
+  <!-- Bar 3 -->
+  <rect x="22" y="80" width="32" height="6" rx="3" fill="white"/>
+
+  <!-- Selection dot -->
+  <circle cx="70" cy="83" r="14" fill="#6366F1" opacity="0.2"/>
+  <circle cx="70" cy="83" r="9.5" fill="#6366F1"/>
+  <circle cx="70" cy="83" r="4" fill="white"/>
+
+</svg>
