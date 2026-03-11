@@ -16,6 +16,46 @@
 
 ---
 
+### 2026-03-10 — [D14] Observability & Monitoring — complete first draft
+
+**Files created:**
+- `docs/OBSERVABILITY.md` — 12 sections: Pino structured logging with PII redaction, Sentry error tracking (client + server + Inngest), 3 health endpoints, 9 SLOs with error budget, 4-severity alerting, application + business metrics, request ID tracing, Inngest dead-letter handling, admin system dashboard.
+
+**Files updated:**
+- `docs/INDEX.md` — D14 status: `⬜ Not Started` → `✅ Complete (Review)`.
+
+**Key decisions:**
+- Three-pillar approach: logs (Pino), errors (Sentry), metrics (Vercel + Redis counters). No Prometheus/Grafana in MVP.
+- PII never in logs: Pino `redact` strips auth headers, tokens, candidate email/phone. Sentry session replay disabled.
+- SLOs: 99.9% availability, p95 < 500ms, error rate < 0.1%, Inngest success > 99%.
+- Alerting via Inngest cron (5-min checks) → Slack webhook. P1 alerts also go to PagerDuty.
+- Health endpoints: `/api/health` (shallow, public), `/api/health/ready` (deep, public), `/api/v1/system/status` (admin-only).
+
+**Status:** Review.
+
+---
+
+### 2026-03-10 — [D15] CI/CD Pipeline — complete first draft
+
+**Files created:**
+- `docs/CI-CD.md` — 8 sections: 4-environment strategy, GitHub Actions workflows (3: PR checks, staging deploy, production deploy), Supabase migration strategy, preview environments, Dependabot config, release management, rollback procedures, CI security.
+
+**Files updated:**
+- `docs/INDEX.md` — D15 status: `⬜ Not Started` → `✅ Complete (Review)`.
+
+**Key decisions:**
+- Migrations must be backward-compatible (zero-downtime deploys). Breaking changes use 3-step protocol.
+- Production deploys require GitHub Environment approval.
+- Rollback: Vercel instant rollback (< 30s) for app, reverse migration for DB, PITR for data corruption.
+- No Docker in CI — Vercel builds natively. Supabase CLI Docker for local only.
+- Dependabot weekly with grouped PRs (production vs dev dependencies).
+
+**Status:** Review.
+
+**Next:** D16 (Performance) → D17 (Analytics) → D18 (Runbooks).
+
+---
+
 ### 2026-03-10 — [D13] GDPR & Compliance — complete first draft
 
 **Files created:**
