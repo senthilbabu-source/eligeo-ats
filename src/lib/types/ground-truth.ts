@@ -103,6 +103,15 @@ export interface CloneIntent {
   newLevel?: string;    // e.g. "Staff" — set when reason = new_level
 }
 
+/** Clone checklist dismissed items stored in job_openings.metadata.clone_checklist_dismissed */
+export type CloneChecklistItem =
+  | "title_updated"
+  | "skills_reviewed"
+  | "hiring_manager_assigned"
+  | "salary_set"
+  | "embedding_generated"
+  | "bias_checked";
+
 /** Job metadata stored in job_openings.metadata JSONB */
 export interface JobMetadata {
   external_ids?: {
@@ -114,6 +123,7 @@ export interface JobMetadata {
   application_form_id?: string;
   internal_notes?: string;
   clone_intent?: CloneIntent;
+  clone_checklist_dismissed?: Partial<Record<CloneChecklistItem, boolean>>;
   [key: string]: unknown;
 }
 

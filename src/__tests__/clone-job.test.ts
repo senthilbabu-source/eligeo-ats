@@ -59,7 +59,7 @@ vi.mock("@sentry/nextjs", () => ({
 
 // ── Import after mocks ────────────────────────────────────
 
-import { cloneJob, rewriteJobDescription } from "@/lib/actions/jobs";
+import { cloneJob, rewriteJobDescription, dismissChecklistItem } from "@/lib/actions/jobs";
 
 // ── Test data ─────────────────────────────────────────────
 
@@ -373,5 +373,41 @@ describe("rewriteJobDescription", () => {
     expect(result).toEqual({ error: "Insufficient AI credits" });
     // description_previous must NOT be written — original is preserved
     expect(updateChain.update).not.toHaveBeenCalled();
+  });
+});
+
+// ── dismissChecklistItem tests (D4) ───────────────────────
+
+describe("dismissChecklistItem", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should merge dismissed item into existing metadata without clobbering other keys", async () => {
+    const existingMeta = { clone_intent: { reason: "new_location", newLocation: "London" }, clone_checklist_dismissed: { title_updated: true } };
+    const fetchChain = createChainMock({ data: { metadata: existingMeta }, error: null });
+    const updateChain = createChainMock({ data: null, error: null });
+
+    let jobOpeningsCall = 0;
+    mockFrom.mockImplementation(() => {
+      jobOpeningsCall++;
+      return jobOpeningsCall === 1 ? fetchChain : updateChain;
+    });
+
+    await dismissChecklistItem("job-id", "skills_reviewed");
+
+    const updateArgs = updateChain.update!.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
+    const updatedMeta = updateArgs?.metadata as Record<string, unknown> | undefined;
+    expect(updatedMeta?.clone_checklist_dismissed).toEqual({ title_updated: true, skills_reviewed: true });
+    expect(updatedMeta?.clone_intent).toEqual(existingMeta.clone_intent);
+  });
+
+  it("should return error when job is not found in org", async () => {
+    const notFoundChain = createChainMock({ data: null, error: null });
+    mockFrom.mockReturnValue(notFoundChain);
+
+    const result = await dismissChecklistItem("foreign-job-id", "title_updated");
+    expect(result).toEqual({ error: "Job not found." });
+    expect(notFoundChain.update).not.toHaveBeenCalled();
   });
 });

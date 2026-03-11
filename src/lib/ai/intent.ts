@@ -18,6 +18,7 @@ export interface ParsedIntent {
     | "draft_email"
     | "generate_job_description"
     | "find_matches"
+    | "clone_job"
     | "navigate"
     | "unknown";
   params: Record<string, string>;
@@ -34,6 +35,7 @@ const intentActions = [
   "draft_email",
   "generate_job_description",
   "find_matches",
+  "clone_job",
   "navigate",
   "unknown",
 ] as const;
@@ -57,6 +59,7 @@ Available actions:
 - draft_email: Draft an email. Params: type (rejection/outreach/update/follow_up), candidate (name), job (title), tone (warm/professional/casual)
 - generate_job_description: Generate a job description. Params: title, key_points (optional)
 - find_matches: Find AI-matched candidates for a job. Params: job (title or description)
+- clone_job: Clone a job with intent. Params: title (job title to clone), reason (new_location/new_level/repost/different_team), location (new location if applicable), level (new level if applicable)
 - navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines)
 - unknown: Cannot determine intent`;
 
@@ -194,6 +197,45 @@ function matchQuickPatterns(input: string): ParsedIntent | null {
   }
   if (/^(new|create|add) candidate/i.test(lower)) {
     return { action: "create_candidate", params: {}, confidence: 1, display: "Add a new candidate" };
+  }
+
+  // Clone job intent patterns (E2) — most-specific first
+  // "clone [title] for [level] level" → new_level (must match before generic location pattern)
+  const cloneForLevel = /^clone\s+(.+?)\s+(?:for|as)\s+(.+?)\s+level$/i.exec(lower);
+  if (cloneForLevel) {
+    const title = (cloneForLevel[1] ?? "").trim();
+    const level = (cloneForLevel[2] ?? "").trim();
+    return {
+      action: "clone_job",
+      params: { title, reason: "new_level", level },
+      confidence: 0.9,
+      display: `Clone "${title}" at ${level} level`,
+    };
+  }
+
+  // "clone [title] for [location]" → new_location intent
+  const cloneForLocation = /^clone\s+(.+?)\s+for\s+(.+)$/i.exec(lower);
+  if (cloneForLocation) {
+    const title = (cloneForLocation[1] ?? "").trim();
+    const location = (cloneForLocation[2] ?? "").trim();
+    return {
+      action: "clone_job",
+      params: { title, reason: "new_location", location },
+      confidence: 0.95,
+      display: `Clone "${title}" for ${location}`,
+    };
+  }
+
+  // "repost [title]" → repost intent
+  const repost = /^repost\s+(.+)$/i.exec(lower);
+  if (repost) {
+    const title = (repost[1] ?? "").trim();
+    return {
+      action: "clone_job",
+      params: { title, reason: "repost" },
+      confidence: 0.95,
+      display: `Repost "${title}"`,
+    };
   }
 
   return null; // No quick match — fall through to AI

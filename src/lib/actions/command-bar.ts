@@ -23,6 +23,34 @@ export async function executeCommand(
     userId: session.userId,
   });
 
+  // clone_job: return intent for frontend to open CloneIntentModal pre-filled
+  // (frontend must search for job by title and open the modal)
+  if (intent.action === "clone_job") {
+    const supabase = await createClient();
+    const titleQuery = intent.params.title ?? "";
+    if (titleQuery) {
+      const escaped = titleQuery.replace(/[%_\\]/g, "\\$&");
+      const { data } = await supabase
+        .from("job_openings")
+        .select("id, title, status")
+        .eq("organization_id", session.orgId)
+        .ilike("title", `%${escaped}%`)
+        .is("deleted_at", null)
+        .limit(5);
+
+      return {
+        intent,
+        results: (data ?? []).map((j) => ({
+          id: j.id,
+          title: j.title,
+          subtitle: `Clone → ${j.status}`,
+          href: `/jobs/${j.id}`,
+        })),
+      };
+    }
+    return { intent };
+  }
+
   // For search intents, execute the search and return results
   if (
     intent.action === "search_candidates" ||

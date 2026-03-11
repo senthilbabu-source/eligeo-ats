@@ -9,6 +9,7 @@ import { AiMatchPanel } from "./ai-match-panel";
 import { RewritePanel } from "./rewrite-panel";
 import { TitleSuggestionBadge } from "./title-suggestion";
 import { SkillsDeltaPanel } from "./skills-delta-panel";
+import { CloneChecklist } from "./clone-checklist";
 import type { JobMetadata } from "@/lib/types/ground-truth";
 
 export async function generateMetadata({
@@ -43,7 +44,7 @@ export default async function JobDetailPage({
       id, title, slug, description, description_previous, metadata,
       department, location, location_type,
       employment_type, salary_min, salary_max, salary_currency, status,
-      headcount, published_at, created_at, job_embedding
+      headcount, hiring_manager_id, published_at, created_at, job_embedding
     `,
     )
     .eq("id", id)
@@ -72,6 +73,16 @@ export default async function JobDetailPage({
       >
         &larr; All Jobs
       </Link>
+
+      {cloneIntent && (
+        <CloneChecklist
+          jobId={job.id}
+          jobMeta={meta}
+          hasSalary={Boolean(job.salary_min && job.salary_max)}
+          hasHiringManager={Boolean(job.hiring_manager_id)}
+          hasEmbedding={job.job_embedding !== null}
+        />
+      )}
 
       {cloneIntent && (
         <TitleSuggestionBadge

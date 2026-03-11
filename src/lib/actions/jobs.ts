@@ -10,7 +10,7 @@ import {
   generateAndStoreEmbedding,
   buildJobEmbeddingText,
 } from "@/lib/ai/embeddings";
-import type { CloneIntent, JobMetadata } from "@/lib/types/ground-truth";
+import type { CloneIntent, JobMetadata, CloneChecklistItem } from "@/lib/types/ground-truth";
 
 // ── Validation Schemas ─────────────────────────────────────
 
@@ -557,6 +557,39 @@ export async function getJobSkillsDelta(jobId: string) {
     organizationId: session.orgId,
     userId: session.userId,
   });
+}
+
+// ── Dismiss Clone Checklist Item ──────────────────────────
+
+export async function dismissChecklistItem(jobId: string, item: CloneChecklistItem) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "jobs:edit");
+
+  const supabase = await createClient();
+
+  const { data: job } = await supabase
+    .from("job_openings")
+    .select("metadata")
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!job) return { error: "Job not found." };
+
+  const meta = (job.metadata ?? {}) as JobMetadata;
+  const dismissed = { ...(meta.clone_checklist_dismissed ?? {}), [item]: true };
+
+  const { error } = await supabase
+    .from("job_openings")
+    .update({ metadata: { ...meta, clone_checklist_dismissed: dismissed } })
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId);
+
+  if (error) return { error: "Failed to dismiss checklist item." };
+
+  revalidatePath(`/jobs/${jobId}`);
+  return { success: true };
 }
 
 // ── Delete Job (soft delete) ───────────────────────────────
