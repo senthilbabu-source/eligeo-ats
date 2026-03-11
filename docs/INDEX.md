@@ -53,7 +53,7 @@
 
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
-| D13 | **GDPR & Compliance** | `docs/COMPLIANCE.md` | P2 | ⬜ Not Started | D01 | DSAR flow. Right to erasure. Data retention policy. Consent management. SOC 2 prep. CCPA. |
+| D13 | **GDPR & Compliance** | `docs/COMPLIANCE.md` | P2 | ✅ Complete (Review) | D01, D09 | DSAR flow (access/portability/erasure/rectification/restriction), data retention policies with automated cron, consent management with versioning + withdrawal, DEI aggregation rules with cohort suppression (G-019), SOC 2 Type II control mapping, CCPA requirements, data region awareness, legal hold override, EEO-1 export, 10 API endpoints, 4 Inngest functions. Post-build audit: 7/7 PASS. |
 | D14 | **Observability & Monitoring** | `docs/OBSERVABILITY.md` | P2 | ⬜ Not Started | — | Logging (Pino/structured). Sentry config. Metrics. Alerting. SLOs. Health endpoint. |
 | D15 | **CI/CD Pipeline** | `docs/CI-CD.md` | P2 | ⬜ Not Started | — | GitHub Actions specs. DB migration strategy. Preview environments. Rollback procedure. |
 | D16 | **Performance & Caching** | `docs/PERFORMANCE.md` | P2 | ⬜ Not Started | D01, D10 | Redis caching strategy. Cache invalidation. Query targets. ISR for portal. Load testing targets. |

@@ -16,6 +16,39 @@
 
 ---
 
+### 2026-03-10 — [D13] GDPR & Compliance — complete first draft
+
+**Files created:**
+- `docs/COMPLIANCE.md` — 13 sections (450+ lines): regulatory landscape (GDPR/CCPA/PIPEDA/EEO), DSAR flow (5 request types with automated data assembly), data retention policies (24mo rejected, 12mo withdrawn) with weekly Inngest cron, consent management with versioning + jurisdiction-aware text + withdrawal flow, DEI data aggregation with cohort suppression rules (G-019), audit log compliance queries + export, SOC 2 Type II control mapping (14 controls), data region awareness, legal hold override, EEO-1 reporting, 10 API endpoints, 4 Inngest functions.
+
+**Files updated:**
+- `docs/INDEX.md` — D13 status: `⬜ Not Started` → `✅ Complete (Review)`.
+- `docs/GAPS.md` — G-019 resolved (DEI aggregation rules). Re-tagged from D17 to D13 (compliance owns aggregation rules, analytics just consumes them).
+
+**Key decisions:**
+- GDPR as baseline: most restrictive regulation applied globally, jurisdiction variations via config.
+- DSAR export assembles data from all 11 candidate-related tables into JSON. Async via Inngest, signed URL delivery.
+- Retention cron runs weekly (Sunday 3am UTC). Rejected=24mo, withdrawn=12mo. Enterprise can customize.
+- DEI cohort suppression: minimum 5 candidates per group, max 2 cross-tab dimensions, cascade suppression.
+- Consent versioning via `consent_version` date string matching privacy policy version. No re-consent on policy update unless purposes change.
+- Legal hold: admin flag on application prevents erasure execution. Candidate notified of delay.
+- Data region is informational in MVP (single Supabase project). Field enables future multi-region.
+- G-019 re-tagged from D17 to D13: aggregation rules are a compliance concern, not analytics.
+
+**Post-build audit:** 7/7 categories PASS.
+
+**Contracts exported:**
+- D17 (Analytics): DEI aggregation rules defined here, D17 consumes them for reporting dashboards.
+- D18 (Security Runbooks): SOC 2 control mapping provides framework for incident response procedures.
+
+**[PLAYBOOK]** Extractable patterns: DSAR automation flow, retention cron with SQL helper, DEI cohort suppression algorithm, consent versioning, SOC 2 control mapping template, jurisdiction-aware consent text.
+
+**Status:** Review.
+
+**Next:** D14 (Observability) → D15 (CI/CD) → D16 (Performance) → D17 (Analytics) → D18 (Runbooks).
+
+---
+
 ### 2026-03-10 — [D09] Candidate Portal — complete first draft
 
 **Files created:**

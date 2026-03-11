@@ -41,7 +41,7 @@
 | G-016 | D01 | D10 (Search & AI) | `match_candidates_for_job()` returns top 50 by cosine similarity, but no spec on how stale embeddings are handled — what triggers re-embedding when a candidate updates their profile? | P1 | RESOLVED |
 | G-017 | D03 | D10 (Search & AI) | AI credit costs vary by action (resume parse vs. matching vs. summarization). D03 uses flat "1 credit per action" but doesn't define per-action costs. D10 should specify credit weights. | P2 | RESOLVED |
 | G-018 | D01 | D12 (Workflow) | `talent_pool_members` links candidates to pools, but no spec on automatic pool membership rules (e.g., "all silver medalists auto-added to 'Strong Rejects' pool"). D12 must decide — this is workflow automation, not real-time. | P2 | RESOLVED |
-| G-019 | D01 | D17 (Analytics) | `candidate_dei_data` has restricted RLS (only owner/admin), but D17 needs to define aggregation rules — minimum cohort size for statistical reporting to prevent de-identification. | P1 | OPEN |
+| G-019 | D01 | D13 (Compliance) | `candidate_dei_data` has restricted RLS (only owner/admin), but D13 needs to define aggregation rules — minimum cohort size for statistical reporting to prevent de-identification. | P1 | RESOLVED |
 | G-020 | D05 | D09 (Candidate Portal) | Design System specifies `branding_config` drives career page theming, but doesn't define fallback behavior when `branding_config` fields are null/empty. D09 must specify defaults. | P2 | RESOLVED |
 | G-021 | D02 | D08 (Notifications) | Webhook outbound auto-disables after 10 consecutive failures (D02 §8). But no spec on re-enablement — manual only? Auto-retry after 24h? Admin notification before disable? | P2 | RESOLVED |
 | G-022 | D01 | D06 (Offers) | `offer_approvals.sequence_order` defines approval chain, but no spec on what happens when an approver is removed from the organization mid-approval flow. Skip? Reassign? Block? | P1 | RESOLVED |
@@ -102,6 +102,7 @@
 | G-026 | 2026-03-10 | (this commit) | D09 §9: Candidate emails use stateless signed JWT magic links (separate secret from Supabase). 5 email templates with scoped tokens. No unsubscribe (transactional only). |
 | G-029 | 2026-03-10 | (this commit) | D09 §8: Typesense scoped API key per org, 90-day expiry, daily Inngest cron for rotation, client-side InstantSearch adapter. Fallback to PostgreSQL ILIKE if Typesense unavailable. |
 | G-030 | 2026-03-10 | (this commit) | D09 §6.3: Adaptive polling — 30s default, exponential backoff to 60s on no change, reset on change. Lightweight endpoint (~200 bytes). No WebSocket. |
+| G-019 | 2026-03-10 | (this commit) | D13 §6.3: DEI aggregation with minimum cohort size of 5, max 2 cross-tabulation dimensions, suppression cascade, 3-month minimum rolling window. EEO-1 export on Pro+. |
 
 ---
 
