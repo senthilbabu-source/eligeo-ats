@@ -6,7 +6,22 @@
 > **Last updated:** 2026-03-11
 > **Depends on:** D00 (competitive positioning), D03 (billing tiers), D25 (user personas), all module specs (D06–D12)
 > **Depended on by:** All implementation work — this document determines build order
-> **Architecture decisions assumed:** All ADRs (001–010)
+> **Architecture decisions assumed:** All ADRs (001–011)
+
+---
+
+> ## ⚠️ ADR-011 Amendment (2026-03-11)
+>
+> **The build order in §3.3 has been superseded by ADR-011.** A legacy-pitfall audit after Phase 2 found the product was building a traditional CRUD ATS with AI deferred to v2.0. The sequential Phase 3→4→5→6 order is replaced by a horizontal pass:
+>
+> - **Phase 2.5:** Foundation fixes (pagination, application form, indexes, org-scoped career portal)
+> - **Phase 2.6:** Command bar (⌘K) + AI core (resume parsing, fit scoring, NL search)
+> - **Phase 2.7:** UX polish (drag-drop Kanban, settings pages, dashboard metrics, role-aware views)
+> - Then resume vertical: Phase 3 (interviews) → Phase 4 (offers) → Phase 5 (billing)
+>
+> **Key rule change:** Every new feature ships with AI-assisted mode from Day 1. AI resume parsing and candidate-job fit scoring move from v2.0 to Phase 2.6.
+>
+> The feature tables (§3.1, §3.2, §5) remain valid for WHAT to build. Only the build ORDER and AI timing have changed. See `docs/ADRs/011-ai-first-build-pivot.md` for full rationale.
 
 ---
 
@@ -71,7 +86,7 @@ The minimum set of features that lets a team post a job, receive applications, e
 
 | Feature | Why Deferred | Version |
 |---------|-------------|---------|
-| AI matching / resume parsing | Not needed to hire. Expensive to build. Justifies Pro tier later. | v2.0 |
+| AI matching / resume parsing | ~~Not needed to hire. Expensive to build. Justifies Pro tier later.~~ **MOVED to Phase 2.6 per ADR-011.** AI resume parsing + candidate-job fit scoring ship before v1.0 launch. | **Phase 2.6** |
 | Typesense full-text search | PostgreSQL ILIKE is sufficient for < 10K candidates. | v2.0 |
 | Talent pools / CRM | Retention feature, not acquisition. | v2.0 |
 | Custom fields | Orgs can work with standard fields initially. | v2.0 |
@@ -94,7 +109,9 @@ The minimum set of features that lets a team post a job, receive applications, e
 
 ### 3.3 v1.0 Build Order
 
-Within v1.0, features must be built in dependency order. Six phases over 12 weeks:
+> **⚠️ SUPERSEDED by ADR-011.** The Phase 0→1→2→3→4→5→6 order below is the ORIGINAL plan. After Phase 2 completion, the build pivoted to a horizontal pass (Phase 2.5→2.6→2.7) before resuming vertical features (Phase 3→4→5). See ADR-011 for the active build order.
+
+Within v1.0, features were originally planned in dependency order. Six phases over 12 weeks:
 
 ```
 Phase 0: Infrastructure                    Week 1
@@ -450,7 +467,7 @@ Decisions made in this document that override or refine earlier specs:
 | Offer approval auto-approve (single step) in v1.0 | Small teams don't need approval chains. Full chain in v2.0. | D06 |
 | No Typesense in v1.0 | PostgreSQL ILIKE is sufficient for < 10K candidates. Avoids Typesense infra dependency. | D10 |
 | No Nylas in v1.0 | Manual scheduling works. Reduces third-party dependency for launch. | D07 |
-| No AI features in v1.0 | Expensive, complex, and not needed to complete a hiring loop. Justifies Pro tier in v2.0. | D10, D03 |
+| ~~No AI features in v1.0~~ **REVERSED by ADR-011** | AI resume parsing + candidate-job fit scoring + command bar NL search now ship in Phase 2.6, before v1.0 launch. Every new feature ships with AI-assisted mode from Day 1. | ADR-011, D10, D03 |
 | Multi-org switching in v1.0 only if trivial | ADR-005 is designed but implementation may be v1.1 if it delays launch. | ADR-005 |
 | Career page is mobile-first | 60%+ of job seekers browse on mobile. D05 responsive breakpoints apply. | D05, D09 |
 | Candidate tracker page ships in v1.1, not v1.0 | Candidates get email notifications in v1.0. Self-service tracker is v1.1. | D09 |
