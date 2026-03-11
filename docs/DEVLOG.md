@@ -16,6 +16,44 @@
 
 ---
 
+### 2026-03-10 — [PLAYBOOK] Bulk extraction: 12 ATS patterns → SaaS Accelerator Playbook
+
+**Extracted to:** `/Users/senthilbabu/Downloads/SaaS-Playbook/`
+
+**12 JOURNEY-LOG entries added** (abstracted from D01-D13 [PLAYBOOK] markers):
+- D01: Soft-delete everything (P-17), crypto-shredding, audit triggers
+- D02: Dual API layer (Server Actions + Route Handlers), idempotency keys
+- D03: Billing truth in payment provider (P-16), plan-tier feature gating
+- D05: HSL tokens, warm-white backgrounds, data-dense 14px dashboards
+- D06: Approval chains with auto-skip, state machines with terminal states
+- D07: Blind review, snapshot-on-assign, weighted scoring
+- D08: Notification routing with smart defaults, webhook health (P-20), digest batching
+- D09: External user auth via stateless tokens (P-19), adaptive polling
+- D10: Two-engine search (full-text + semantic), composite scoring
+- D11: Multi-tenant real-time channel naming, optimistic UI dedup, connection hygiene
+- D12: Automation loop prevention (P-18), SLA via delayed events
+- D13: Consent versioning (P-21), DSAR automation, DEI cohort suppression
+
+**6 new principles added** (P-16 through P-21):
+- P-16: Billing truth lives in payment provider
+- P-17: Soft-delete everything, hard-delete nothing
+- P-18: Automation loops are serverless fork bombs
+- P-19: External users need separate auth
+- P-20: Every webhook needs a health circuit breaker
+- P-21: Consent is versioned
+
+**6 battle-test entries added** for 01-architect prompts validated against ATS:
+- database-schema-design.md — Passed with refinements
+- auth-strategy.md — Passed with refinements
+- api-contract-design.md — Passed with refinements
+- multi-tenancy-design.md — Passed
+- background-jobs-design.md — Passed with refinements
+- documentation-system.md — Passed
+
+**Next:** Playbook prompt refinements based on battle-test findings. Create new prompts for phases 02-04.
+
+---
+
 ### 2026-03-10 — [D19, D20, D21] Phase 3 complete — Onboarding, White-Label, i18n
 
 **Files created:**
