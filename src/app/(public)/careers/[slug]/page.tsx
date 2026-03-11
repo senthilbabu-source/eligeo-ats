@@ -53,7 +53,7 @@ export default async function CareerDetailPage({
   const org = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as { name: string } | null;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
       <Link
         href="/careers"
         className="text-sm text-muted-foreground hover:text-foreground"

@@ -57,7 +57,7 @@ export function ApplicationForm({ jobId, jobTitle }: ApplicationFormProps) {
               type="text"
               required
               placeholder="Jane Doe"
-              className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -74,7 +74,7 @@ export function ApplicationForm({ jobId, jobTitle }: ApplicationFormProps) {
               type="email"
               required
               placeholder="jane@example.com"
-              className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -92,7 +92,7 @@ export function ApplicationForm({ jobId, jobTitle }: ApplicationFormProps) {
               name="phone"
               type="tel"
               placeholder="+1 (555) 123-4567"
-              className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
@@ -108,7 +108,7 @@ export function ApplicationForm({ jobId, jobTitle }: ApplicationFormProps) {
               name="linkedinUrl"
               type="url"
               placeholder="https://linkedin.com/in/janedoe"
-              className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         </div>
@@ -126,7 +126,7 @@ export function ApplicationForm({ jobId, jobTitle }: ApplicationFormProps) {
             rows={4}
             maxLength={5000}
             placeholder="Tell us about yourself and why you'd be a great fit..."
-            className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -135,7 +135,7 @@ export function ApplicationForm({ jobId, jobTitle }: ApplicationFormProps) {
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 sm:w-auto"
+          className="inline-flex h-11 w-full items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 sm:h-10 sm:w-auto"
         >
           {isPending ? "Submitting..." : "Submit Application"}
         </button>
