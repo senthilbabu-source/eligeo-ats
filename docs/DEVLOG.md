@@ -15,6 +15,19 @@
 
 ---
 
+### 2026-03-11 — [SECURITY] Fix members_insert RLS policy (M018)
+
+- **Bug:** `members_insert` allowed `user_id = auth.uid()` — any authenticated user could self-add to any org
+- **Root cause:** Policy intended for signup flow (first member of new org) was unconditionally permissive
+- **Fix (migration 018):**
+  - Created `org_has_members(org_id)` SECURITY DEFINER function — checks member existence bypassing RLS
+  - Self-insert now requires `NOT org_has_members(organization_id)` — only works for empty orgs (signup)
+  - Owner/admin invite path unchanged
+  - SECURITY DEFINER needed because inline `NOT EXISTS` subquery was subject to RLS — the inserting user couldn't see the target org's members, defeating the check
+- **Verified:** 3 scenarios pass — self-insert to existing org DENIED, owner invite ALLOWED, self-insert to empty org ALLOWED
+- **Test:** Added explicit test for M018 fix in `organization-members.rls.test.ts`
+- `[PLAYBOOK]` RLS subqueries in WITH CHECK are subject to RLS themselves. Use SECURITY DEFINER functions for cross-tenant existence checks in policies.
+
 ### 2026-03-11 — [TEST] Close remaining ADR-004 Day 1 gaps (380 total)
 
 - **API integration tests (28 new):**

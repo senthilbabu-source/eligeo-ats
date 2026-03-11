@@ -62,23 +62,28 @@ describe("RLS: organization_members", () => {
     });
 
     it("Tenant B cannot INSERT another user into Tenant A org", async () => {
-      // Tenant B tries to add a random user to Tenant A — should fail because:
-      // 1. user_id != auth.uid() (not self-insert)
-      // 2. has_org_role(Tenant A org, 'owner', 'admin') is FALSE for Tenant B
       const { error } = await tenantBClient
         .from("organization_members")
         .insert({
           organization_id: TENANT_A.org.id,
-          user_id: crypto.randomUUID(), // NOT their own uid
+          user_id: crypto.randomUUID(),
           role: "recruiter",
         });
       expect(error).not.toBeNull();
     });
 
-    // NOTE: Known RLS policy issue — members_insert allows user_id = auth.uid()
-    // which means any authenticated user can add THEMSELVES to any org.
-    // This is intended for the signup flow but is overly permissive.
-    // TODO: Tighten members_insert policy with invite-token or org-creation check.
+    it("Tenant B cannot self-INSERT into Tenant A org (M018 fix)", async () => {
+      // Migration 018 fixed this — self-insert only allowed into empty orgs (signup flow).
+      // org_has_members() SECURITY DEFINER function bypasses RLS for the check.
+      const { error } = await tenantBClient
+        .from("organization_members")
+        .insert({
+          organization_id: TENANT_A.org.id,
+          user_id: TENANT_B.users.owner.id, // their own uid
+          role: "recruiter",
+        });
+      expect(error).not.toBeNull();
+    });
   });
 
   // ─── SELECT: all 5 roles ───────────────────────────────
