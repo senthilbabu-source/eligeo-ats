@@ -43,12 +43,36 @@ function SectionHeader({ title }: { title: string }) {
 
 // ── Dashboard Page ─────────────────────────────────────────
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await requireAuth();
   const supabase = await createClient();
   const orgId = session.orgId;
+  const params = searchParams ? await searchParams : {};
+  // SR6: "mine" mode — filter to jobs where recruiter_id = current user
+  const mineMode = params["mine"] === "1";
+  const recruiterFilter = mineMode ? session.userId : null;
   // eslint-disable-next-line react-hooks/purity -- Server Component, runs once per request
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  // SR6: when in mine mode, pre-fetch the recruiter's job IDs for filtering
+  let recruiterJobIds: string[] | null = null;
+  if (recruiterFilter) {
+    const { data: myJobs } = await supabase
+      .from("job_openings")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("recruiter_id", recruiterFilter)
+      .is("deleted_at", null);
+    recruiterJobIds = (myJobs ?? []).map((j: { id: string }) => j.id);
+  }
+
+  // SR6: when in mine mode, restrict to these job IDs (empty guard prevents full table scan)
+  const myJobIds = recruiterJobIds ?? null;
+  const noJobs = myJobIds !== null && myJobIds.length === 0;
 
   // Parallel queries — all org-scoped + soft-delete filtered
   const [
@@ -62,67 +86,96 @@ export default async function DashboardPage() {
     { data: defaultTemplateRow },
   ] = await Promise.all([
     // Active jobs — status "open" is the only valid published state (schema CHECK constraint)
-    supabase
-      .from("job_openings")
-      .select("*", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .eq("status", "open")
-      .is("deleted_at", null),
+    // SR6: in mine mode, filter by recruiter_id directly on job_openings
+    (() => {
+      const q = supabase
+        .from("job_openings")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", orgId)
+        .eq("status", "open")
+        .is("deleted_at", null);
+      return recruiterFilter ? q.eq("recruiter_id", recruiterFilter) : q;
+    })(),
 
-    // Total candidates
+    // Total candidates — always org-wide (not scoped to recruiter)
     supabase
       .from("candidates")
       .select("*", { count: "exact", head: true })
       .eq("organization_id", orgId)
       .is("deleted_at", null),
 
-    // Active applications
-    supabase
-      .from("applications")
-      .select("*", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .eq("status", "active")
-      .is("deleted_at", null),
+    // Active applications — scoped to recruiter's jobs in mine mode
+    noJobs
+      ? Promise.resolve({ count: 0, data: null, error: null })
+      : (() => {
+          const q = supabase
+            .from("applications")
+            .select("*", { count: "exact", head: true })
+            .eq("organization_id", orgId)
+            .eq("status", "active")
+            .is("deleted_at", null);
+          return myJobIds ? q.in("job_opening_id", myJobIds) : q;
+        })(),
 
-    // Applications this week
-    supabase
-      .from("applications")
-      .select("*", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .gte("applied_at", oneWeekAgo)
-      .is("deleted_at", null),
+    // Applications this week — scoped to recruiter's jobs in mine mode
+    noJobs
+      ? Promise.resolve({ count: 0, data: null, error: null })
+      : (() => {
+          const q = supabase
+            .from("applications")
+            .select("*", { count: "exact", head: true })
+            .eq("organization_id", orgId)
+            .gte("applied_at", oneWeekAgo)
+            .is("deleted_at", null);
+          return myJobIds ? q.in("job_opening_id", myJobIds) : q;
+        })(),
 
     // Source attribution — canonical name via source_id FK, fallback to freeform source TEXT
-    supabase
-      .from("applications")
-      .select("candidates!inner(source, candidate_sources(name))")
-      .eq("organization_id", orgId)
-      .eq("status", "active")
-      .is("deleted_at", null),
+    noJobs
+      ? Promise.resolve({ data: [], error: null })
+      : (() => {
+          const q = supabase
+            .from("applications")
+            .select("candidates!inner(source, candidate_sources(name))")
+            .eq("organization_id", orgId)
+            .eq("status", "active")
+            .is("deleted_at", null);
+          return myJobIds ? q.in("job_opening_id", myJobIds) : q;
+        })(),
 
     // Pipeline funnel — applications per stage (with template_id for R3 filter)
-    supabase
-      .from("applications")
-      .select(`
-        current_stage_id,
-        pipeline_stages!inner(name, stage_order, stage_type, pipeline_template_id)
-      `)
-      .eq("organization_id", orgId)
-      .eq("status", "active")
-      .is("deleted_at", null),
+    noJobs
+      ? Promise.resolve({ data: [], error: null })
+      : (() => {
+          const q = supabase
+            .from("applications")
+            .select(`
+              current_stage_id,
+              pipeline_stages!inner(name, stage_order, stage_type, pipeline_template_id)
+            `)
+            .eq("organization_id", orgId)
+            .eq("status", "active")
+            .is("deleted_at", null);
+          return myJobIds ? q.in("job_opening_id", myJobIds) : q;
+        })(),
 
-    // Recent 5 applications
-    supabase
-      .from("applications")
-      .select(`
-        id, applied_at,
-        candidates!inner(full_name),
-        job_openings!inner(title)
-      `)
-      .eq("organization_id", orgId)
-      .is("deleted_at", null)
-      .order("applied_at", { ascending: false })
-      .limit(5),
+    // Recent 5 applications — scoped to recruiter's jobs in mine mode
+    noJobs
+      ? Promise.resolve({ data: [], error: null })
+      : (() => {
+          const q = supabase
+            .from("applications")
+            .select(`
+              id, applied_at,
+              candidates!inner(full_name),
+              job_openings!inner(title)
+            `)
+            .eq("organization_id", orgId)
+            .is("deleted_at", null)
+            .order("applied_at", { ascending: false })
+            .limit(5);
+          return myJobIds ? q.in("job_opening_id", myJobIds) : q;
+        })(),
 
     // Default pipeline template for this org (R3 funnel filter)
     supabase
@@ -148,7 +201,24 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
-      <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        {/* SR6 — Recruiter personalization toggle */}
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted p-1 text-sm">
+          <Link
+            href="/dashboard"
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${!mineMode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            All Jobs
+          </Link>
+          <Link
+            href="/dashboard?mine=1"
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${mineMode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            My Jobs
+          </Link>
+        </div>
+      </div>
 
       {/* ── Top Metrics ── */}
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">

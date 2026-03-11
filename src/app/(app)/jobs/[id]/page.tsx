@@ -58,13 +58,37 @@ export default async function JobDetailPage({
   const meta = (job.metadata ?? {}) as JobMetadata;
   const cloneIntent = meta.clone_intent ?? null;
 
-  // Get application count for this job
-  const { count: applicationCount } = await supabase
-    .from("applications")
-    .select("id", { count: "exact", head: true })
-    .eq("job_opening_id", id)
-    .eq("organization_id", session.orgId)
-    .is("deleted_at", null);
+  // Parallel queries: application count + per-stage breakdown (JI1/JI3)
+  const [{ count: applicationCount }, { data: stageCountRows }] = await Promise.all([
+    supabase
+      .from("applications")
+      .select("id", { count: "exact", head: true })
+      .eq("job_opening_id", id)
+      .eq("organization_id", session.orgId)
+      .is("deleted_at", null),
+    supabase
+      .from("applications")
+      .select(`
+        current_stage_id,
+        pipeline_stages!inner(name, stage_order, stage_type)
+      `)
+      .eq("job_opening_id", id)
+      .eq("organization_id", session.orgId)
+      .eq("status", "active")
+      .is("deleted_at", null),
+  ]);
+
+  // Aggregate per-stage counts (JI3)
+  const stageCounts: Record<string, { name: string; order: number; count: number }> = {};
+  for (const row of stageCountRows ?? []) {
+    const stageRaw = row.pipeline_stages as unknown;
+    const stage = (Array.isArray(stageRaw) ? stageRaw[0] : stageRaw) as { name: string; stage_order: number } | null;
+    if (!stage || !row.current_stage_id) continue;
+    const key = row.current_stage_id;
+    if (!stageCounts[key]) stageCounts[key] = { name: stage.name, order: stage.stage_order, count: 0 };
+    stageCounts[key]!.count++;
+  }
+  const stageBreakdown = Object.values(stageCounts).sort((a, b) => a.order - b.order);
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -147,6 +171,34 @@ export default async function JobDetailPage({
           <p className="text-sm text-muted-foreground">Status</p>
         </div>
       </div>
+
+      {/* JI1/JI3 — Pipeline stage count sidebar */}
+      {stageBreakdown.length > 0 && (
+        <div className="mt-6 rounded-lg border border-border bg-card p-4">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Pipeline Breakdown
+          </h3>
+          <div className="space-y-2">
+            {stageBreakdown.map((s) => {
+              const max = Math.max(1, ...stageBreakdown.map((x) => x.count));
+              return (
+                <div key={s.name} className="flex items-center gap-3 text-sm">
+                  <span className="w-28 shrink-0 truncate text-xs text-muted-foreground">{s.name}</span>
+                  <div className="flex-1">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-1.5 rounded-full bg-primary/60"
+                        style={{ width: `${Math.round((s.count / max) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="w-6 text-right text-xs tabular-nums text-muted-foreground">{s.count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {job.description && (
         <div className="mt-8">
