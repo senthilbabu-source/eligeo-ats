@@ -1,0 +1,145 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { aiMatchCandidates, aiGenerateJobEmbedding } from "@/lib/actions/ai";
+
+interface AiMatchPanelProps {
+  jobId: string;
+  hasEmbedding: boolean;
+}
+
+interface MatchResult {
+  candidate_id: string;
+  full_name: string;
+  email: string;
+  current_title: string | null;
+  skills: string[];
+  similarity_score: number;
+}
+
+export function AiMatchPanel({ jobId, hasEmbedding }: AiMatchPanelProps) {
+  const [matches, setMatches] = useState<MatchResult[]>([]);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [isGenerating, startGenerating] = useTransition();
+
+  function handleFindMatches() {
+    startTransition(async () => {
+      setError(null);
+      const result = await aiMatchCandidates(jobId);
+      if ("error" in result && result.error) {
+        setError(result.error);
+      } else if ("matches" in result) {
+        setMatches(result.matches);
+        setCreditsRemaining(result.creditsRemaining ?? null);
+      }
+      setHasSearched(true);
+    });
+  }
+
+  function handleGenerateEmbedding() {
+    startGenerating(async () => {
+      setError(null);
+      const result = await aiGenerateJobEmbedding(jobId);
+      if ("error" in result && result.error) {
+        setError(result.error);
+      } else {
+        // Embedding generated — now find matches
+        handleFindMatches();
+      }
+    });
+  }
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-medium">AI Candidate Matches</h2>
+        {creditsRemaining !== null && (
+          <span className="text-xs text-muted-foreground">
+            {creditsRemaining} credits remaining
+          </span>
+        )}
+      </div>
+
+      {!hasEmbedding ? (
+        <div className="mt-3 rounded-lg border border-dashed border-border p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            Generate an AI embedding for this job to find matching candidates.
+          </p>
+          <button
+            onClick={handleGenerateEmbedding}
+            disabled={isGenerating}
+            className="mt-3 inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isGenerating ? "Generating..." : "Generate Embedding & Find Matches"}
+          </button>
+        </div>
+      ) : (
+        <>
+          {!hasSearched && (
+            <button
+              onClick={handleFindMatches}
+              disabled={isPending}
+              className="mt-3 inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isPending ? "Searching..." : "Find AI Matches"}
+            </button>
+          )}
+        </>
+      )}
+
+      {error && (
+        <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {hasSearched && matches.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {matches.map((match) => (
+            <Link
+              key={match.candidate_id}
+              href={`/candidates/${match.candidate_id}`}
+              className="flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{match.full_name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {match.current_title ?? match.email}
+                </p>
+                {match.skills?.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {match.skills.slice(0, 5).map((skill) => (
+                      <span
+                        key={skill}
+                        className="rounded bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="ml-4 text-right">
+                <div className="text-lg font-semibold text-primary">
+                  {Math.round(match.similarity_score * 100)}%
+                </div>
+                <p className="text-xs text-muted-foreground">match</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {hasSearched && matches.length === 0 && !error && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          No matching candidates found. Try adding more candidates with
+          embeddings or lower the similarity threshold.
+        </p>
+      )}
+    </div>
+  );
+}

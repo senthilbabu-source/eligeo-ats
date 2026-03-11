@@ -15,6 +15,20 @@
 
 ---
 
+### 2026-03-11 — [FEAT] Phase 2.6: Command Bar + AI Core
+
+- **Migration 015** — pgvector extension, `candidate_embedding vector(1536)` + `job_embedding vector(1536)` columns with HNSW indexes (m=16, ef_construction=64), `ai_usage_logs` table (append-only), `consume_ai_credits()` atomic SQL function, `match_candidates_for_job()` similarity search RPC
+- **OpenAI integration** — singleton client (`gpt-4o-mini` chat, `text-embedding-3-small` embeddings), AI credit metering with per-action weights (resume_parse=2, match=1, jd_generate=3, email=1, intent=1)
+- **AI resume parser** — OpenAI structured output with strict JSON schema → `ParsedResume` (name, email, skills, experience, education). 2 credits per parse.
+- **Embedding pipeline** — `buildCandidateEmbeddingText()` / `buildJobEmbeddingText()` → OpenAI embedding → store as JSON string in Supabase → log usage
+- **Candidate-job fit scoring** — `match_candidates_for_job` pgvector cosine similarity RPC, `<AiMatchPanel>` on job detail page (generate embedding → find matches → ranked list with % scores)
+- **AI generation** — `generateJobDescription()` (title+dept+keypoints → full JD, 3 credits), `generateEmailDraft()` (rejection/outreach/update/follow_up + tone, 1 credit)
+- **NL intent parser** — Quick pattern matching (regex for nav/search/create) → LLM fallback (1 credit). 10 intent types: navigate, search_candidates, search_jobs, create_job, create_candidate, move_stage, generate_jd, draft_email, match_candidates, unknown.
+- **Command bar (⌘K)** — Full palette UI: backdrop blur, search input, "Thinking..." animation, keyboard nav (↑↓ Enter Esc), auto-navigate for nav/create intents, result list with candidate/job links, footer hints. Wired into app layout.
+- **Server actions** — 6 AI actions (aiParseResume, aiGenerateCandidateEmbedding, aiGenerateJobEmbedding, aiMatchCandidates, aiGenerateJobDescription, aiDraftEmail) + `executeCommand()` for command bar
+- **All checks pass:** typecheck ✅ lint ✅ 14 tests ✅ build ✅ (17 routes) · Supabase 15 migrations ✅
+- **What's next:** Phase 2.7 — UX polish (drag-drop Kanban, settings pages, dashboard metrics, role-aware views)
+
 ### 2026-03-11 — [INFRA] Phase 2.5: Foundation Fixes
 
 - **Migration 014** — 6 performance indexes: org+date composites on jobs, candidates, applications; slug+status for career portal; status+published for listings

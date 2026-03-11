@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/constants/roles";
 import { JobActions } from "./job-actions";
+import { AiMatchPanel } from "./ai-match-panel";
 
 export async function generateMetadata({
   params,
@@ -37,7 +38,7 @@ export default async function JobDetailPage({
       `
       id, title, slug, description, department, location, location_type,
       employment_type, salary_min, salary_max, salary_currency, status,
-      headcount, published_at, created_at
+      headcount, published_at, created_at, job_embedding
     `,
     )
     .eq("id", id)
@@ -117,6 +118,8 @@ export default async function JobDetailPage({
           </div>
         </div>
       )}
+
+      <AiMatchPanel jobId={job.id} hasEmbedding={job.job_embedding !== null} />
     </div>
   );
 }
