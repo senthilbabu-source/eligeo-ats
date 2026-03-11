@@ -16,6 +16,25 @@
 
 ---
 
+### 2026-03-10 — [D05] Amend Design System: light theme primary, dark mode post-MVP
+
+**Changed:** Design principle #5 from "Dark mode from day one" to "Light theme is primary."
+
+**Rationale:** Corporate enterprise product used by recruiters during business hours in lit offices. Light theme is the expected experience. Dark mode adds design surface area (every component × 2 color sets) and testing scope without MVP value. Aligns with SaaS UI conventions (blue primaries, light backgrounds #fcfcfc–#fefefe).
+
+**What changed in D05:**
+- Principle #5 rewritten
+- §2.3 Dark Mode tokens preserved as `<details>` collapsed reference (post-MVP)
+- §7.1 dark contrast rows marked "(post-MVP)"
+- `next-themes` infrastructure still included (2KB, enables future addition)
+
+**Impact on downstream docs:**
+- D09 (Candidate Portal): career page branding already light-based — no change needed
+- D21 (i18n): RTL support unaffected by theme — no change needed
+- Playbook JOURNEY-LOG: "dark mode from day one" pattern should be amended to "light-first, dark when demanded"
+
+---
+
 ### 2026-03-10 — [PLAYBOOK] Bulk extraction: 12 ATS patterns → SaaS Accelerator Playbook
 
 **Extracted to:** `/Users/senthilbabu/Downloads/SaaS-Playbook/`

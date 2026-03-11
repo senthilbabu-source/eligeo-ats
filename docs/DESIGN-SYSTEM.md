@@ -19,7 +19,7 @@
 | 2 | **Analytics-first** | Pipeline health, time-to-fill, source-of-hire visible from day one. Not bolted on later. |
 | 3 | **Keyboard-first** | Recruiters live in the app 8+ hours/day. Every action reachable via keyboard shortcuts and command palette. |
 | 4 | **Tenant-brandable** | Career pages and candidate portal respect `branding_config` (D01 organizations table). Internal UI stays consistent. |
-| 5 | **Dark mode from day one** | Not a retrofit. Both themes designed simultaneously. |
+| 5 | **Light theme is primary** | Corporate product used during business hours. Dark mode deferred to post-MVP — `next-themes` infrastructure included for future addition, but MVP ships light-only to reduce design surface area and testing scope. |
 | 6 | **WCAG 2.1 AA baseline** | Legal requirement in many markets. 4.5:1 text contrast, full keyboard nav, screen reader support. |
 | 7 | **Motion with purpose** | Animations improve comprehension (drag-drop feedback, loading states). No decorative motion. Respect `prefers-reduced-motion`. |
 
@@ -94,7 +94,14 @@ All colors defined as CSS custom properties in HSL format (shadcn/ui convention)
 }
 ```
 
-### 2.3 Dark Mode
+### 2.3 Dark Mode (Post-MVP)
+
+Dark mode tokens are designed but **not shipped in MVP**. This is a corporate product — recruiters and hiring managers work in lit offices during business hours. Light theme is the expected experience.
+
+**Post-MVP plan:** `next-themes` v0.4+ infrastructure will be included (SSR-safe cookie strategy, no white flash). Dark mode toggle added when customer demand warrants it. The token set below is ready for implementation:
+
+<details>
+<summary>Dark mode tokens (post-MVP reference)</summary>
 
 ```css
 .dark {
@@ -123,8 +130,7 @@ All colors defined as CSS custom properties in HSL format (shadcn/ui convention)
   --ring: 217 91% 60%;
 }
 ```
-
-**Implementation:** `next-themes` v0.4+ (SSR-safe cookie strategy). Theme cookie set in `<head>` inline script (prevents white flash). User toggle persists via cookie.
+</details>
 
 ---
 
@@ -273,8 +279,8 @@ Base: shadcn/ui (Radix UI primitives + Tailwind styling). Customize, don't fork.
 | Body text on background | 4.5:1 | `#0F172A` on `#FEFDFB` = 15.2:1 ✅ |
 | Muted text on background | 4.5:1 | `#71717A` on `#FEFDFB` = 5.0:1 ✅ |
 | Primary on white | 4.5:1 | `#145FD9` on `#FFFFFF` = 5.3:1 ✅ |
-| Dark: body on background | 4.5:1 | `#E2E8F0` on `#09090B` = 14.8:1 ✅ |
-| Dark: muted on background | 4.5:1 | `#8B8FA3` on `#09090B` = 5.7:1 ✅ |
+| Dark: body on background (post-MVP) | 4.5:1 | `#E2E8F0` on `#09090B` = 14.8:1 ✅ |
+| Dark: muted on background (post-MVP) | 4.5:1 | `#8B8FA3` on `#09090B` = 5.7:1 ✅ |
 | UI components (borders, icons) | 3:1 | All border colors verified against backgrounds |
 
 ### 7.2 Keyboard Navigation
