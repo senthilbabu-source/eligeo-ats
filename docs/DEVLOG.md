@@ -15,6 +15,27 @@
 
 ---
 
+### 2026-03-11 — [JOBS] Phase 2: Jobs + Career Portal (Complete)
+
+- **Pipeline Kanban board** — `/jobs/[id]/pipeline`:
+  - Stage columns with color-coded headers (sourced→hired→rejected)
+  - Candidate cards with name, title, date, and arrow buttons for stage moves
+  - Horizontal scrollable layout for many stages
+  - Move buttons call `moveStage()` server action via `useActionState`
+- **Creation forms**:
+  - `/jobs/new` — full form: title, description, department, location type, employment type, salary range, pipeline selection
+  - `/candidates/new` — contact info, title/company, LinkedIn, source dropdown, tag input for skills/tags
+  - Both use `useActionState` with redirect on success
+  - TagInput component: type + Enter to add, Backspace to remove, hidden JSON field for form submission
+- **Career portal** (public, unauthenticated):
+  - `/careers` — lists all open jobs across orgs with salary, location, employment type
+  - `/careers/[slug]` — full job detail with description, pill-style metadata badges
+  - Public layout with minimal header (Eligeo brand + "Sign in" link)
+  - Uses `createServiceClient` (service role) with `force-dynamic` for SSR
+- **Action signatures fixed**: `createJob` and `createCandidate` now accept `(_prev, formData)` for `useActionState` compatibility
+- **16 routes total**: 7 app pages, 4 API routes, 2 career pages, 2 auth pages, 1 landing
+- **Build verified**: typecheck ✅ lint ✅ 14 tests ✅ build ✅
+
 ### 2026-03-11 — [JOBS] Phase 2: Jobs + Career Portal (App Layer)
 
 - **Server Actions** — 10 actions across 2 modules:
