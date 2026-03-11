@@ -10,6 +10,7 @@ import { RewritePanel } from "./rewrite-panel";
 import { TitleSuggestionBadge } from "./title-suggestion";
 import { SkillsDeltaPanel } from "./skills-delta-panel";
 import { CloneChecklist } from "./clone-checklist";
+import { JdQualityPanel } from "./jd-quality-panel";
 import type { JobMetadata } from "@/lib/types/ground-truth";
 
 export async function generateMetadata({
@@ -155,6 +156,15 @@ export default async function JobDetailPage({
           </div>
         </div>
       )}
+
+      <JdQualityPanel
+        jobId={job.id}
+        description={job.description ?? null}
+        salaryMin={job.salary_min ?? null}
+        salaryMax={job.salary_max ?? null}
+        location={job.location ?? null}
+        canEdit={can(session.orgRole, "jobs:edit")}
+      />
 
       {cloneIntent && (
         <SkillsDeltaPanel jobId={job.id} cloneIntent={cloneIntent} />
