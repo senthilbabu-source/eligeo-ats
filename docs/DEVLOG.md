@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] J3 final close — command bar deep-link + RLS gap (job_required_skills)
+
+**Phase:** Build — Phase 2.7 post-audit (J3 fully closed, ADR-004 violation resolved)
+**Scope:** Command bar clone intent deep-link; RLS tests for job_required_skills; job_openings cross-tenant UPDATE/DELETE coverage
+
+### Changes
+
+#### Command bar deep-link (UX gap closed)
+- `page.tsx` — reads `searchParams` (`?action=clone&reason=X&location=Y&level=Z`), computes `autoClone`/`cloneReason`/`cloneLocation`/`cloneLevel`, passes to `JobActions`
+- `job-actions.tsx` — accepts `autoOpen`, `initialReason`, `initialLocation`, `initialLevel`; modal starts open when `autoOpen=true`; forwards initial values to modal
+- `clone-intent-modal.tsx` — accepts `initialReason`, `initialLocation`, `initialLevel`; pre-fills useState from props
+- Net: "clone senior engineer for London" in command bar → navigates to job → modal opens pre-filled with New Location + "London"
+
+#### RLS gap — job_required_skills (ADR-004 P0 blocker resolved)
+- `supabase/seed.sql` — Globex pipeline template + job opening + job_required_skills for isolation tests
+- `golden-tenant.ts` — TENANT_B extended with `pipeline`, `jobs`, `jobSkills`
+- `job-required-skills.rls.test.ts` — NEW: 5 roles × 4 ops + 2-tenant isolation (~25 tests)
+- `job-openings.rls.test.ts` — `tenantBRecordId: undefined` → `TENANT_B.jobs.pythonDeveloper.id`; UPDATE/DELETE cross-tenant tests now active
+
+### Test count: ~591 → ~616 Vitest (+25 RLS). Total: ~664
+
+---
+
 ## 2026-03-11 — [Phase 2.7] J3 audit close-out — dashboard label fix, E2E tests, intent pattern tests
 
 **Phase:** Build — Phase 2.7 post-audit fixes (all J3 gaps closed)

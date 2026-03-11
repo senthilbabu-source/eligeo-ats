@@ -204,6 +204,17 @@ INSERT INTO pipeline_stages (id, organization_id, pipeline_template_id, name, st
   ('11111111-6002-4000-a000-000000000005', '11111111-2001-4000-a000-000000000001', '11111111-6001-4000-a000-000000000001', 'Offer',      'offer',      4, FALSE),
   ('11111111-6002-4000-a000-000000000006', '11111111-2001-4000-a000-000000000001', '11111111-6001-4000-a000-000000000001', 'Hired',      'hired',      5, TRUE);
 
+-- ─── Pipeline Template (Globex — cross-tenant RLS tests) ───
+
+INSERT INTO pipeline_templates (id, organization_id, name, is_default, created_by) VALUES
+  (
+    '22222222-6001-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    'Standard Pipeline',
+    TRUE,
+    '22222222-1001-4000-a000-000000000001'
+  );
+
 -- ─── Job Openings (itecbrains) ─────────────────────────────
 
 INSERT INTO job_openings (id, organization_id, pipeline_template_id, title, slug, description, department, location, location_type, employment_type, salary_min, salary_max, salary_currency, status, hiring_manager_id, recruiter_id, headcount, published_at) VALUES
@@ -242,6 +253,20 @@ INSERT INTO job_openings (id, organization_id, pipeline_template_id, title, slug
     '11111111-1001-4000-a000-000000000003',
     1,
     NULL
+  );
+
+-- ─── Job Opening (Globex — cross-tenant RLS tests) ──────────
+
+INSERT INTO job_openings (id, organization_id, pipeline_template_id, title, slug, status, location_type, employment_type) VALUES
+  (
+    '22222222-3001-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    '22222222-6001-4000-a000-000000000001',
+    'Python Developer',
+    'python-developer',
+    'draft',
+    'remote',
+    'full_time'
   );
 
 -- ─── Candidates (itecbrains) ───────────────────────────────
@@ -373,7 +398,9 @@ INSERT INTO candidate_skills (id, organization_id, candidate_id, skill_id, profi
 
 -- ─── Job Required Skills ─────────────────────────────────
 INSERT INTO job_required_skills (id, organization_id, job_id, skill_id, importance) VALUES
-  ('11111111-6008-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', '11111111-3001-4000-a000-000000000001', '11111111-6006-4000-a000-000000000001', 'must_have');
+  ('11111111-6008-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', '11111111-3001-4000-a000-000000000001', '11111111-6006-4000-a000-000000000001', 'must_have'),
+  -- Globex job skill (cross-tenant RLS tests)
+  ('22222222-6008-4000-a000-000000000001', '22222222-2001-4000-a000-000000000001', '22222222-3001-4000-a000-000000000001', '22222222-6006-4000-a000-000000000001', 'must_have');
 
 -- ─── Talent Pool Members (deterministic ID) ──────────────
 INSERT INTO talent_pool_members (id, organization_id, talent_pool_id, candidate_id, added_by, notes) VALUES

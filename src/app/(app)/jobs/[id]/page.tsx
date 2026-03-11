@@ -31,10 +31,19 @@ export async function generateMetadata({
 
 export default async function JobDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
+  // Command bar deep-link: ?action=clone&reason=new_location&location=London
+  const autoClone = sp.action === "clone";
+  const cloneReason = sp.reason as import("@/lib/types/ground-truth").CloneIntent["reason"] | undefined;
+  const cloneLocation = typeof sp.location === "string" ? sp.location : undefined;
+  const cloneLevel = typeof sp.level === "string" ? sp.level : undefined;
+
   const session = await requireAuth();
   const supabase = await createClient();
 
@@ -144,6 +153,10 @@ export default async function JobDetailPage({
             status={job.status}
             canEdit={can(session.orgRole, "jobs:edit")}
             canCreate={can(session.orgRole, "jobs:create")}
+            autoOpen={autoClone && can(session.orgRole, "jobs:create")}
+            initialReason={cloneReason}
+            initialLocation={cloneLocation}
+            initialLevel={cloneLevel}
           />
         )}
       </div>

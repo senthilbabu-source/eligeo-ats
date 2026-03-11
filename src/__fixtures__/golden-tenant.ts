@@ -168,12 +168,30 @@ export const TENANT_B = {
       role: "recruiter" as const,
     },
   },
+  pipeline: {
+    template: {
+      id: "22222222-6001-4000-a000-000000000001",
+      name: "Standard Pipeline",
+    },
+  },
+  jobs: {
+    pythonDeveloper: {
+      id: "22222222-3001-4000-a000-000000000001",
+      title: "Python Developer",
+      status: "draft" as const,
+    },
+  },
   candidates: {
     dave: {
       id: "22222222-4001-4000-a000-000000000001",
       first_name: "Dave",
       last_name: "Brown",
       email: "dave@example.com",
+    },
+  },
+  jobSkills: {
+    pythonRequired: {
+      id: "22222222-6008-4000-a000-000000000001",
     },
   },
 } as const;

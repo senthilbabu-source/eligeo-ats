@@ -11,15 +11,23 @@ export function JobActions({
   status,
   canEdit,
   canCreate,
+  autoOpen = false,
+  initialReason,
+  initialLocation,
+  initialLevel,
 }: {
   jobId: string;
   status: string;
   canEdit: boolean;
   canCreate: boolean;
+  autoOpen?: boolean;
+  initialReason?: CloneIntent["reason"];
+  initialLocation?: string;
+  initialLevel?: string;
 }) {
   const router = useRouter();
   const [isCloning, startClone] = useTransition();
-  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(autoOpen);
 
   function handleCloneConfirm(intent: CloneIntent | null) {
     startClone(async () => {
@@ -66,6 +74,9 @@ export function JobActions({
         onClose={() => setModalOpen(false)}
         onConfirm={handleCloneConfirm}
         isPending={isCloning}
+        initialReason={initialReason}
+        initialLocation={initialLocation}
+        initialLevel={initialLevel}
       />
     </>
   );

@@ -31,12 +31,15 @@ interface Props {
   onClose: () => void;
   onConfirm: (intent: CloneIntent | null) => void;
   isPending: boolean;
+  initialReason?: CloneIntent["reason"];
+  initialLocation?: string;
+  initialLevel?: string;
 }
 
-export function CloneIntentModal({ isOpen, onClose, onConfirm, isPending }: Props) {
-  const [reason, setReason] = useState<CloneIntent["reason"] | null>(null);
-  const [newLocation, setNewLocation] = useState("");
-  const [newLevel, setNewLevel] = useState("");
+export function CloneIntentModal({ isOpen, onClose, onConfirm, isPending, initialReason, initialLocation, initialLevel }: Props) {
+  const [reason, setReason] = useState<CloneIntent["reason"] | null>(initialReason ?? null);
+  const [newLocation, setNewLocation] = useState(initialLocation ?? "");
+  const [newLevel, setNewLevel] = useState(initialLevel ?? "");
 
   if (!isOpen) return null;
 
