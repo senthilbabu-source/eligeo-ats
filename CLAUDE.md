@@ -83,3 +83,15 @@ Scopes: `auth`, `jobs`, `candidates`, `pipeline`, `interviews`, `offers`, `billi
 - Do NOT commit without DEVLOG update for significant changes
 - Run pre-start gate (AI-RULES §21) before any new deliverable
 - Run post-build audit (AI-RULES §13) after completing any document
+
+### ADR-011 Legacy Prevention (mandatory)
+
+These rules prevent drifting back to a traditional CRUD ATS. Enforced on every feature, PR, and code review.
+
+1. **No CRUD-only features.** Every user-facing feature MUST have an AI-assisted path (command bar intent, smart defaults, or AI suggestion). A form without an AI alternative is a legacy pattern.
+2. **Command bar is primary.** If a workflow requires 3+ clicks through traditional UI, it MUST also be achievable via ⌘K command bar. Navigation-heavy = legacy.
+3. **No "coming soon" dead-ends.** Never ship a page that says "coming soon" or "placeholder" without a concrete phase target (e.g., "Phase 2.5"). Dead-ends signal abandoned features, not a living product.
+4. **No "v2.0" on AI features.** OpenAI, pgvector, embeddings, NL intent, resume parsing, fit scoring — these are Phase 2.6 (v1.0), NOT v2.0. Only Typesense full-text and Nylas calendar are v2.0.
+5. **AI env vars are active.** `OPENAI_API_KEY` is a required v1.0 env var, not commented out. Check `.env.example` when adding new integrations.
+6. **Scan code artifacts on pivot.** When architecture changes (like ADR-011), audit not just docs but also: `.env*`, code comments, TODO markers, placeholder text, config files, and test fixtures for stale assumptions.
+7. **Every new page gets AI consideration.** Before building any new page, answer: "How would the command bar handle this?" If the answer is "it can't," the page design is wrong.

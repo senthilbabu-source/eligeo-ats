@@ -3,6 +3,8 @@ import Link from "next/link";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/constants/roles";
+import { parsePagination, buildPaginationMeta } from "@/lib/utils/pagination";
+import { Pagination } from "@/components/pagination";
 
 export const metadata: Metadata = {
   title: "Jobs",
@@ -16,16 +18,25 @@ const STATUS_BADGES: Record<string, string> = {
   archived: "bg-muted text-muted-foreground",
 };
 
-export default async function JobsPage() {
+export default async function JobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await requireAuth();
   const supabase = await createClient();
+  const params = parsePagination(await searchParams);
 
-  const { data: jobs } = await supabase
+  const { data: jobs, count } = await supabase
     .from("job_openings")
     .select(
       "id, title, slug, department, location, location_type, status, headcount, published_at, created_at",
+      { count: "exact" },
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(params.from, params.to);
+
+  const meta = buildPaginationMeta(count ?? 0, params);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
@@ -33,7 +44,7 @@ export default async function JobsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Jobs</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {jobs?.length ?? 0} job{(jobs?.length ?? 0) !== 1 ? "s" : ""}
+            {meta.totalCount} job{meta.totalCount !== 1 ? "s" : ""}
           </p>
         </div>
         {can(session.orgRole, "jobs:create") && (
@@ -87,6 +98,8 @@ export default async function JobsPage() {
           </div>
         )}
       </div>
+
+      <Pagination meta={meta} basePath="/jobs" />
     </div>
   );
 }

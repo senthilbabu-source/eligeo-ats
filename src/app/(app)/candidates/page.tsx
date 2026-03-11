@@ -3,21 +3,32 @@ import Link from "next/link";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/constants/roles";
+import { parsePagination, buildPaginationMeta } from "@/lib/utils/pagination";
+import { Pagination } from "@/components/pagination";
 
 export const metadata: Metadata = {
   title: "Candidates",
 };
 
-export default async function CandidatesPage() {
+export default async function CandidatesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await requireAuth();
   const supabase = await createClient();
+  const params = parsePagination(await searchParams);
 
-  const { data: candidates } = await supabase
+  const { data: candidates, count } = await supabase
     .from("candidates")
     .select(
       "id, full_name, email, current_title, current_company, location, source, skills, tags, created_at",
+      { count: "exact" },
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(params.from, params.to);
+
+  const meta = buildPaginationMeta(count ?? 0, params);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
@@ -25,8 +36,7 @@ export default async function CandidatesPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Candidates</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {candidates?.length ?? 0} candidate
-            {(candidates?.length ?? 0) !== 1 ? "s" : ""}
+            {meta.totalCount} candidate{meta.totalCount !== 1 ? "s" : ""}
           </p>
         </div>
         {can(session.orgRole, "candidates:create") && (
@@ -100,6 +110,8 @@ export default async function CandidatesPage() {
           </div>
         )}
       </div>
+
+      <Pagination meta={meta} basePath="/candidates" />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
+import { ApplicationForm } from "./application-form";
 
 export async function generateMetadata({
   params,
@@ -99,12 +100,7 @@ export default async function CareerDetailPage({
         </div>
       )}
 
-      <div className="mt-10 rounded-lg border border-border bg-card p-6 text-center">
-        <h2 className="text-lg font-semibold">Interested in this role?</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Application portal coming soon. For now, reach out directly.
-        </p>
-      </div>
+      <ApplicationForm jobId={job.id} jobTitle={job.title} />
     </div>
   );
 }

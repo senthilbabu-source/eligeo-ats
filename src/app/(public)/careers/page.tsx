@@ -9,12 +9,35 @@ export const metadata: Metadata = {
   description: "View open positions and apply",
 };
 
-export default async function CareersPage() {
+export default async function CareersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const orgSlug = typeof params.org === "string" ? params.org : undefined;
   const supabase = createServiceClient();
 
-  // Fetch only published (open) jobs across all orgs
-  // In production, this would be filtered by org based on domain/subdomain
-  const { data: jobs } = await supabase
+  // Resolve org from slug for org-scoped career portals
+  let orgId: string | undefined;
+  let orgName: string | undefined;
+
+  if (orgSlug) {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("id, name")
+      .eq("slug", orgSlug)
+      .is("deleted_at", null)
+      .single();
+
+    if (org) {
+      orgId = org.id;
+      orgName = org.name;
+    }
+  }
+
+  // Build query — filter by org if slug provided, otherwise show all open jobs
+  let query = supabase
     .from("job_openings")
     .select(
       `
@@ -28,10 +51,18 @@ export default async function CareersPage() {
     .is("deleted_at", null)
     .order("published_at", { ascending: false });
 
+  if (orgId) {
+    query = query.eq("organization_id", orgId);
+  }
+
+  const { data: jobs } = await query;
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Open Positions</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {orgName ? `${orgName} — Open Positions` : "Open Positions"}
+        </h1>
         <p className="mt-2 text-muted-foreground">
           Find your next opportunity. Apply today.
         </p>
@@ -42,18 +73,24 @@ export default async function CareersPage() {
           const orgRaw = job.organizations as unknown;
           const org = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as { name: string } | null;
 
+          // Preserve org scope in career detail links
+          const detailHref = orgSlug
+            ? `/careers/${job.slug}?org=${orgSlug}`
+            : `/careers/${job.slug}`;
+
           return (
             <Link
               key={job.id}
-              href={`/careers/${job.slug}`}
+              href={detailHref}
               className="block rounded-lg border border-border bg-card p-6 transition-colors hover:border-primary/50 hover:bg-muted/30"
             >
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-lg font-semibold">{job.title}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {org?.name}
-                    {job.department && ` · ${job.department}`}
+                    {!orgSlug && org?.name}
+                    {!orgSlug && job.department && ` · `}
+                    {job.department}
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">

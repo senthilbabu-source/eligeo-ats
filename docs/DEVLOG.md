@@ -15,6 +15,19 @@
 
 ---
 
+### 2026-03-11 — [INFRA] Phase 2.5: Foundation Fixes
+
+- **Migration 014** — 6 performance indexes: org+date composites on jobs, candidates, applications; slug+status for career portal; status+published for listings
+- **Pagination** — server-side `parsePagination()` + `buildPaginationMeta()` utilities, reusable `<Pagination>` component with page window (5 pages visible, prev/next)
+- **Paginated /jobs and /candidates** — Supabase `.range()` with `{ count: "exact" }`, 25 per page default, total count in header
+- **Career portal application form** — public `submitPublicApplication()` server action (service client, no auth), validates with Zod, upserts candidate, creates application at first pipeline stage, handles duplicate applications
+- **Org-scoped career portal** — `/careers?org=itecbrains` filters to org's jobs, shows org name in header, preserves scope in detail links
+- **Apply to Job (internal)** — `<ApplyToJobForm>` on candidate detail page, dropdown of open jobs (excludes already-applied), auto-selects first pipeline stage
+- **ADR-011 legacy prevention rules** — 7 rules added to CLAUDE.md (no CRUD-only features, command bar primary, no dead-ends, no v2.0 on AI, AI env vars active, scan artifacts on pivot, every page gets AI consideration)
+- **Env fix** — moved `OPENAI_API_KEY` from v2.0 to active v1.0 section in `.env.example`
+- **All checks pass:** typecheck ✅ lint ✅ 14 tests ✅ build ✅ (17 routes) · Supabase 14 migrations ✅
+- **What's next:** Phase 2.6 — command bar (⌘K) + AI core (resume parsing, fit scoring, NL search)
+
 ### 2026-03-11 — [META] ADR-011: AI-First Build Pivot
 
 - **Legacy pitfall audit** — comprehensive review of UI, workflows, AI architecture, and performance

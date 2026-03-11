@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { can } from "@/lib/constants/roles";
+import { ApplyToJobForm } from "./apply-to-job-form";
 
 export async function generateMetadata({
   params,
@@ -26,7 +28,7 @@ export default async function CandidateDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireAuth();
+  const session = await requireAuth();
   const supabase = await createClient();
 
   const { data: candidate } = await supabase
@@ -56,6 +58,47 @@ export default async function CandidateDetailPage({
     )
     .eq("candidate_id", id)
     .order("applied_at", { ascending: false });
+
+  // Get open jobs for the "Apply to Job" form (exclude jobs already applied to)
+  const appliedJobIds = applications?.map((a) => a.job_opening_id) ?? [];
+
+  let openJobs: Array<{ id: string; title: string; firstStageId: string | null }> = [];
+
+  if (can(session.orgRole, "applications:create")) {
+    const { data: jobs } = await supabase
+      .from("job_openings")
+      .select("id, title, pipeline_template_id")
+      .eq("status", "open")
+      .is("deleted_at", null)
+      .order("title");
+
+    if (jobs && jobs.length > 0) {
+      // Get first stage for each pipeline template
+      const templateIds = [...new Set(jobs.map((j) => j.pipeline_template_id))];
+      const { data: stages } = await supabase
+        .from("pipeline_stages")
+        .select("id, pipeline_template_id, stage_order")
+        .in("pipeline_template_id", templateIds)
+        .is("deleted_at", null)
+        .order("stage_order", { ascending: true });
+
+      // Map template -> first stage
+      const firstStageByTemplate: Record<string, string> = {};
+      for (const stage of stages ?? []) {
+        if (!firstStageByTemplate[stage.pipeline_template_id]) {
+          firstStageByTemplate[stage.pipeline_template_id] = stage.id;
+        }
+      }
+
+      openJobs = jobs
+        .filter((j) => !appliedJobIds.includes(j.id))
+        .map((j) => ({
+          id: j.id,
+          title: j.title,
+          firstStageId: firstStageByTemplate[j.pipeline_template_id] ?? null,
+        }));
+    }
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -165,6 +208,13 @@ export default async function CandidateDetailPage({
           )}
         </div>
       </div>
+
+      {/* Apply to Job */}
+      {can(session.orgRole, "applications:create") && (
+        <div className="mt-8 rounded-lg border border-border bg-card p-5">
+          <ApplyToJobForm candidateId={candidate.id} jobs={openJobs} />
+        </div>
+      )}
 
       {/* Applications */}
       <div className="mt-8">
