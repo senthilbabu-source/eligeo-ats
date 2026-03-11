@@ -49,4 +49,29 @@ test.describe("Authentication", () => {
     await page.goto("/signup");
     await expect(page.getByRole("heading", { name: /create|sign up|get started/i })).toBeVisible();
   });
+
+  test("redirects to login from protected routes", async ({ page }) => {
+    // Try multiple protected routes — all should redirect to /login
+    for (const route of ["/jobs", "/candidates", "/jobs/new"]) {
+      await page.goto(route);
+      await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
+    }
+  });
+
+  test("login form rejects empty email", async ({ page }) => {
+    await page.goto("/login");
+    // Leave email empty, fill password
+    await page.getByLabel(/password/i).fill("password123");
+    await page.getByRole("button", { name: /sign in/i }).click();
+    // Should stay on login page (HTML5 validation or custom error)
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("login form rejects empty password", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel(/email/i).fill("senthil@itecbrains.com");
+    // Leave password empty
+    await page.getByRole("button", { name: /sign in/i }).click();
+    await expect(page).toHaveURL(/\/login/);
+  });
 });

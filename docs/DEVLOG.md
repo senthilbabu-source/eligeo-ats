@@ -15,6 +15,19 @@
 
 ---
 
+### 2026-03-11 — [TEST] Close remaining ADR-004 Day 1 gaps (380 total)
+
+- **API integration tests (28 new):**
+  - `health.test.ts` — 5 tests: response shape, timestamp format, git SHA parsing, 'local' fallback
+  - `auth-callback.test.ts` — 6 tests: code exchange, redirect with next param, error redirect, missing code handling (mocks Supabase server client)
+  - `problem.test.ts` — 7 tests: RFC 9457 structure, status codes, Content-Type header, optional detail, type URL lowercasing
+  - `cn.test.ts` — 7 tests: class merging, Tailwind conflict resolution, conditional/object/array syntax, empty/falsy inputs
+  - `logger.test.ts` — 3 tests: logger instance exports, PII redaction config, LOG_LEVEL default
+- **E2E expansion (4 new):**
+  - Auth: redirect-back from protected routes (/jobs, /candidates, /jobs/new), empty email rejection, empty password rejection
+  - Jobs: form validation on empty submit stays on /jobs/new
+- **Totals:** 269 RLS + 111 unit/API = 380 Vitest tests, 20 E2E (Playwright) = 400 total
+
 ### 2026-03-11 — [TEST] Expand RLS tests to full D24 §6.2 matrix (352 total)
 
 - **Expanded all 10 RLS test files** to full 5 roles × 4 ops matrix:

@@ -58,4 +58,12 @@ test.describe("Job Management", () => {
     // Should redirect to the new job's detail page
     await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/, { timeout: 10000 });
   });
+
+  test("new job form shows validation on empty submit", async ({ page }) => {
+    await page.goto("/jobs/new");
+    // Try to submit without filling required fields
+    await page.getByRole("button", { name: /create job/i }).click();
+    // Should stay on the form page (not redirect to a detail page)
+    await expect(page).toHaveURL(/\/jobs\/new/);
+  });
 });
