@@ -1,7 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import * as Sentry from "@sentry/nextjs";
 import { chatModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
+import { CONFIG } from "@/lib/constants/config";
 
 /**
  * Parsed intent from natural language command bar input.
@@ -91,7 +93,7 @@ export async function parseIntent(params: {
       schema: intentSchema,
       system: INTENT_PROMPT,
       prompt: input,
-      maxOutputTokens: 200,
+      maxOutputTokens: CONFIG.AI.INTENT_MAX_TOKENS,
     });
 
     const latencyMs = Date.now() - startTime;
@@ -115,6 +117,7 @@ export async function parseIntent(params: {
       display: object.display ?? "Unknown command",
     };
   } catch (err) {
+    Sentry.captureException(err);
     const message = err instanceof Error ? err.message : "Unknown error";
     await logAiUsage({
       organizationId,

@@ -1,7 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import * as Sentry from "@sentry/nextjs";
 import { smartModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
+import { CONFIG } from "@/lib/constants/config";
 
 /**
  * Zod schema for parsed resume data.
@@ -79,7 +81,7 @@ export async function parseResume(params: {
       model: smartModel,
       schema: parsedResumeSchema,
       system: RESUME_PARSE_PROMPT,
-      prompt: resumeText.slice(0, 15000),
+      prompt: resumeText.slice(0, CONFIG.AI.RESUME_TEXT_MAX),
     });
 
     const latencyMs = Date.now() - startTime;
@@ -99,6 +101,7 @@ export async function parseResume(params: {
 
     return { data: object };
   } catch (err) {
+    Sentry.captureException(err);
     const latencyMs = Date.now() - startTime;
     const message = err instanceof Error ? err.message : "Unknown error";
 

@@ -151,6 +151,8 @@ export async function moveStage(
     .from("applications")
     .select("id, current_stage_id, organization_id")
     .eq("id", applicationId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .single();
 
   if (fetchError || !app) {
@@ -211,7 +213,8 @@ export async function rejectApplication(
     })
     .eq("id", applicationId)
     .eq("status", "active")
-    .eq("organization_id", session.orgId);
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null);
 
   if (error) {
     return { error: "Failed to reject application" };
@@ -234,6 +237,32 @@ export async function createApplication(
   assertCan(session.orgRole, "applications:create");
 
   const supabase = await createClient();
+
+  // Verify candidate exists and is not soft-deleted
+  const { data: candidateCheck } = await supabase
+    .from("candidates")
+    .select("id")
+    .eq("id", candidateId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!candidateCheck) {
+    return { error: "Candidate not found" };
+  }
+
+  // Verify job exists and is not soft-deleted
+  const { data: jobCheck } = await supabase
+    .from("job_openings")
+    .select("id")
+    .eq("id", jobOpeningId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!jobCheck) {
+    return { error: "Job not found" };
+  }
 
   const { data: app, error } = await supabase
     .from("applications")

@@ -2,8 +2,8 @@
 
 import { requireAuth } from "@/lib/auth";
 import { assertCan } from "@/lib/constants/roles";
-import { createClient } from "@/lib/supabase/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import logger from "@/lib/utils/logger";
 import { parseResume } from "@/lib/ai/resume-parser";
 import { generateJobDescription, generateEmailDraft } from "@/lib/ai/generate";
 import {
@@ -12,6 +12,7 @@ import {
   buildJobEmbeddingText,
 } from "@/lib/ai/embeddings";
 import { getRemainingCredits } from "@/lib/ai/credits";
+import { CONFIG } from "@/lib/constants/config";
 
 // ── AI Resume Parse ───────────────────────────────────────
 
@@ -34,7 +35,8 @@ export async function aiParseResume(
   });
 
   if (result.error) {
-    return { error: result.error };
+    logger.error({ error: result.error }, "AI resume parse failed");
+    return { error: "Failed to parse resume. Please try again." };
   }
 
   return { success: true, data: result.data };
@@ -50,6 +52,8 @@ export async function aiGenerateCandidateEmbedding(candidateId: string) {
     .from("candidates")
     .select("id, organization_id, resume_text, skills, current_title, current_company")
     .eq("id", candidateId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .single();
 
   if (!candidate) return { error: "Candidate not found" };
@@ -74,6 +78,8 @@ export async function aiGenerateJobEmbedding(jobId: string) {
     .from("job_openings")
     .select("id, organization_id, title, description")
     .eq("id", jobId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .single();
 
   if (!job) return { error: "Job not found" };
@@ -119,13 +125,14 @@ export async function aiMatchCandidates(jobId: string) {
     {
       p_job_id: jobId,
       p_organization_id: session.orgId,
-      p_similarity_threshold: 0.5,
-      p_max_results: 50,
+      p_similarity_threshold: CONFIG.AI.SIMILARITY_THRESHOLD,
+      p_max_results: CONFIG.AI.MAX_MATCH_RESULTS,
     },
   );
 
   if (error) {
-    return { error: "Failed to find matches: " + error.message };
+    logger.error({ err: error, jobId }, "AI match candidates RPC failed");
+    return { error: "Failed to find matches. Please try again." };
   }
 
   const credits = await getRemainingCredits(session.orgId);
@@ -163,7 +170,8 @@ export async function aiGenerateJobDescription(
   });
 
   if (result.error) {
-    return { error: result.error };
+    logger.error({ error: result.error }, "AI job description generation failed");
+    return { error: "Failed to generate description. Please try again." };
   }
 
   return { success: true, text: result.text };
@@ -198,7 +206,8 @@ export async function aiDraftEmail(
   });
 
   if (result.error) {
-    return { error: result.error };
+    logger.error({ error: result.error }, "AI email draft generation failed");
+    return { error: "Failed to generate email. Please try again." };
   }
 
   return { success: true, subject: result.subject, body: result.body };

@@ -27,7 +27,7 @@ export default async function PipelinePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireAuth();
+  const session = await requireAuth();
   const supabase = await createClient();
 
   // Fetch job with pipeline template
@@ -35,6 +35,8 @@ export default async function PipelinePage({
     .from("job_openings")
     .select("id, title, pipeline_template_id")
     .eq("id", id)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .single();
 
   if (!job) notFound();
@@ -44,6 +46,8 @@ export default async function PipelinePage({
     .from("pipeline_stages")
     .select("id, name, stage_type, sort_order")
     .eq("pipeline_template_id", job.pipeline_template_id)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .order("sort_order");
 
   // Fetch applications with candidate info for this job
@@ -56,7 +60,9 @@ export default async function PipelinePage({
     `,
     )
     .eq("job_opening_id", id)
+    .eq("organization_id", session.orgId)
     .eq("status", "active")
+    .is("deleted_at", null)
     .order("applied_at", { ascending: false });
 
   // Group applications by stage

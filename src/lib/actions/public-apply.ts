@@ -16,6 +16,14 @@ const applySchema = z.object({
  * Public career portal application — no auth required.
  * Uses service client because the applicant has no Supabase session.
  * Creates candidate (or finds existing) + application + stage history.
+ *
+ * ADR-001 EXCEPTION: Service role is required here because public applicants
+ * have no Supabase auth session. RLS INSERT policies require is_org_member(),
+ * which anonymous users cannot satisfy. All operations are tightly scoped:
+ * - Job lookup: only open, non-deleted jobs
+ * - Candidate: created within the job's org_id (derived server-side)
+ * - Application: scoped to the fetched job's org + first pipeline stage
+ * Rate limiting is enforced at the proxy layer (SEC-05).
  */
 export async function submitPublicApplication(
   _prev: unknown,

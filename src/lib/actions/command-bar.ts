@@ -4,6 +4,11 @@ import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseIntent, type ParsedIntent } from "@/lib/ai/intent";
 
+/** Escape SQL LIKE wildcards to prevent enumeration via % and _ */
+function escapeLikeQuery(input: string): string {
+  return input.replace(/[%_\\]/g, "\\$&");
+}
+
 export async function executeCommand(
   input: string,
 ): Promise<{
@@ -27,11 +32,13 @@ export async function executeCommand(
     const query = intent.params.query ?? "";
 
     if (intent.action === "search_candidates" && query) {
+      const escaped = escapeLikeQuery(query);
       const { data } = await supabase
         .from("candidates")
         .select("id, full_name, email, current_title")
+        .eq("organization_id", session.orgId)
         .or(
-          `full_name.ilike.%${query}%,email.ilike.%${query}%,current_title.ilike.%${query}%`,
+          `full_name.ilike.%${escaped}%,email.ilike.%${escaped}%,current_title.ilike.%${escaped}%`,
         )
         .is("deleted_at", null)
         .limit(10);
@@ -48,10 +55,12 @@ export async function executeCommand(
     }
 
     if (intent.action === "search_jobs" && query) {
+      const escaped = escapeLikeQuery(query);
       const { data } = await supabase
         .from("job_openings")
         .select("id, title, department, status")
-        .or(`title.ilike.%${query}%,department.ilike.%${query}%`)
+        .eq("organization_id", session.orgId)
+        .or(`title.ilike.%${escaped}%,department.ilike.%${escaped}%`)
         .is("deleted_at", null)
         .limit(10);
 

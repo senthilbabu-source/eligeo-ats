@@ -1,7 +1,9 @@
 import { generateText, generateObject, streamText } from "ai";
 import { z } from "zod";
+import * as Sentry from "@sentry/nextjs";
 import { chatModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
+import { CONFIG } from "@/lib/constants/config";
 
 /**
  * Generate a full job description from a title and key points.
@@ -47,7 +49,7 @@ export async function generateJobDescription(params: {
       system:
         "You are a talent acquisition expert who writes compelling, inclusive job descriptions. Return plain text with section headers.",
       prompt,
-      maxOutputTokens: 1500,
+      maxOutputTokens: CONFIG.AI.JOB_DESCRIPTION_MAX_TOKENS,
     });
 
     const latencyMs = Date.now() - startTime;
@@ -66,6 +68,7 @@ export async function generateJobDescription(params: {
 
     return { text };
   } catch (err) {
+    Sentry.captureException(err);
     const message = err instanceof Error ? err.message : "Unknown error";
     await logAiUsage({
       organizationId,
@@ -143,7 +146,7 @@ Body should be plain text with line breaks, not HTML.`,
       ]
         .filter(Boolean)
         .join("\n"),
-      maxOutputTokens: 500,
+      maxOutputTokens: CONFIG.AI.EMAIL_DRAFT_MAX_TOKENS,
     });
 
     const latencyMs = Date.now() - startTime;
@@ -165,6 +168,7 @@ Body should be plain text with line breaks, not HTML.`,
       body: object.body ?? null,
     };
   } catch (err) {
+    Sentry.captureException(err);
     const message = err instanceof Error ? err.message : "Unknown error";
     await logAiUsage({
       organizationId,
@@ -222,7 +226,7 @@ export async function streamJobDescription(params: {
     system:
       "You are a talent acquisition expert who writes compelling, inclusive job descriptions. Return plain text with section headers.",
     prompt,
-    maxOutputTokens: 1500,
+    maxOutputTokens: CONFIG.AI.JOB_DESCRIPTION_MAX_TOKENS,
     async onFinish({ usage }) {
       const latencyMs = Date.now() - startTime;
       await logAiUsage({

@@ -33,6 +33,8 @@ export default async function JobsPage({
       "id, title, slug, department, location, location_type, status, headcount, published_at, created_at",
       { count: "exact" },
     )
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .range(params.from, params.to);
 

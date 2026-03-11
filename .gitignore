@@ -56,3 +56,6 @@ next-env.d.ts
 
 # Vercel
 .vercel/
+
+# Binary documents (tracked in source/ for provenance, gitignored going forward)
+*.docx

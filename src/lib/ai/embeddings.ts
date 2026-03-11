@@ -1,7 +1,9 @@
 import { embed } from "ai";
+import * as Sentry from "@sentry/nextjs";
 import { embeddingModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
 import { createServiceClient } from "@/lib/supabase/server";
+import { CONFIG } from "@/lib/constants/config";
 
 /**
  * Build the text input for candidate embedding generation.
@@ -86,7 +88,7 @@ export async function generateAndStoreEmbedding(params: {
     // 2. Generate embedding via AI SDK
     const { embedding, usage } = await embed({
       model: embeddingModel,
-      value: text.slice(0, 8191), // Model max input
+      value: text.slice(0, CONFIG.AI.EMBEDDING_INPUT_MAX),
     });
 
     const latencyMs = Date.now() - startTime;
@@ -121,6 +123,7 @@ export async function generateAndStoreEmbedding(params: {
 
     return { success: true };
   } catch (err) {
+    Sentry.captureException(err);
     const latencyMs = Date.now() - startTime;
     const message = err instanceof Error ? err.message : "Unknown error";
 

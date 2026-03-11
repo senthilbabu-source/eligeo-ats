@@ -25,6 +25,8 @@ export default async function CandidatesPage({
       "id, full_name, email, current_title, current_company, location, source, skills, tags, created_at",
       { count: "exact" },
     )
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .range(params.from, params.to);
 

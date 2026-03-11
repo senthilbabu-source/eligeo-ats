@@ -42,6 +42,8 @@ export default async function JobDetailPage({
     `,
     )
     .eq("id", id)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .single();
 
   if (!job) notFound();
@@ -50,7 +52,9 @@ export default async function JobDetailPage({
   const { count: applicationCount } = await supabase
     .from("applications")
     .select("id", { count: "exact", head: true })
-    .eq("job_opening_id", id);
+    .eq("job_opening_id", id)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null);
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">

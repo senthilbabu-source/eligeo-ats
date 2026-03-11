@@ -41,6 +41,8 @@ export default async function CandidateDetailPage({
     `,
     )
     .eq("id", id)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .single();
 
   if (!candidate) notFound();
@@ -57,6 +59,8 @@ export default async function CandidateDetailPage({
     `,
     )
     .eq("candidate_id", id)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
     .order("applied_at", { ascending: false });
 
   // Get open jobs for the "Apply to Job" form (exclude jobs already applied to)
@@ -68,6 +72,7 @@ export default async function CandidateDetailPage({
     const { data: jobs } = await supabase
       .from("job_openings")
       .select("id, title, pipeline_template_id")
+      .eq("organization_id", session.orgId)
       .eq("status", "open")
       .is("deleted_at", null)
       .order("title");
