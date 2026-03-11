@@ -15,6 +15,38 @@
 
 ---
 
+### 2026-03-11 — [INFRA] Migrate AI layer from raw OpenAI SDK to Vercel AI SDK
+
+- **What:** Replaced `openai` package with `@ai-sdk/openai` + `ai` (Vercel AI SDK)
+- **Files changed:** `client.ts`, `embeddings.ts`, `generate.ts`, `intent.ts`, `resume-parser.ts`
+- **Key changes:**
+  - `getOpenAIClient()` → `chatModel` / `embeddingModel` provider exports
+  - `openai.chat.completions.create()` → `generateText()` / `generateObject()`
+  - `openai.embeddings.create()` → `embed()`
+  - Manual JSON schemas → Zod schemas with `generateObject()` (type-safe structured output)
+  - `response_format: { type: "json_object" }` → Zod schema validation
+  - `prompt_tokens/completion_tokens` → `inputTokens/outputTokens`
+  - `maxTokens` → `maxOutputTokens`
+- **Why:** AI SDK provides type-safe structured output, streaming support, and provider abstraction
+- **`openai` package no longer imported** — can be removed from dependencies
+
+### 2026-03-11 — [TEST] Complete MSW mock registry — all 9 services (D24 §4.1)
+
+- **Was:** 3/9 external services mocked (Stripe, Resend, Inngest)
+- **Now:** 9/9 services mocked per D24 §4.1:
+  - Stripe (2 handlers: checkout sessions, billing portal)
+  - Resend (1: email send)
+  - Nylas (2: GET/POST calendar events)
+  - Typesense (2: document search, document upsert)
+  - OpenAI (2: embeddings, chat completions)
+  - Merge.dev (1: GET candidates)
+  - Dropbox Sign (1: signature request send)
+  - Inngest (1: event ingestion)
+  - Slack (1: webhook alerts)
+- **Added `msw-handlers.test.ts`** — 10 tests verifying all 9 services + total handler count
+- **Totals:** 391 Vitest (269 RLS + 122 unit/API) + 20 E2E = 411 total
+- **P1 MSW debt: CLOSED**
+
 ### 2026-03-11 — [SECURITY] Fix members_insert RLS policy (M018)
 
 - **Bug:** `members_insert` allowed `user_id = auth.uid()` — any authenticated user could self-add to any org
