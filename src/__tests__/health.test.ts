@@ -2,7 +2,7 @@
  * API integration test: GET /api/health
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { GET } from "@/app/api/health/route";
 
 describe("GET /api/health", () => {
