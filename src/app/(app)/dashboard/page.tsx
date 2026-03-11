@@ -3,7 +3,15 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
-import { aggregateSources, calcSourcePct, aggregateFunnel, calcTimeToHire } from "@/lib/utils/dashboard";
+import {
+  aggregateSources,
+  calcSourcePct,
+  aggregateFunnel,
+  calcTimeToHire,
+  aggregateSourceQuality,
+  findAtRiskJobs,
+  type AtRiskJob,
+} from "@/lib/utils/dashboard";
 import { MineToggle } from "./mine-toggle";
 
 export const metadata: Metadata = {
@@ -62,6 +70,50 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
+// ── At-Risk Jobs Widget ─────────────────────────────────────
+
+function AtRiskWidget({ jobs }: { jobs: AtRiskJob[] }) {
+  if (jobs.length === 0) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-5">
+        <p className="flex items-center gap-2 text-sm text-success">
+          <span>✓</span>
+          <span>All open roles have active pipeline activity.</span>
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-card divide-y divide-border">
+      {jobs.map((job) => (
+        <div key={job.id} className="flex items-center justify-between px-5 py-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{job.title}</p>
+            <p className="text-xs text-muted-foreground">
+              {job.daysOpen} days open · {job.activeCount} active {job.activeCount === 1 ? "app" : "apps"}
+            </p>
+          </div>
+          <div className="ml-4 flex shrink-0 items-center gap-2">
+            <Link
+              href={`/jobs/${job.id}`}
+              className="rounded-md border border-border px-2.5 py-1 text-xs font-medium transition-colors hover:bg-muted"
+            >
+              Refresh JD
+            </Link>
+            <Link
+              href={`/jobs/${job.id}?action=clone`}
+              className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+            >
+              Clone
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Dashboard Page ─────────────────────────────────────────
 
 export default async function DashboardPage({
@@ -110,6 +162,9 @@ export default async function DashboardPage({
     { data: stageRows },
     { data: recentApps },
     { data: defaultTemplateRow },
+    { data: hiredSourceRows },
+    { data: openJobRows },
+    { data: activeAppStatRows },
   ] = await Promise.all([
     // Active jobs
     (() => {
@@ -163,7 +218,7 @@ export default async function DashboardPage({
           return myJobIds ? q.in("job_opening_id", myJobIds) : q;
         })(),
 
-    // Source attribution
+    // R9: Source attribution — active applications
     noJobs
       ? Promise.resolve({ data: [], error: null })
       : (() => {
@@ -219,6 +274,43 @@ export default async function DashboardPage({
       .eq("is_default", true)
       .is("deleted_at", null)
       .maybeSingle(),
+
+    // R9: Source quality — hired applications with source data (all-time, not capped to this month)
+    noJobs
+      ? Promise.resolve({ data: [], error: null })
+      : (() => {
+          const q = supabase
+            .from("applications")
+            .select("candidates!inner(source, candidate_sources(name))")
+            .eq("organization_id", orgId)
+            .eq("status", "hired")
+            .is("deleted_at", null);
+          return myJobIds ? q.in("job_opening_id", myJobIds) : q;
+        })(),
+
+    // R10: At-risk analysis — open jobs
+    (() => {
+      const q = supabase
+        .from("job_openings")
+        .select("id, title, published_at, created_at")
+        .eq("organization_id", orgId)
+        .eq("status", "open")
+        .is("deleted_at", null);
+      return recruiterFilter ? q.eq("recruiter_id", recruiterFilter) : q;
+    })(),
+
+    // R10: At-risk analysis — active app counts + last applied per job
+    noJobs
+      ? Promise.resolve({ data: [], error: null })
+      : (() => {
+          const q = supabase
+            .from("applications")
+            .select("job_opening_id, applied_at")
+            .eq("organization_id", orgId)
+            .eq("status", "active")
+            .is("deleted_at", null);
+          return myJobIds ? q.in("job_opening_id", myJobIds) : q;
+        })(),
   ]);
 
   // ── R8: Compute hires count + avg time-to-hire ──────────
@@ -233,8 +325,32 @@ export default async function DashboardPage({
     avgDays = total / hiresRows.length;
   }
 
-  // ── Aggregate source data ──────────────────────────────
+  // ── R9: Aggregate source quality (volume + hire rate) ──
+  const sourceQuality = aggregateSourceQuality(
+    (sourceRows ?? []) as Parameters<typeof aggregateSourceQuality>[0],
+    (hiredSourceRows ?? []) as Parameters<typeof aggregateSourceQuality>[1],
+    5
+  );
+  // Keep plain volume aggregation for the bar widths
   const topSources = aggregateSources(sourceRows ?? []);
+
+  // ── R10: Build at-risk maps + find at-risk jobs ─────────
+  const activeCountByJobId: Record<string, number> = {};
+  const lastAppliedByJobId: Record<string, string | null> = {};
+  for (const row of (activeAppStatRows ?? []) as Array<{ job_opening_id: string; applied_at: string }>) {
+    if (!row.job_opening_id) continue;
+    activeCountByJobId[row.job_opening_id] = (activeCountByJobId[row.job_opening_id] ?? 0) + 1;
+    const prev = lastAppliedByJobId[row.job_opening_id];
+    if (!prev || row.applied_at > prev) {
+      lastAppliedByJobId[row.job_opening_id] = row.applied_at;
+    }
+  }
+  const atRiskJobs = findAtRiskJobs(
+    (openJobRows ?? []) as Parameters<typeof findAtRiskJobs>[0],
+    activeCountByJobId,
+    lastAppliedByJobId,
+    nowMs
+  );
 
   // ── Aggregate stage distribution (filtered to default template) ──
   const defaultTemplateId = defaultTemplateRow?.id ?? null;
@@ -319,15 +435,18 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        {/* ── Source Attribution ── */}
+        {/* ── R9: Source Attribution + hire rate quality badges ── */}
         <div>
-          <SectionHeader title="Source Attribution" />
+          <SectionHeader
+            title="Source Attribution"
+            tooltip="Volume = active applications. Hire rate shown when source has ≥5 total applications."
+          />
           <div className="rounded-lg border border-border bg-card p-5">
-            {topSources.length === 0 ? (
+            {sourceQuality.length === 0 ? (
               <p className="text-sm text-muted-foreground">No source data yet.</p>
             ) : (
               <div className="space-y-2">
-                {topSources.map(([source, count]) => {
+                {sourceQuality.map(([source, count, hireRate]) => {
                   const pct = calcSourcePct(count, topSources[0]?.[1] ?? 1);
                   return (
                     <div key={source} className="flex items-center gap-3 text-sm">
@@ -341,6 +460,13 @@ export default async function DashboardPage({
                         </div>
                       </div>
                       <span className="w-8 text-right tabular-nums text-muted-foreground">{count}</span>
+                      {hireRate !== null ? (
+                        <span className="w-16 shrink-0 text-right text-xs font-medium text-success">
+                          {hireRate}% hired
+                        </span>
+                      ) : (
+                        <span className="w-16 shrink-0 text-right text-xs text-muted-foreground/50">—</span>
+                      )}
                     </div>
                   );
                 })}
@@ -348,6 +474,15 @@ export default async function DashboardPage({
             )}
           </div>
         </div>
+      </div>
+
+      {/* ── R10: At-Risk Jobs — always renders (green empty state when all healthy) ── */}
+      <div className="mt-8">
+        <SectionHeader
+          title="At-Risk Jobs"
+          tooltip="Open ≥21 days with fewer than 3 active applications and no new application in the last 7 days."
+        />
+        <AtRiskWidget jobs={atRiskJobs} />
       </div>
 
       {/* ── R12: Recent Applications — with links, stage, status ── */}

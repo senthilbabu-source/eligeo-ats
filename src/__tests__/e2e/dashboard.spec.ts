@@ -62,6 +62,14 @@ test.describe("Dashboard", () => {
     await expect(page).toHaveURL(/\/candidates\/.+/, { timeout: 8000 });
   });
 
+  // E2E-17: At-risk widget renders (always — green empty state when seed jobs have recent activity)
+  test("at-risk jobs widget always renders on dashboard", async ({ page }) => {
+    await page.goto("/dashboard");
+    await expect(page.getByText(/at-risk jobs/i)).toBeVisible({ timeout: 5000 });
+    // Widget always renders — seed data has recently-active jobs so green empty state is shown
+    await expect(page.getByText(/all open roles have active pipeline activity/i)).toBeVisible({ timeout: 5000 });
+  });
+
   // E2E-16: Mine mode cookie persistence (R13)
   test("mine mode toggle persists via cookie across reload", async ({ page }) => {
     await page.goto("/dashboard");

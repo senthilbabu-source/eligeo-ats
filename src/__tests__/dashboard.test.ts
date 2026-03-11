@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { aggregateSources, calcSourcePct, aggregateFunnel, calcTimeToHire } from "@/lib/utils/dashboard";
+import { aggregateSources, calcSourcePct, aggregateFunnel, calcTimeToHire, aggregateSourceQuality, findAtRiskJobs } from "@/lib/utils/dashboard";
 
 describe("aggregateSources", () => {
   it("should use candidate_sources.name (canonical) when source_id is set", () => {
@@ -141,5 +141,151 @@ describe("aggregateFunnel", () => {
     const result = aggregateFunnel(rows, TEMPLATE_A);
     expect(result.at(0)?.name).toBe("Applied");
     expect(result.at(1)?.name).toBe("Interview");
+  });
+});
+
+// ── helpers for source quality tests ────────────────────────
+
+function makeSourceRow(source: string, canonicalName?: string) {
+  return {
+    candidates: {
+      source,
+      candidate_sources: canonicalName ? { name: canonicalName } : null,
+    },
+  };
+}
+
+describe("aggregateSourceQuality", () => {
+  it("should return active count and hire rate when cohort is met", () => {
+    const active = [
+      makeSourceRow("linkedin", "LinkedIn"),
+      makeSourceRow("linkedin", "LinkedIn"),
+      makeSourceRow("linkedin", "LinkedIn"),
+    ];
+    const hired = [
+      makeSourceRow("linkedin", "LinkedIn"),
+      makeSourceRow("linkedin", "LinkedIn"),
+    ];
+    // total = 3 active + 2 hired = 5 → meets minCohort=5
+    // hire rate = 2/5 = 40%
+    const result = aggregateSourceQuality(active, hired, 5);
+    expect(result.at(0)?.[0]).toBe("LinkedIn");
+    expect(result.at(0)?.[1]).toBe(3); // active count
+    expect(result.at(0)?.[2]).toBe(40); // hire rate %
+  });
+
+  it("should suppress hire rate (null) when cohort is below minimum", () => {
+    const active = [makeSourceRow("indeed", "Indeed"), makeSourceRow("indeed", "Indeed")];
+    const hired = [makeSourceRow("indeed", "Indeed")];
+    // total = 2 + 1 = 3 < minCohort=5 → rate suppressed
+    const result = aggregateSourceQuality(active, hired, 5);
+    expect(result.at(0)?.[2]).toBeNull();
+  });
+
+  it("should use canonical name from candidate_sources.name", () => {
+    const active = [
+      makeSourceRow("linked in", "LinkedIn"),
+      makeSourceRow("linkedin", "LinkedIn"),
+    ];
+    const hired: ReturnType<typeof makeSourceRow>[] = [];
+    const result = aggregateSourceQuality(active, hired, 5);
+    expect(result.at(0)?.[0]).toBe("LinkedIn");
+  });
+
+  it("should fall back to source TEXT when candidate_sources is null", () => {
+    const active = [makeSourceRow("Referral"), makeSourceRow("Referral")];
+    const hired: ReturnType<typeof makeSourceRow>[] = [];
+    const result = aggregateSourceQuality(active, hired, 5);
+    expect(result.at(0)?.[0]).toBe("Referral");
+  });
+
+  it("should return 0% hire rate (not null) when total meets cohort but no hires", () => {
+    const active = [
+      makeSourceRow("website", "Website"),
+      makeSourceRow("website", "Website"),
+      makeSourceRow("website", "Website"),
+      makeSourceRow("website", "Website"),
+      makeSourceRow("website", "Website"),
+    ];
+    const hired: ReturnType<typeof makeSourceRow>[] = [];
+    // total = 5 = minCohort → rate should be 0%, not null
+    const result = aggregateSourceQuality(active, hired, 5);
+    expect(result.at(0)?.[2]).toBe(0);
+  });
+
+  it("should sort by active count descending", () => {
+    const active = [
+      makeSourceRow("indeed", "Indeed"),
+      makeSourceRow("linkedin", "LinkedIn"),
+      makeSourceRow("linkedin", "LinkedIn"),
+    ];
+    const hired: ReturnType<typeof makeSourceRow>[] = [];
+    const result = aggregateSourceQuality(active, hired, 5);
+    expect(result.at(0)?.[0]).toBe("LinkedIn"); // 2 active
+    expect(result.at(1)?.[0]).toBe("Indeed");   // 1 active
+  });
+});
+
+describe("findAtRiskJobs", () => {
+  const NOW = new Date("2026-03-11T12:00:00Z").getTime();
+
+  function daysAgo(n: number): string {
+    return new Date(NOW - n * 86400000).toISOString();
+  }
+
+  function makeJob(id: string, publishedDaysAgo: number | null, createdDaysAgo = 30) {
+    return {
+      id,
+      title: `Job ${id}`,
+      published_at: publishedDaysAgo !== null ? daysAgo(publishedDaysAgo) : null,
+      created_at: daysAgo(createdDaysAgo),
+    };
+  }
+
+  it("should flag a job open ≥21 days with 0 active apps and no recent app", () => {
+    const jobs = [makeJob("j1", 25)];
+    const result = findAtRiskJobs(jobs, {}, {}, NOW);
+    expect(result).toHaveLength(1);
+    expect(result.at(0)?.id).toBe("j1");
+    expect(result.at(0)?.daysOpen).toBe(25);
+  });
+
+  it("should NOT flag a job with ≥3 active applications", () => {
+    const jobs = [makeJob("j1", 25)];
+    const result = findAtRiskJobs(jobs, { j1: 3 }, {}, NOW);
+    expect(result).toHaveLength(0);
+  });
+
+  it("should NOT flag a job with a new application within last 7 days", () => {
+    const jobs = [makeJob("j1", 25)];
+    const result = findAtRiskJobs(jobs, {}, { j1: daysAgo(5) }, NOW);
+    expect(result).toHaveLength(0);
+  });
+
+  it("should NOT flag a job open <21 days", () => {
+    const jobs = [makeJob("j1", 15)];
+    const result = findAtRiskJobs(jobs, {}, {}, NOW);
+    expect(result).toHaveLength(0);
+  });
+
+  it("should fall back to created_at when published_at is null", () => {
+    const jobs = [makeJob("j1", null, 25)]; // created 25 days ago, never published
+    const result = findAtRiskJobs(jobs, {}, {}, NOW);
+    expect(result).toHaveLength(1);
+    expect(result.at(0)?.daysOpen).toBe(25);
+  });
+
+  it("should sort by daysOpen descending (most neglected first)", () => {
+    const jobs = [makeJob("j1", 22), makeJob("j2", 35)];
+    const result = findAtRiskJobs(jobs, {}, {}, NOW);
+    expect(result.at(0)?.id).toBe("j2");
+    expect(result.at(1)?.id).toBe("j1");
+  });
+
+  it("should return empty array when all jobs are healthy", () => {
+    const jobs = [makeJob("j1", 25), makeJob("j2", 30)];
+    // both have 3+ apps
+    const result = findAtRiskJobs(jobs, { j1: 5, j2: 4 }, {}, NOW);
+    expect(result).toHaveLength(0);
   });
 });

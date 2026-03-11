@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-03-11 — [Dashboard] R9/R10 Wave 2 — source quality hire rate + at-risk jobs widget
+
+**Phase:** Build — R1/R3/R4 Dashboard Enhancements (Wave 2 of 3)
+**Test count:** 637 Vitest (up from 624) + 51 E2E = 688 total. All passing. Typecheck clean. Lint clean.
+
+### Changes
+
+#### `src/lib/utils/dashboard.ts` — 2 new functions
+- **`aggregateSourceQuality(activeRows, hiredRows, minCohort=5)`** — returns `[sourceName, activeCount, hireRatePct | null][]`. Hire rate = hired / (active + hired) per source. Rate suppressed (null) when total < minCohort (D13 cohort rule). Sorted descending by active count, top 5.
+- **`findAtRiskJobs(jobs, activeCountByJobId, lastAppliedByJobId, nowMs)`** — returns `AtRiskJob[]`. At-risk = open ≥21 days AND <3 active apps AND no app in last 7 days. Falls back to `created_at` when `published_at` is null. Sorted by daysOpen descending. Empty array when all healthy.
+
+#### `src/app/(app)/dashboard/page.tsx` — 3 new queries + 2 new UI sections
+- **Extended `Promise.all`** with: hired source rows (for quality), open jobs list (for at-risk), active app stats per job (count + last applied).
+- **Source Attribution** now calls `aggregateSourceQuality` — each source row shows volume bar + hire rate badge (`X% hired`) or `—` when cohort suppressed.
+- **At-Risk Jobs widget** (`AtRiskWidget` component) — always renders. Green empty state when no jobs at risk. Each at-risk job row: title, days open, active count, "Refresh JD" + "Clone" (`?action=clone`) CTAs.
+
+#### `src/__tests__/dashboard.test.ts` — 13 new unit tests
+- `aggregateSourceQuality` (6): cohort met → rate shown, below cohort → null, 0% when no hires, canonical name, text fallback, sort order.
+- `findAtRiskJobs` (7): flags at-risk, not flagged ≥3 apps, not flagged recent app, not flagged <21 days, created_at fallback, sort order, empty when healthy.
+
+#### `src/__tests__/e2e/dashboard.spec.ts` — 1 new E2E test
+- E2E-17: at-risk widget always renders; seed jobs have recent activity → green empty state asserted.
+
+---
+
 ## 2026-03-11 — [Dashboard] R1/R3/R4 Wave 1 — actionable metrics, stage distribution, recent apps, mine mode cookie
 
 **Phase:** Build — R1/R3/R4 Dashboard Enhancements (Wave 1 of 3)
