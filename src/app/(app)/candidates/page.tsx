@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { can } from "@/lib/constants/roles";
+import { can, type OrgRole } from "@/lib/constants/roles";
 import { parsePagination, buildPaginationMeta } from "@/lib/utils/pagination";
 import { Pagination } from "@/components/pagination";
+import { CandidateFilterBar } from "./filter-bar";
 
 export const metadata: Metadata = {
   title: "Candidates",
@@ -17,21 +18,135 @@ export default async function CandidatesPage({
 }) {
   const session = await requireAuth();
   const supabase = await createClient();
-  const params = parsePagination(await searchParams);
+  const rawParams = await searchParams;
+  const params = parsePagination(rawParams);
 
-  const { data: candidates, count } = await supabase
+  // CL2 — filter params
+  const query = typeof rawParams.q === "string" ? rawParams.q.trim() : "";
+  const sourceId = typeof rawParams.source === "string" ? rawParams.source : "";
+  const jobId = typeof rawParams.job === "string" ? rawParams.job : "";
+
+  // CL2 — fetch filter options in parallel
+  const [{ data: sources }, { data: openJobs }] = await Promise.all([
+    supabase
+      .from("candidate_sources")
+      .select("id, name")
+      .eq("organization_id", session.orgId)
+      .is("deleted_at", null)
+      .order("name"),
+    supabase
+      .from("job_openings")
+      .select("id, title")
+      .eq("organization_id", session.orgId)
+      .eq("status", "open")
+      .is("deleted_at", null)
+      .order("title"),
+  ]);
+
+  // CL2 — job filter: pre-fetch candidate IDs that applied to this job
+  let jobCandidateIds: string[] | null = null;
+  if (jobId) {
+    const { data: apps } = await supabase
+      .from("applications")
+      .select("candidate_id")
+      .eq("organization_id", session.orgId)
+      .eq("job_opening_id", jobId)
+      .is("deleted_at", null);
+    jobCandidateIds = (apps ?? []).map((a: { candidate_id: string }) => a.candidate_id);
+  }
+
+  // Base query builder — apply all active filters
+  let q = supabase
     .from("candidates")
     .select(
-      "id, full_name, email, current_title, current_company, location, source, skills, tags, created_at",
+      "id, full_name, email, current_title, current_company, location, source, source_id, skills, tags, created_at",
       { count: "exact" },
     )
     .eq("organization_id", session.orgId)
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+
+  if (query) {
+    const escaped = query.replace(/[%_\\]/g, "\\$&");
+    q = q.or(`full_name.ilike.%${escaped}%,email.ilike.%${escaped}%,current_title.ilike.%${escaped}%`);
+  }
+  if (sourceId) {
+    q = q.eq("source_id", sourceId);
+  }
+  if (jobCandidateIds !== null) {
+    if (jobCandidateIds.length === 0) {
+      // No candidates for this job — return empty
+      const emptyMeta = buildPaginationMeta(0, params);
+      return (
+        <CandidatesLayout
+          session={session}
+          sources={sources ?? []}
+          openJobs={openJobs ?? []}
+          query={query}
+          sourceId={sourceId}
+          jobId={jobId}
+          candidates={[]}
+          meta={emptyMeta}
+        />
+      );
+    }
+    q = q.in("id", jobCandidateIds);
+  }
+
+  const { data: candidates, count } = await q
     .order("created_at", { ascending: false })
     .range(params.from, params.to);
 
   const meta = buildPaginationMeta(count ?? 0, params);
 
+  return (
+    <CandidatesLayout
+      session={session}
+      sources={sources ?? []}
+      openJobs={openJobs ?? []}
+      query={query}
+      sourceId={sourceId}
+      jobId={jobId}
+      candidates={candidates ?? []}
+      meta={meta}
+    />
+  );
+}
+
+// ── Layout component ────────────────────────────────────────
+
+type CandidateRow = {
+  id: string;
+  full_name: string;
+  email: string;
+  current_title: string | null;
+  current_company: string | null;
+  location: string | null;
+  source: string | null;
+  source_id: string | null;
+  skills: unknown;
+  tags: unknown;
+  created_at: string;
+};
+
+function CandidatesLayout({
+  session,
+  sources,
+  openJobs,
+  query,
+  sourceId,
+  jobId,
+  candidates,
+  meta,
+}: {
+  session: { orgRole: OrgRole };
+  sources: Array<{ id: string; name: string }>;
+  openJobs: Array<{ id: string; title: string }>;
+  query: string;
+  sourceId: string;
+  jobId: string;
+  candidates: CandidateRow[];
+  meta: ReturnType<typeof buildPaginationMeta>;
+}) {
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="flex items-center justify-between">
@@ -51,7 +166,16 @@ export default async function CandidatesPage({
         )}
       </div>
 
-      <div className="mt-6">
+      {/* CL2 — filter bar */}
+      <CandidateFilterBar
+        sources={sources}
+        openJobs={openJobs}
+        query={query}
+        sourceId={sourceId}
+        jobId={jobId}
+      />
+
+      <div className="mt-4">
         <table className="w-full text-data-dense">
           <thead>
             <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -63,7 +187,7 @@ export default async function CandidatesPage({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {candidates?.map((c) => (
+            {candidates.map((c) => (
               <tr key={c.id} className="hover:bg-muted/30">
                 <td className="py-3 pr-4">
                   <Link
@@ -83,7 +207,9 @@ export default async function CandidatesPage({
                 <td className="py-3 pr-4 text-muted-foreground">
                   {c.location}
                 </td>
-                <td className="py-3 pr-4 text-muted-foreground">{c.source}</td>
+                <td className="py-3 pr-4 text-muted-foreground capitalize">
+                  {c.source}
+                </td>
                 <td className="py-3 pr-4">
                   <div className="flex flex-wrap gap-1">
                     {(c.skills as string[])?.slice(0, 3).map((skill) => (
@@ -106,9 +232,9 @@ export default async function CandidatesPage({
           </tbody>
         </table>
 
-        {(!candidates || candidates.length === 0) && (
+        {candidates.length === 0 && (
           <div className="rounded-lg border border-dashed border-border p-12 text-center text-muted-foreground">
-            <p>No candidates yet.</p>
+            <p>No candidates found.</p>
           </div>
         )}
       </div>
