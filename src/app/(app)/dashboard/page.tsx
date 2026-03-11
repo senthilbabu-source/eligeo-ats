@@ -80,7 +80,6 @@ export default async function DashboardPage({
   const mineMode = params["mine"] === "1" || (params["mine"] !== "0" && mineCookie);
   const recruiterFilter = mineMode ? session.userId : null;
 
-  // eslint-disable-next-line react-hooks/purity -- Server Component, runs once per request
   const nowMs = new Date().getTime();
   const oneWeekAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString();
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
