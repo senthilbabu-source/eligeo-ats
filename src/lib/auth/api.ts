@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
+import type { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { OrgRole } from "@/lib/constants/roles";
+import { problemResponse } from "@/lib/utils/problem";
+import type { ProblemDetail } from "@/lib/utils/problem";
 import type { Session } from "./session";
 
 /**
@@ -22,11 +24,11 @@ function extractSession(user: {
 
 type AuthResult =
   | { session: Session; error: null }
-  | { session: null; error: NextResponse };
+  | { session: null; error: NextResponse<ProblemDetail> };
 
 /**
  * Require auth in API Route Handlers.
- * Returns error response (not redirect) for unauthenticated requests.
+ * Returns RFC 9457 error response (not redirect) for unauthenticated requests.
  *
  * Usage:
  *   const { session, error } = await requireAuthAPI();
@@ -41,10 +43,7 @@ export async function requireAuthAPI(): Promise<AuthResult> {
   if (!user) {
     return {
       session: null,
-      error: NextResponse.json(
-        { code: "ATS-AU01", message: "Authentication required" },
-        { status: 401 },
-      ),
+      error: problemResponse(401, "ATS-AU01", "Authentication required"),
     };
   }
 
@@ -63,10 +62,7 @@ export async function requireRoleAPI(
   if (!roles.includes(result.session.orgRole)) {
     return {
       session: null,
-      error: NextResponse.json(
-        { code: "ATS-AU04", message: "Insufficient permissions" },
-        { status: 403 },
-      ),
+      error: problemResponse(403, "ATS-AU04", "Insufficient permissions"),
     };
   }
 

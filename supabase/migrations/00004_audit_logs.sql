@@ -33,15 +33,18 @@ COMMENT ON COLUMN audit_logs.new_data IS 'New row state (INSERT/UPDATE). NULL on
 -- ─── Audit Trigger Function ───
 -- Generic trigger that logs INSERT/UPDATE/DELETE to audit_logs.
 -- Attached to tables in migration 005.
+-- Supports both interactive (auth.uid()) and background job (SET LOCAL app.performed_by) contexts.
+-- ADR-001: background jobs use service role + SET LOCAL for tenant scoping.
 CREATE OR REPLACE FUNCTION audit_trigger_func()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_org_id UUID;
-  v_record_id UUID;
-  v_row JSONB;
+  v_org_id     UUID;
+  v_record_id  UUID;
+  v_row        JSONB;
+  v_actor      UUID;
 BEGIN
   -- Extract from appropriate row (handles tables with or without organization_id)
   IF TG_OP = 'DELETE' THEN
@@ -55,19 +58,23 @@ BEGIN
   -- Safely extract org_id (NULL for tables like user_profiles that lack it)
   v_org_id := (v_row ->> 'organization_id')::UUID;
 
+  -- Resolve actor: auth.uid() for interactive, app.performed_by for background jobs
+  v_actor := COALESCE(auth.uid(), current_setting('app.performed_by', TRUE)::UUID);
+
+  INSERT INTO audit_logs (organization_id, table_name, record_id, action, old_data, new_data, performed_by)
+  VALUES (
+    v_org_id,
+    TG_TABLE_NAME,
+    v_record_id,
+    TG_OP,
+    CASE WHEN TG_OP IN ('UPDATE', 'DELETE') THEN to_jsonb(OLD) END,
+    CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN to_jsonb(NEW) END,
+    v_actor
+  );
+
   IF TG_OP = 'DELETE' THEN
-    INSERT INTO audit_logs (organization_id, table_name, record_id, action, old_data, performed_by)
-    VALUES (v_org_id, TG_TABLE_NAME, v_record_id, 'DELETE', to_jsonb(OLD), auth.uid());
     RETURN OLD;
-  ELSIF TG_OP = 'UPDATE' THEN
-    INSERT INTO audit_logs (organization_id, table_name, record_id, action, old_data, new_data, performed_by)
-    VALUES (v_org_id, TG_TABLE_NAME, v_record_id, 'UPDATE', to_jsonb(OLD), to_jsonb(NEW), auth.uid());
-    RETURN NEW;
-  ELSIF TG_OP = 'INSERT' THEN
-    INSERT INTO audit_logs (organization_id, table_name, record_id, action, new_data, performed_by)
-    VALUES (v_org_id, TG_TABLE_NAME, v_record_id, 'INSERT', to_jsonb(NEW), auth.uid());
-    RETURN NEW;
   END IF;
-  RETURN NULL;
+  RETURN NEW;
 END;
 $$;

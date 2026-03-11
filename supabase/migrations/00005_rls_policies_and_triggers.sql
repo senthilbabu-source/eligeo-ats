@@ -26,7 +26,8 @@ CREATE POLICY "orgs_update" ON organizations FOR UPDATE
   USING (
     deleted_at IS NULL
     AND has_org_role(id, 'owner', 'admin')
-  );
+  )
+  WITH CHECK (id = current_user_org_id());
 
 -- DELETE: Never hard-delete (ADR-006)
 CREATE POLICY "orgs_delete" ON organizations FOR DELETE
@@ -70,7 +71,8 @@ CREATE POLICY "profiles_insert" ON user_profiles FOR INSERT
 
 -- UPDATE: Only own profile
 CREATE POLICY "profiles_update" ON user_profiles FOR UPDATE
-  USING (id = auth.uid() AND deleted_at IS NULL);
+  USING (id = auth.uid() AND deleted_at IS NULL)
+  WITH CHECK (id = auth.uid());
 
 -- DELETE: Never hard-delete
 CREATE POLICY "profiles_delete" ON user_profiles FOR DELETE
@@ -113,7 +115,8 @@ CREATE POLICY "members_update" ON organization_members FOR UPDATE
       has_org_role(organization_id, 'owner', 'admin')
       OR user_id = auth.uid()
     )
-  );
+  )
+  WITH CHECK (organization_id = current_user_org_id() OR user_id = auth.uid());
 
 -- DELETE: Owner only (soft-delete via deleted_at)
 CREATE POLICY "members_delete" ON organization_members FOR DELETE
