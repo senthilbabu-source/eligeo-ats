@@ -16,6 +16,37 @@
 
 ---
 
+### 2026-03-10 — [D11] Real-Time Features — complete first draft
+
+**Files created:**
+- `docs/modules/REALTIME.md` — 13 sections (394 lines): Supabase Realtime architecture using 3 primitives (Postgres Changes, Broadcast, Presence), channel naming convention (`{scope}:{org_id}:{resource}[:{id}]`), 7 subscribed tables with event filters, notification broadcast (D08 integration), page-level + team presence, optimistic UI with dedup, connection management + reconnection, last-write-wins conflict resolution, ChannelManager cleanup utility.
+
+**Files updated:**
+- `docs/INDEX.md` — D11 status: `⬜ Not Started` → `✅ Complete (Review)`.
+- `docs/GAPS.md` — G-027 resolved. G-030 added. G-018 re-tagged from "D11 (Talent Pools)" → "D12 (Workflow)". G-019 re-tagged from "D12 (Analytics)" → "D17 (Analytics)".
+
+**Key decisions:**
+- Channel naming: `{scope}:{org_id}:{resource}[:{id}]`. org_id always present for tenant isolation. Derived from JWT, never client input.
+- 7 tables subscribed (applications, stage_history, interviews, scorecards, offers, notes, candidates). 30+ tables intentionally excluded — low frequency or derived from parent events.
+- No `notifications` table: broadcast-only delivery aligns with D08's ephemeral notification design.
+- Last-write-wins conflict resolution. No CRDTs or OT — overkill for ATS where concurrent edits on same entity are rare.
+- Presence limits: 100 users/channel (Supabase limit), fallback to polling for large orgs.
+- High-volume batching: `requestAnimationFrame` + 100ms accumulation window for bulk operations.
+
+**Post-build audit:** 7/7 categories PASS. No fixes needed. No [VERIFY] markers (Supabase Realtime is core platform).
+
+**Contracts exported:**
+- D09 (Candidate Portal): candidates use polling, not Realtime (no persistent WebSocket). D09 must define polling interval.
+- D16 (Performance): Realtime connection pooling targets, max 10 channels per client.
+
+**[PLAYBOOK]** Extractable patterns: channel naming convention for multi-tenant Realtime, optimistic UI with Realtime dedup, presence with graceful degradation, ChannelManager for SPA route cleanup.
+
+**Status:** Review.
+
+**Next:** D12 (Workflow) then D09 (Candidate Portal) — completes Phase 1.
+
+---
+
 ### 2026-03-10 — [D10] Search Architecture — complete first draft
 
 **Files created:**
