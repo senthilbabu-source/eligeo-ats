@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] J3 Wave 4 — Bias check, title suggestion, skills delta
+
+**Phase:** Build — Phase 2.7 (UX Polish)
+**Scope:** J3 Wave 4 (D1+D2+D3) — AI quality layer for cloned jobs
+
+### Changes
+- **D1 — Bias check** `checkJobDescriptionBias()` in `generate.ts` + `checkJobBias()` SA: fires via `useCompletion.onFinish` after streaming. Amber warning panel in `RewritePanel` lists flagged terms with neutral alternatives. Accept button disabled while checking.
+- **D2 — Title suggestion** `suggestJobTitle()` in `generate.ts` + `getJobTitleSuggestion()` + `applyTitleSuggestion()` SAs + `<TitleSuggestionBadge>` client component: auto-fires on mount for cloned jobs, dismissible, Apply updates DB title only (slug preserved for URL stability).
+- **D3 — Skills delta** `suggestSkillsDelta()` in `generate.ts` + `getJobSkillsDelta()` SA + `<SkillsDeltaPanel>` client component: auto-fires on mount, add (green) / remove (red) skill suggestions, display-only, dismissible.
+- **`page.tsx`** mounts both components when `clone_intent` present in metadata.
+
+### Tests
+- +6 unit tests: `checkJobDescriptionBias` (2), `suggestJobTitle` (2), `suggestSkillsDelta` (2)
+- **Count: 562 → 568 Vitest. All passing. Typecheck clean.**
+
+[PLAYBOOK] AI quality gate pattern: run bias/quality checks after AI generation, disable accept while checking, show inline warnings rather than blocking. Warn + proceed > warn + block.
+
+---
+
 ## 2026-03-11 — [Phase 2.7] J3 Wave 3 — Streaming rewrite diff panel
 
 **Phase:** Build — Phase 2.7 (UX Polish)

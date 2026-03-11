@@ -435,11 +435,11 @@
    - ~~Wave 1: skills/team fields cloned, clean slug, embedding asserted~~ ✅
    - ~~Wave 2: CloneIntentModal, intent stored in metadata~~ ✅
    - ~~Wave 3: streaming RewritePanel, intent-aware prompt, accept/revert~~ ✅
-   - **Wave 4: bias check (D1), AI title suggestion (D2), AI skills delta (D3)** ← next J3 sub-wave
-   - Wave 5: post-clone checklist (D4), command bar intent (E2)
+   - ~~Wave 4: bias check (D1), AI title suggestion (D2), AI skills delta (D3)~~ ✅
+   - **Wave 5: post-clone checklist (D4), command bar intent (E2)** ← next J3 sub-wave
 2. ~~**R1/R4 dashboard P0 fixes**~~ ✅ DONE (status="open", source_id join — 2026-03-11)
 3. ~~**R3/R4 dashboard P1 fixes**~~ ✅ DONE (denominator fix + template filter — 2026-03-11)
-4. **JD1/JD2/JD3/JD4** — Job description quality panel (score + inline bias highlighting) ← **NEXT after J3 Wave 4**
+4. **JD1/JD2/JD3/JD4** — Job description quality panel (score + inline bias highlighting) ← **NEXT**
 5. **AR4/AR5** — Inline candidate actions + sequential review queue
 6. **CP2/CP4/CP7/CP8** — Candidate profile detail improvements
 7. **CL2** — Multi-dimensional candidate list filters
