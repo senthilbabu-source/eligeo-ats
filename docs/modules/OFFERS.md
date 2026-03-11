@@ -62,32 +62,47 @@ interface OfferCompensation {
 }
 ```
 
+**Currency rules:**
+
+| Rule | Detail |
+|------|--------|
+| **Supported currencies** | USD, EUR, GBP, CAD, AUD, INR, SGD, JPY, CHF, SEK. Org can use any; no conversion between them. |
+| **Validation** | `currency` must be a valid ISO 4217 code from the supported list. Reject unknown codes at API level (ATS-OF04). |
+| **Display** | Format using `Intl.NumberFormat` with the offer's `currency` code. Example: `new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })`. |
+| **Comparison** | No cross-currency comparison in v1.0. Analytics group by currency. Mixed-currency aggregation deferred to v2.0+. |
+| **Per-org default** | `organizations.default_currency` (not yet in schema — add when building offers). Pre-fills the currency picker; editable per offer. |
+| **Stripe interaction** | Stripe billing is always in the org's subscription currency (set at checkout). Offer compensation currency is independent — offers are internal, not billed. |
+
 ### 3.3 State Machine
 
 ```
                  ┌─────────┐
-        ┌────────│  draft  │────────┐
+        ┌────────│  draft  │◄───────┐
         │        └─────────┘        │
-        │ submit for approval       │ withdraw
-        ▼                           ▼
-  ┌──────────────┐          ┌───────────┐
-  │pending_approval│────────►│ withdrawn │
-  └──────────────┘ withdraw └───────────┘
-        │                         ▲
-        │ all approved            │ withdraw
-        ▼                         │
-  ┌──────────┐                    │
-  │ approved │────────────────────┤
-  └──────────┘                    │
-        │                         │
-        │ send for e-sign         │
-        ▼                         │
-  ┌──────────┐                    │
-  │   sent   │────────────────────┤
-  └──────────┘                    │
+        │ submit for     │ withdraw │ approver rejected
+        │ approval       ▼         │ (resets all approvals)
+        │         ┌───────────┐     │
+        │         │ withdrawn │     │
+        │         └───────────┘     │
+        ▼               ▲          │
+  ┌──────────────┐      │ withdraw │
+  │pending_approval│─────┤──────────┘
+  └──────────────┘      │
+        │               │
+        │ all approved  │ withdraw
+        ▼               │
+  ┌──────────┐          │
+  │ approved │──────────┤
+  └──────────┘          │
+        │               │
+        │ send e-sign   │ withdraw
+        ▼               │
+  ┌──────────┐          │
+  │   sent   │──────────┘
+  └──────────┘
         │         │               │
         │ signed  │ declined      │ expired (cron)
-        ▼         ▼               │
+        ▼         ▼               ▼
   ┌────────┐ ┌─────────┐  ┌─────────┐
   │ signed │ │declined │  │ expired │
   └────────┘ └─────────┘  └─────────┘

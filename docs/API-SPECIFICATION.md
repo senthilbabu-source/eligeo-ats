@@ -89,6 +89,67 @@ const { data: keyRecord } = await supabaseAdmin
 if (!keyRecord) return problemResponse(401, 'Invalid API key');
 ```
 
+### 2.3 Supabase Auth Configuration
+
+Settings applied to the Supabase project (Dashboard → Auth → Settings). Not in code — configured per environment.
+
+| Setting | Value | Notes |
+|---------|-------|-------|
+| **Site URL** | `https://eligeo.io` (prod), `https://staging.eligeo.io` (staging) | Redirect target after auth flows |
+| **Redirect URLs** | `https://eligeo.io/**`, `https://*.vercel.app/**`, `http://localhost:3000/**` | Wildcard for preview environments |
+| **JWT expiry** | 3600 seconds (1 hour) | Access token lifetime. Refresh handled by `proxy.ts`. |
+| **Refresh token rotation** | Enabled | Each refresh invalidates the old token. Prevents replay. |
+| **Refresh token reuse interval** | 10 seconds | Grace period for concurrent requests during rotation. |
+| **Password minimum length** | 8 characters | Supabase default. No complexity rules (encourages passphrases). |
+| **Email confirmations** | Enabled | Users must verify email before first login. |
+| **Double opt-in** | Disabled | Single confirmation email is sufficient. |
+| **Secure email change** | Enabled | Requires confirmation on both old and new email. |
+| **MFA/2FA** | Not in v1.0 | Deferred to v3.0 (Enterprise SSO/SAML). |
+| **Rate limiting (auth)** | Supabase defaults (30 requests/hour per IP for signup, 5 for password reset) | Override if needed post-launch. |
+| **Session per user** | Multiple concurrent sessions allowed | User can be logged in on desktop + mobile. |
+
+**Email templates (customized):**
+
+| Template | Subject | Key content |
+|----------|---------|-------------|
+| Confirm signup | "Welcome to Eligeo — verify your email" | Branded, Eligeo logo, verify button |
+| Reset password | "Reset your Eligeo password" | Branded, reset link, 1-hour expiry note |
+| Magic link | "Sign in to Eligeo" | Branded, one-click login button |
+| Change email | "Confirm your new email address" | Branded, confirm button |
+| Invite user | "You've been invited to {org_name} on Eligeo" | Branded, accept invite button, org name |
+
+Templates use React Email (same system as D08 notifications). Rendered at deploy time, uploaded to Supabase via API.
+
+### 2.4 API Key Permission Scoping
+
+API keys (v2.1+, Pro/Enterprise) use the `permissions` JSONB column to restrict access.
+
+**Permission format:** Array of `resource:action` strings from the RBAC permission set.
+
+```typescript
+// Example: read-only key for candidates and applications
+{
+  "permissions": ["candidates:view", "applications:view", "jobs:view"]
+}
+
+// Example: full-access key (same as recruiter role)
+{
+  "permissions": ["jobs:create", "jobs:publish", "candidates:view", "candidates:create", "applications:view", "applications:create", "applications:move"]
+}
+
+// Example: empty = no access (key is useless until permissions are set)
+{
+  "permissions": []
+}
+```
+
+**Rules:**
+- API key permissions are a **subset** of the creating user's role permissions. You cannot create a key with more access than you have.
+- Keys inherit the org scope of the creator. No cross-org keys.
+- `billing:manage`, `org:manage`, and `audit:view` are **never** available via API key — dashboard-only.
+- Default TTL: 365 days. Maximum: 365 days. Configurable at creation.
+- Revocation is immediate — key hash is deleted from lookup, all subsequent requests fail.
+
 ---
 
 ## 3. Authorization (RBAC)

@@ -21,6 +21,8 @@ This document defines the application error code scheme (ATS-XXXX), user-facing 
 
 **Relationship to D02:** D02 defines the RFC 9457 response envelope. This document defines the error codes and messages that populate that envelope.
 
+**Module cross-reference:** Error codes map to source modules: AU (Auth) → D02 §2, WF (Workflow) → D12, OF (Offers) → D06, IV (Interviews) → D07, SR (Search) → D10, BL (Billing) → D03, FL (Files) → D01 §07, NT (Notifications) → D08, CP (Candidate Portal) → D09, MG (Migration) → D23, VL (Validation) → D02 §7, SY (System) → D14.
+
 ---
 
 ## 2. Error Code Scheme

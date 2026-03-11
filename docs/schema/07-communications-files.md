@@ -363,6 +363,23 @@ CREATE TRIGGER audit_trigger AFTER INSERT OR UPDATE OR DELETE ON files
   FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
 ```
 
+### Upload Constraints
+
+| Category | Allowed MIME Types | Max Size | Context |
+|----------|--------------------|----------|---------|
+| `resume` | `application/pdf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | 10 MB | Candidate applications |
+| `cover_letter` | `application/pdf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | 5 MB | Candidate applications |
+| `offer_letter` | `application/pdf` | 10 MB | Generated or uploaded offer PDFs |
+| `profile_photo` | `image/jpeg`, `image/png`, `image/webp` | 2 MB | Candidate or user avatar |
+| `attachment` | `application/pdf`, `image/jpeg`, `image/png`, `image/webp`, `text/plain` | 10 MB | Notes, general attachments |
+| `career_site_asset` | `image/jpeg`, `image/png`, `image/webp`, `image/svg+xml` | 5 MB | Career page branding |
+
+**Validation strategy:** Check MIME type (from `Content-Type` header) AND file extension. Reject mismatches (e.g., `.exe` with `application/pdf` MIME). Magic byte validation deferred to virus scanning step.
+
+**Virus scanning:** Files are uploaded with `scan_status = 'pending'`. A background process (Inngest or Supabase Edge Function) scans via ClamAV cloud API. Files with `scan_status = 'infected'` are soft-deleted and the uploader is notified. Files remain inaccessible (download blocked) until `scan_status = 'clean'`.
+
+**Storage paths:** `{org_id}/{category}/{entity_id}/{uuid}.{ext}` — ensures org isolation at the storage bucket level.
+
 ---
 
 ## `custom_field_definitions`

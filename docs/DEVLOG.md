@@ -16,6 +16,16 @@
 
 ---
 
+### 2026-03-11 — [D02,D06,D10,D12,D26,D27,schema/07] Pre-code audit — MEDIUM+LOW gap remediation
+
+- **D10 SEARCH.md:** Added version gating note — v1.0 uses PostgreSQL ILIKE, Typesense deferred to v2.0.
+- **D06 OFFERS.md:** Added currency rules (10 supported currencies, validation, display via Intl.NumberFormat, no cross-currency comparison in v1.0). Updated state machine diagram to show `pending_approval → draft` rejection path.
+- **schema/07-communications-files.md:** Added upload constraints table (MIME types, max sizes per file category), validation strategy (MIME + extension check), virus scanning flow, storage path convention.
+- **D02 API-SPECIFICATION.md:** Added §2.3 Supabase Auth Configuration (JWT expiry, password policy, email templates, redirect URLs, session rules) and §2.4 API Key Permission Scoping (resource:action format, subset-of-creator rule, TTL, revocation).
+- **D12 WORKFLOW.md:** Added version gating note — withdrawal flow is v1.1, auto-actions are Growth+ v1.1, SLA is Pro+ v1.1.
+- **D27 PRODUCT-ROADMAP.md:** Clarified v1.0 notification events are 10 of 21 total (remaining 11 ship v1.1+).
+- **D26 ERROR-TAXONOMY.md:** Added module cross-reference mapping error code categories to source documents.
+
 ### 2026-03-11 — [D02,D24,D27,D29] Pre-code audit — HIGH gap remediation
 
 - **D02 API-SPECIFICATION.md:** Added §3.1 Endpoint-Level Permission Matrix (31 endpoints × 5 roles) and §3.2 Timezone Convention (storage, API, display, cron, DST rules).

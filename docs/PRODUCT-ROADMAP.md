@@ -172,7 +172,9 @@ Phase 6: Billing + Polish                  Weeks 11–12
   └── E2E: Signup → onboarding → first job → first hire (full journey)
 ```
 
-### 3.4 v1.0 Notification Events (10)
+### 3.4 v1.0 Notification Events (10 of 21)
+
+v1.0 ships with 10 critical events. D08 defines 21 total events; the remaining 11 (feedback_overdue, all_complete, approval chain, webhook health, subscription events, etc.) ship in v1.1+.
 
 | Event | Channel | Persona Notified |
 |-------|---------|-----------------|

@@ -15,6 +15,8 @@
 
 Search Architecture covers three search paradigms: full-text search (Typesense), semantic/AI matching (pgvector), and structured filtering (PostgreSQL). These compose together to power candidate discovery, job search, and AI-driven matching. The system syncs PostgreSQL data to Typesense for fast faceted search while keeping pgvector in-database for cosine similarity matching.
 
+> **Version gating (D27):** v1.0 uses **PostgreSQL ILIKE only** — sufficient for <10K candidates. Typesense sync pipeline (§4–5), AI matching (§6), and search Inngest functions (§8) are **v2.0 features**. All search API endpoints (§7) work with both backends — v1.0 uses the PostgreSQL fallback path, v2.0 activates Typesense. No code is wasted; the architecture is designed so v1.0 ILIKE queries are replaced by Typesense calls behind the same API surface.
+
 **Scope:**
 - In scope: Typesense collection schemas, Postgres→Typesense sync pipeline, faceted search, pgvector semantic matching, AI credit weighting, embedding lifecycle (create/update/invalidate), search API, skill-based matching.
 - Out of scope: Search analytics dashboards (D17), search result caching (D16), candidate portal job search UI (D09).

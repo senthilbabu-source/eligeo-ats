@@ -19,6 +19,8 @@ Workflow & State Machine defines how candidates move through the hiring pipeline
 - In scope: Stage transition state machine, `auto_actions` JSONB specification, auto-advance triggers, talent pool automation rules (G-018), interview completion auto-advance (G-025), SLA timers, bulk operations, rejection/withdrawal flows.
 - Out of scope: Pipeline template CRUD (D01 schema), kanban board UI (D05 Design), real-time board updates (D11), candidate portal status (D09).
 
+> **Version gating (D27):** v1.0 supports manual stage moves and recruiter-initiated rejection only. **Withdrawal flow (§8.3)** is documented for completeness but ships in **v1.1** (candidate-initiated via portal — see D09). **Auto-actions** (`send_email`, `add_to_pool`, `auto_advance`) are **Growth+ plan features** shipping in **v1.1**. v1.0 pipeline stages have no auto-actions configured. **SLA enforcement** is **Pro+ in v1.1+**.
+
 ## 2. User Stories
 
 | ID | Role | Story | Acceptance Criteria |
