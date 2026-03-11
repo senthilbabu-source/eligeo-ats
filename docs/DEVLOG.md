@@ -16,6 +16,23 @@
 
 ---
 
+### 2026-03-11 — [D27] Product Roadmap & Release Strategy — complete first draft
+
+**The most important document in the project.** Translates 27 spec documents into a phased release plan. Determines what we build first and why.
+
+**5 release versions:**
+- **v1.0 "Launch"** (12 weeks): Complete hiring loop — 26 features across 6 build phases. Post job → receive applications → evaluate → interview → offer → hire. Targets BambooHR graduates and spreadsheet users at $29–$79/mo. 10 critical notification events. No AI, no Typesense, no Nylas, no e-signatures — those justify Pro tier in v2.0.
+- **v1.1 "Velocity"** (4–6 weeks post-launch): Email templates, rejection flow, CSV import, bulk operations, basic dashboard, candidate status tracker. Features first 10 customers will ask for.
+- **v2.0 "Intelligence"** (Quarter 2): AI matching, Typesense search, workflow automation, self-scheduling (Nylas), e-signatures (Dropbox Sign), advanced analytics, talent pools, custom fields. Justifies Pro tier pricing.
+- **v2.1 "Scale"** (Quarter 3): ATS-to-ATS migration (Merge.dev), external API, webhooks, GDPR automation, Realtime, audit log export. Enterprise pipeline.
+- **v3.0 "Enterprise"** (Quarter 4+): White-label, custom domains, i18n, SSO/SAML, DEI reporting, HRIS integration.
+
+**Key decisions:** All 39 tables created in Phase 0 (future-proofing), but many unused until later versions. Email templates hardcoded in v1.0. Offer approval auto-approve (single step) in v1.0. No Typesense/Nylas/AI in v1.0. Revenue projections: $540 MRR at launch → $125K MRR at v3.0.
+
+**Build order = revenue order, not document order.**
+
+---
+
 ### 2026-03-11 — [D24] Consolidated Testing Strategy — complete first draft
 
 Consolidates all test requirements from ADR-004 and D06-D12 into executable plan. Vitest + Playwright configurations. Golden tenant fixture: 2 tenants (Acme Corp Pro, Globex Inc Starter) with 5 roles, pipeline, jobs, candidates, applications, scorecard templates. MSW mock registry: 9 external services (Stripe, Resend, Nylas, Typesense, OpenAI, Merge.dev, Dropbox Sign, Inngest, Slack) with handler overrides per test.
