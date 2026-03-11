@@ -15,6 +15,24 @@
 
 ---
 
+### 2026-03-11 — [TEST] Test debt payoff (Phases 2, 2.5, 2.6)
+
+- **Unit tests (72 total, up from 14):**
+  - `pagination.test.ts` — 15 tests: parsePagination (defaults, clamping, edge cases), buildPaginationMeta (pages, boundaries)
+  - `intent-patterns.test.ts` — 29 tests: command bar quick patterns (navigation, search, create intents, no-match), AI credit weights
+  - `embeddings.test.ts` — 14 tests: buildCandidateEmbeddingText, buildJobEmbeddingText (null handling, field combinations)
+  - `rbac.test.ts` — 11 tests (existing from Phase 1, covers Phase 2+ permissions)
+  - `smoke.test.ts` — 3 tests (existing)
+- **E2E tests (14 total, Playwright):**
+  - `auth.spec.ts` — 5 tests: login/redirect/error/signup flows
+  - `jobs.spec.ts` — 2 tests: list page + detail navigation (create tests deferred — see bug below)
+  - `career-portal.spec.ts` — 3 tests: public listing, published jobs, detail view
+  - `command-bar.spec.ts` — 4 tests: ⌘K open/close, type suggestion, navigate
+- **Bug found by E2E:** `extractSession()` reads `app_metadata` from `getUser()` DB call, but custom_access_token_hook injects claims into JWT only. `orgRole` defaults to "interviewer", breaking permission-gated pages. Fix needed: decode JWT access_token in extractSession. Tracked for Phase 2.7.
+- **Fixes:** Playwright config port 3000→3001, career-portal lint warning
+- **ADR-004 compliance:** Day 1 testing debt from Phases 2/2.5/2.6 now paid. 72 unit + 14 E2E = 86 tests total.
+- `[PLAYBOOK]` Testing debt accumulates silently — enforce test counts in CI gate, not just "tests pass"
+
 ### 2026-03-11 — [FEAT] Phase 2.6: Command Bar + AI Core
 
 - **Migration 015** — pgvector extension, `candidate_embedding vector(1536)` + `job_embedding vector(1536)` columns with HNSW indexes (m=16, ef_construction=64), `ai_usage_logs` table (append-only), `consume_ai_credits()` atomic SQL function, `match_candidates_for_job()` similarity search RPC
