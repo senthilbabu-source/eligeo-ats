@@ -308,7 +308,7 @@ Interview completed → scorecard submitted → Inngest: "interview/scorecard-su
 
 ```typescript
 export const workflowAutoAdvance = inngest.createFunction(
-  { id: 'workflow-auto-advance', retries: 3 },
+  { id: 'workflow/auto-advance', retries: 3 },
   { event: 'interview/scorecard-submitted' },
   async ({ event, step }) => {
     const { application_id, organization_id } = event.data;
@@ -576,7 +576,7 @@ async function executeSLA(action: SetSLAAction, context: StageChangeContext) {
 
 ```typescript
 export const workflowSLACheck = inngest.createFunction(
-  { id: 'workflow-sla-check', retries: 2 },
+  { id: 'workflow/sla-check', retries: 2 },
   { event: 'workflow/sla-check' },
   async ({ event, step }) => {
     const { application_id, stage_id, escalation, organization_id } = event.data;
@@ -628,7 +628,7 @@ The central Inngest function that orchestrates all auto-actions:
 
 ```typescript
 export const workflowStageChanged = inngest.createFunction(
-  { id: 'workflow-stage-changed', retries: 3 },
+  { id: 'workflow/stage-changed', retries: 3 },
   { event: 'workflow/stage-changed' },
   async ({ event, step }) => {
     const {
@@ -705,7 +705,7 @@ export const workflowStageChanged = inngest.createFunction(
 
 ```typescript
 export const workflowRejection = inngest.createFunction(
-  { id: 'workflow-rejection', retries: 3 },
+  { id: 'workflow/rejection', retries: 3 },
   { event: 'workflow/application-rejected' },
   async ({ event, step }) => {
     const { organization_id, application_id, candidate_id, auto_actions } = event.data;
@@ -744,6 +744,71 @@ export const workflowRejection = inngest.createFunction(
   }
 );
 ```
+
+### 8.3 Withdrawal Handler
+
+When a candidate withdraws (via Candidate Portal D09), the workflow engine processes cleanup:
+
+```typescript
+export const workflowWithdrawal = inngest.createFunction(
+  { id: 'workflow/application-withdrawn', retries: 3 },
+  { event: 'workflow/application-withdrawn' },
+  async ({ event, step }) => {
+    const { organization_id, application_id, candidate_id } = event.data;
+
+    // Step 1: Update application status
+    await step.run('update-status', async () => {
+      const supabase = createServiceClient();
+      await supabase.rpc('set_local_org', { org_id: organization_id });
+      await supabase.from('applications')
+        .update({ status: 'withdrawn', withdrawn_at: new Date().toISOString() })
+        .eq('id', application_id);
+    });
+
+    // Step 2: Void any pending offers
+    await step.run('void-pending-offers', async () => {
+      const supabase = createServiceClient();
+      await supabase.rpc('set_local_org', { org_id: organization_id });
+      const { data: offers } = await supabase.from('offers')
+        .select('id, status')
+        .eq('application_id', application_id)
+        .in('status', ['draft', 'pending_approval', 'approved', 'sent'])
+        .is('deleted_at', null);
+
+      for (const offer of offers ?? []) {
+        await inngest.send({
+          name: 'ats/offer.withdrawn',
+          data: { organization_id, offer_id: offer.id, reason: 'candidate_withdrawn' },
+        });
+      }
+    });
+
+    // Step 3: Notify relevant team members
+    await step.run('notify-withdrawal', async () => {
+      await inngest.send({
+        name: 'notification/dispatch',
+        data: {
+          organization_id,
+          event_type: 'application.withdrawn',
+          payload: { application_id, candidate_id },
+        },
+      });
+    });
+
+    // Step 4: Sync search index
+    await step.run('sync-search', async () => {
+      await inngest.send({
+        name: 'search/candidate-updated',
+        data: { organization_id, candidate_id },
+      });
+    });
+  }
+);
+```
+
+**Trigger:** The Candidate Portal (D09) sends `workflow/application-withdrawn` when a candidate withdraws. This ensures withdrawals route through the workflow engine rather than only firing a notification event.
+
+---
 
 ## 9. Bulk Operations
 
@@ -835,14 +900,30 @@ async function bulkRejectApplications(input: {
 
 ## 11. Inngest Functions
 
+### Naming Convention (Global)
+
+All Inngest function IDs use `module/action` format with forward-slash module separator and kebab-case actions:
+
+| Module | Pattern | Example |
+|--------|---------|---------|
+| Workflow | `workflow/<action>` | `workflow/stage-changed` |
+| Interview | `interview/<action>` | `interview/create-calendar-event` |
+| Offers | `offers/<action>` | `offers/approval-notify` |
+| Notification | `notification/<action>` | `notification/dispatch` |
+
+This convention applies across all module docs (D06, D07, D08, D12).
+
+### Function Registry
+
 | Function ID | Trigger Event | Purpose |
 |-------------|---------------|---------|
-| `workflow-stage-changed` | `workflow/stage-changed` | Orchestrate all auto-actions on stage entry |
-| `workflow-auto-advance` | `interview/scorecard-submitted` | Check & execute auto-advance after scorecard submission |
-| `workflow-rejection` | `workflow/application-rejected` | Execute rejection flow (pool + notification + search sync) |
-| `workflow-sla-check` | `workflow/sla-check` (delayed) | Check if application is still in stage, escalate if breached |
-| `workflow-send-email` | Internal step | Send auto-action email via Resend (D08 pattern) |
-| `workflow-bulk-stage-move` | `workflow/bulk-move` | Process bulk moves with per-item error handling |
+| `workflow/stage-changed` | `workflow/stage-changed` | Orchestrate all auto-actions on stage entry |
+| `workflow/auto-advance` | `interview/scorecard-submitted` | Check & execute auto-advance after scorecard submission |
+| `workflow/rejection` | `workflow/application-rejected` | Execute rejection flow (pool + notification + search sync) |
+| `workflow/application-withdrawn` | `workflow/application-withdrawn` | Void pending offers, notify team, sync search on withdrawal |
+| `workflow/sla-check` | `workflow/sla-check` (delayed) | Check if application is still in stage, escalate if breached |
+| `workflow/send-email` | Internal step | Send auto-action email via Resend (D08 pattern) |
+| `workflow/bulk-stage-move` | `workflow/bulk-move` | Process bulk moves with per-item error handling |
 
 ## 12. UI Components
 

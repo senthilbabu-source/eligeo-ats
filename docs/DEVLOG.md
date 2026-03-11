@@ -16,6 +16,49 @@
 
 ---
 
+### 2026-03-10 — [AUDIT] Minor audit items resolved (m-1, m-2, m-3)
+
+Closed the 3 minor items originally deferred from the pre-code audit:
+
+- **m-1:** Documented `is_active` vs `deleted_at` semantic distinction on `organization_members` (01-core-tenancy.md). `is_active = FALSE` = suspended (reversible toggle, history preserved). `deleted_at` = soft-deleted (full removal per ADR-006).
+- **m-2:** Added `CustomFieldRenderer` component spec to D05 (DESIGN-SYSTEM.md §6.2). Maps all 7 field types to display/edit components with validation strategy.
+- **m-3:** Documented candidate dedup strategy in 03-candidates-crm.md. MVP: exact email match within org (unique index). Post-MVP: fuzzy matching (name similarity, phone, LinkedIn) with manual merge UI.
+
+**All audit findings (critical + major + minor) now resolved. Zero open items.**
+
+---
+
+### 2026-03-10 — [AUDIT] Pre-code cross-document consistency audit — all findings resolved
+
+**Audit scope:** All 21 documentation specs (D01–D21) audited for cross-document consistency, security gaps, and implementation ambiguities before code phase begins.
+
+**Initial findings:** 3 critical, 8 major, 3 minor. After deep verification, 5 were false positives (already addressed in docs). 5 real issues fixed:
+
+**Critical (fixed):**
+- **C-1:** AI metrics conflict between D02 (operations/day) and D03 (credits/month) — clarified as two-layer enforcement: rate limit (daily burst cap) vs billing quota (monthly credits). Added clarifying notes to both D02 §6 and D03 §2.
+- **C-2/C-3:** 8 RLS INSERT policies missing `organization_id = current_user_org_id()` check — fixed in D01 schema files `05-interviews-scorecards.md` (interviews, scorecard_templates, scorecard_categories, scorecard_attributes, scorecard_submissions) and `06-offers.md` (offer_templates, offers, offer_approvals). Multi-org scenario (ADR-005) could allow cross-org inserts without this check.
+
+**Major (fixed):**
+- **M-1:** Offer-to-pipeline mapping unclear — added design note to `06-offers.md`: offer creation is manual, not auto-triggered on pipeline stage entry.
+- **M-3:** Inngest function ID naming inconsistent (hyphens vs slashes) — standardized all 20+ function IDs to `module/action` format across WORKFLOW.md, INTERVIEW-SCHEDULING.md, NOTIFICATIONS.md. Added global naming convention to D12 §11.
+- **M-4:** Missing `workflow/application-withdrawn` event — added §8.3 withdrawal handler to WORKFLOW.md (voids pending offers, notifies team, syncs search). Updated CANDIDATE-PORTAL.md to route through workflow engine instead of direct notification dispatch.
+
+**False positives (already in docs):**
+- M-2: Event ordering documented in WORKFLOW.md
+- M-5: Offer lifecycle events in NOTIFICATIONS.md + OFFERS.md
+- M-6: Webhook re-enablement in NOTIFICATIONS.md
+- M-7: Cron timezone specified as UTC
+- M-8: Realtime channel registry in REALTIME.md
+
+**Minor (deferred to code phase):**
+- `is_active` vs `deleted_at` on org_members — document at implementation
+- Custom field rendering component — D05 gap, non-blocking
+- Candidate dedup fuzzy matching — already flagged post-MVP
+
+**Verdict:** All critical and major findings resolved. Documentation is audit-clean for code phase.
+
+---
+
 ### 2026-03-10 — [D05] Amend Design System: light theme primary, dark mode post-MVP
 
 **Changed:** Design principle #5 from "Dark mode from day one" to "Light theme is primary."

@@ -267,6 +267,21 @@ Base: shadcn/ui (Radix UI primitives + Tailwind styling). Customize, don't fork.
 | `FilterBar` | Composable filter chips with saved views | `filters[]`, `onApply()` |
 | `ScoreRubric` | Structured scorecard display/input | `attributes[]`, `ratings[]` |
 | `InterviewScheduler` | Calendar-integrated scheduling widget | `interviewerIds[]`, `duration` |
+| `CustomFieldRenderer` | Renders custom field values by type (D07 `custom_field_definitions`) | `definition: CustomFieldDefinition`, `value: unknown`, `mode: 'display' \| 'edit'` |
+
+**`CustomFieldRenderer` type mapping:**
+
+| `field_type` | Display | Edit |
+|-------------|---------|------|
+| `text` | `<span>` | `<Input>` |
+| `number` | `<span>` (formatted) | `<Input type="number">` |
+| `date` | Formatted date string | `<DatePicker>` |
+| `boolean` | Badge (Yes/No) | `<Switch>` |
+| `select` | Badge | `<Select>` with options from `validation_rules.options` |
+| `multi_select` | Badge group | `<MultiSelect>` with options from `validation_rules.options` |
+| `url` | `<a>` link | `<Input type="url">` |
+
+Validation uses `validation_rules` JSONB from the field definition (required, min/max, regex pattern). All custom field edit forms use `react-hook-form` + Zod with schemas generated from the definition at runtime.
 
 ---
 

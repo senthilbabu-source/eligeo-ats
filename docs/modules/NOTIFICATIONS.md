@@ -167,7 +167,7 @@ Per D02 §8, webhook outbound is feature-gated by `webhook_outbound` flag (Growt
 ```typescript
 // Inngest function: notification/webhook-deliver
 export const webhookDeliver = inngest.createFunction(
-  { id: 'notification-webhook-deliver', retries: 5 },
+  { id: 'notification/webhook-deliver', retries: 5 },
   { event: 'notification/webhook-deliver' },
   async ({ event, step }) => {
     const { endpoint_id, payload, event_type } = event.data;
@@ -353,13 +353,13 @@ const PreviewTemplateSchema = z.object({
 
 | Function ID | Trigger | What It Does |
 |-------------|---------|-------------|
-| `notification-dispatch` | `notification/dispatch` | Routes notification to channels based on user preferences |
-| `notification-send-email` | `notification/send-email` | Renders email template + sends via Resend |
-| `notification-send-in-app` | `notification/send-in-app` | Broadcasts via Supabase Realtime to user's channel |
-| `notification-mention-dispatch` | `note/created` | Extracts mentions from note, dispatches per-user notifications |
-| `notification-webhook-deliver` | `notification/webhook-deliver` | Delivers webhook payload with HMAC signature + health tracking |
-| `notification-webhook-fanout` | `notification/webhook-fanout` | For a given event, fans out to all active subscribed endpoints |
-| `notification-digest` | `cron: 0 8 * * *` | Collects digest-enabled events from past 24h, sends batched email |
+| `notification/dispatch` | `notification/dispatch` | Routes notification to channels based on user preferences |
+| `notification/send-email` | `notification/send-email` | Renders email template + sends via Resend |
+| `notification/send-in-app` | `notification/send-in-app` | Broadcasts via Supabase Realtime to user's channel |
+| `notification/mention-dispatch` | `note/created` | Extracts mentions from note, dispatches per-user notifications |
+| `notification/webhook-deliver` | `notification/webhook-deliver` | Delivers webhook payload with HMAC signature + health tracking |
+| `notification/webhook-fanout` | `notification/webhook-fanout` | For a given event, fans out to all active subscribed endpoints |
+| `notification/digest` | `cron: 0 8 * * *` | Collects digest-enabled events from past 24h, sends batched email |
 
 ## 9. UI Components
 

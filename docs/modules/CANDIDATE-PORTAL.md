@@ -371,16 +371,13 @@ async function withdrawApplication(token: string) {
     })
     .eq('id', payload.application_id);
 
-  // Notify recruiter
+  // Route through workflow engine (D12 §8.3) — handles offer voiding, notifications, search sync
   await inngest.send({
-    name: 'notification/dispatch',
+    name: 'workflow/application-withdrawn',
     data: {
       organization_id: payload.organization_id,
-      event_type: 'application.withdrawn',
-      payload: {
-        application_id: payload.application_id,
-        candidate_id: payload.candidate_id,
-      },
+      application_id: payload.application_id,
+      candidate_id: payload.candidate_id,
     },
   });
 }

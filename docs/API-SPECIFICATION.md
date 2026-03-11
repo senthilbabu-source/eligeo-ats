@@ -203,12 +203,14 @@ const nextCursor = hasMore ? encodeCursor(items.at(-1)!) : null;
 
 ### Tiers (per plan from `organizations.plan`)
 
-| Plan | API Requests | AI Operations | Webhook Deliveries |
-|------|-------------|---------------|--------------------|
+| Plan | API Requests | AI Operations (burst cap) | Webhook Deliveries |
+|------|-------------|---------------------------|---------------------|
 | `starter` | 500/min | 100/day | 200/hr |
 | `growth` | 2,000/min | 500/day | 1,000/hr |
 | `pro` | 5,000/min | 2,000/day | 2,000/hr |
 | `enterprise` | 10,000/min | 10,000/day | 5,000/hr |
+
+> **AI Operations vs AI Credits:** "AI Operations/day" is a **rate limit** (burst protection, resets daily at midnight UTC). It prevents abuse but does not govern billing. **AI credits/month** (defined in D03 §2) is the **billing quota** — each AI operation consumes 1 credit from the monthly allocation. Both limits apply simultaneously: a Starter org can burst up to 100 AI calls/day but has only 10 credits/month total. Once monthly credits are exhausted, AI endpoints return `402 Payment Required` regardless of the daily rate limit.
 
 ### Response Headers (always included)
 

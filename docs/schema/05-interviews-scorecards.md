@@ -77,7 +77,8 @@ CREATE POLICY "interviews_select" ON interviews FOR SELECT
 
 CREATE POLICY "interviews_insert" ON interviews FOR INSERT
   WITH CHECK (
-    has_org_role(organization_id, 'owner', 'admin', 'recruiter', 'hiring_manager')
+    organization_id = current_user_org_id()
+    AND has_org_role(organization_id, 'owner', 'admin', 'recruiter', 'hiring_manager')
   );
 
 CREATE POLICY "interviews_update" ON interviews FOR UPDATE
@@ -145,7 +146,8 @@ CREATE POLICY "scorecard_templates_select" ON scorecard_templates FOR SELECT
 
 CREATE POLICY "scorecard_templates_insert" ON scorecard_templates FOR INSERT
   WITH CHECK (
-    has_org_role(organization_id, 'owner', 'admin', 'recruiter', 'hiring_manager')
+    organization_id = current_user_org_id()
+    AND has_org_role(organization_id, 'owner', 'admin', 'recruiter', 'hiring_manager')
   );
 
 CREATE POLICY "scorecard_templates_update" ON scorecard_templates FOR UPDATE
@@ -212,7 +214,8 @@ CREATE POLICY "scorecard_categories_select" ON scorecard_categories FOR SELECT
 
 CREATE POLICY "scorecard_categories_insert" ON scorecard_categories FOR INSERT
   WITH CHECK (
-    has_org_role(organization_id, 'owner', 'admin', 'recruiter', 'hiring_manager')
+    organization_id = current_user_org_id()
+    AND has_org_role(organization_id, 'owner', 'admin', 'recruiter', 'hiring_manager')
   );
 
 CREATE POLICY "scorecard_categories_update" ON scorecard_categories FOR UPDATE
@@ -277,7 +280,8 @@ CREATE POLICY "scorecard_attributes_select" ON scorecard_attributes FOR SELECT
 
 CREATE POLICY "scorecard_attributes_insert" ON scorecard_attributes FOR INSERT
   WITH CHECK (
-    has_org_role(organization_id, 'owner', 'admin', 'recruiter', 'hiring_manager')
+    organization_id = current_user_org_id()
+    AND has_org_role(organization_id, 'owner', 'admin', 'recruiter', 'hiring_manager')
   );
 
 CREATE POLICY "scorecard_attributes_update" ON scorecard_attributes FOR UPDATE
@@ -377,7 +381,8 @@ CREATE POLICY "scorecard_submissions_select" ON scorecard_submissions FOR SELECT
 
 CREATE POLICY "scorecard_submissions_insert" ON scorecard_submissions FOR INSERT
   WITH CHECK (
-    is_org_member(organization_id)
+    organization_id = current_user_org_id()
+    AND is_org_member(organization_id)
     AND submitted_by = auth.uid()  -- Can only submit as yourself
   );
 

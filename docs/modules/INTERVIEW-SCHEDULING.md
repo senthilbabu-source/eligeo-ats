@@ -180,7 +180,7 @@ Two-way sync between ATS and interviewer calendars:
 ```typescript
 // Inngest function: interview/nylas-event-sync
 export const nylasEventSync = inngest.createFunction(
-  { id: 'interview-nylas-event-sync', retries: 3 },
+  { id: 'interview/nylas-event-sync', retries: 3 },
   { event: 'interview/nylas-webhook' },
   async ({ event, step }) => {
     const { type, data } = event;
@@ -368,13 +368,13 @@ const ScorecardSummaryResponse = z.object({
 
 | Function ID | Trigger | What It Does |
 |-------------|---------|-------------|
-| `interview-create-calendar-event` | `interview/scheduled` | Creates Nylas calendar event, stores `nylas_event_id` |
-| `interview-update-calendar-event` | `interview/rescheduled` | Updates Nylas event with new time/details |
-| `interview-cancel-calendar-event` | `interview/cancelled` | Deletes Nylas event, notifies participants |
-| `interview-nylas-event-sync` | `interview/nylas-webhook` | Processes inbound Nylas webhook (attendee status, external deletes) |
-| `interview-feedback-reminder` | `cron: 0 9 * * *` (daily 9 AM UTC) | Finds interviews past `feedback_deadline_at` without submission, sends reminder |
-| `interview-scorecard-submitted` | `scorecard/submitted` | Notifies recruiter + hiring manager of new scorecard |
-| `interview-self-schedule-expire` | `cron: 0 * * * *` (hourly) | Expires self-scheduling links older than 7 days |
+| `interview/create-calendar-event` | `interview/scheduled` | Creates Nylas calendar event, stores `nylas_event_id` |
+| `interview/update-calendar-event` | `interview/rescheduled` | Updates Nylas event with new time/details |
+| `interview/cancel-calendar-event` | `interview/cancelled` | Deletes Nylas event, notifies participants |
+| `interview/nylas-event-sync` | `interview/nylas-webhook` | Processes inbound Nylas webhook (attendee status, external deletes) |
+| `interview/feedback-reminder` | `cron: 0 9 * * *` (daily 9 AM UTC) | Finds interviews past `feedback_deadline_at` without submission, sends reminder |
+| `interview/scorecard-submitted` | `scorecard/submitted` | Notifies recruiter + hiring manager of new scorecard |
+| `interview/self-schedule-expire` | `cron: 0 * * * *` (hourly) | Expires self-scheduling links older than 7 days |
 
 ## 8. UI Components
 

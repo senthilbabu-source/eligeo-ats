@@ -42,7 +42,9 @@ Four tiers. The `organizations.plan` CHECK constraint enforces: `starter`, `grow
 | **SSO/SAML** | ❌ | ❌ | ❌ | ✅ |
 | **Dedicated support** | ❌ | ❌ | ❌ | ✅ |
 | **API rate limit** | 500/min | 2,000/min | 5,000/min | 10,000/min |
-| **AI operations/day** | 100 | 500 | 2,000 | 10,000 |
+| **AI operations/day** (rate limit) | 100 | 500 | 2,000 | 10,000 |
+
+> **Two-layer AI enforcement:** "AI credits/month" is the **billing quota** — each AI operation consumes 1 credit, resets on `invoice.paid` (§6.2), overage at $5/100 credits. "AI operations/day" is the **rate limit** (burst cap) — enforced in `proxy.ts` via Upstash Redis (D02 §6), resets daily at midnight UTC. Both apply simultaneously. When monthly credits are exhausted, AI endpoints return `402` even if the daily rate limit has headroom.
 
 ### 2.1 Feature Flag Enforcement
 

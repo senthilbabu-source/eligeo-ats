@@ -144,6 +144,8 @@ CREATE TRIGGER audit_trigger AFTER INSERT OR UPDATE OR DELETE ON user_profiles
 
 Junction table linking users to organizations with role-based access.
 
+> **`is_active` vs `deleted_at` semantics:** These are two distinct concepts. `is_active = FALSE` means the membership is **suspended** — the user still appears in the member list, their historical actions (notes, scorecards) remain attributed to them, and an admin can re-activate them. `deleted_at IS NOT NULL` means the membership is **soft-deleted** — the user has been fully removed from the org (ADR-006). Suspension is reversible via a toggle; deletion follows the standard soft-delete pattern. Queries should filter on `is_active = TRUE AND deleted_at IS NULL` for current active members.
+
 ```sql
 CREATE TABLE organization_members (
   id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),

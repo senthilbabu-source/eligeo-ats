@@ -188,6 +188,11 @@ CREATE INDEX idx_candidates_org
   WHERE deleted_at IS NULL;
 
 -- Email lookup for dedup on import/apply
+-- Dedup strategy: exact email match within an org is the MVP gate.
+-- On import or application, check this index first. If a match exists,
+-- merge into the existing candidate record rather than creating a duplicate.
+-- Fuzzy matching (name similarity, phone normalization, LinkedIn URL matching)
+-- is deferred to post-MVP and will use a candidate merge UI with manual review.
 CREATE UNIQUE INDEX idx_candidates_email
   ON candidates(organization_id, email)
   WHERE deleted_at IS NULL;

@@ -5,6 +5,12 @@
 
 ---
 
+## Design Note: Offer Creation is Manual
+
+Offers are **not** auto-created when a candidate enters the "Offer" pipeline stage. Recruiters manually create offers by selecting a template and customizing compensation for the specific candidate. The pipeline stage transition is a prerequisite (the candidate must be in an offer-eligible stage), but it does not trigger offer creation. This avoids premature offers and gives recruiters control over timing and terms.
+
+---
+
 ## `offer_templates`
 
 Reusable compensation and terms templates for consistent offer creation across the organization.
@@ -51,7 +57,8 @@ CREATE POLICY "offer_templates_select" ON offer_templates FOR SELECT
 
 CREATE POLICY "offer_templates_insert" ON offer_templates FOR INSERT
   WITH CHECK (
-    has_org_role(organization_id, 'owner', 'admin', 'recruiter')
+    organization_id = current_user_org_id()
+    AND has_org_role(organization_id, 'owner', 'admin', 'recruiter')
   );
 
 CREATE POLICY "offer_templates_update" ON offer_templates FOR UPDATE
@@ -154,7 +161,8 @@ CREATE POLICY "offers_select" ON offers FOR SELECT
 
 CREATE POLICY "offers_insert" ON offers FOR INSERT
   WITH CHECK (
-    has_org_role(organization_id, 'owner', 'admin', 'recruiter')
+    organization_id = current_user_org_id()
+    AND has_org_role(organization_id, 'owner', 'admin', 'recruiter')
   );
 
 CREATE POLICY "offers_update" ON offers FOR UPDATE
@@ -238,7 +246,8 @@ CREATE POLICY "offer_approvals_select" ON offer_approvals FOR SELECT
 
 CREATE POLICY "offer_approvals_insert" ON offer_approvals FOR INSERT
   WITH CHECK (
-    has_org_role(organization_id, 'owner', 'admin', 'recruiter')
+    organization_id = current_user_org_id()
+    AND has_org_role(organization_id, 'owner', 'admin', 'recruiter')
   );
 
 CREATE POLICY "offer_approvals_update" ON offer_approvals FOR UPDATE
