@@ -29,3 +29,45 @@ CREATE INDEX idx_audit_performer ON audit_logs(performed_by, performed_at DESC)
 COMMENT ON TABLE audit_logs IS 'Append-only audit trail. ADR-007. No soft-delete (ADR-006 exception). No RLS — accessed via service role only.';
 COMMENT ON COLUMN audit_logs.old_data IS 'Previous row state (UPDATE/DELETE). NULL on INSERT.';
 COMMENT ON COLUMN audit_logs.new_data IS 'New row state (INSERT/UPDATE). NULL on DELETE.';
+
+-- ─── Audit Trigger Function ───
+-- Generic trigger that logs INSERT/UPDATE/DELETE to audit_logs.
+-- Attached to tables in migration 005.
+CREATE OR REPLACE FUNCTION audit_trigger_func()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_org_id UUID;
+  v_record_id UUID;
+  v_row JSONB;
+BEGIN
+  -- Extract from appropriate row (handles tables with or without organization_id)
+  IF TG_OP = 'DELETE' THEN
+    v_row := to_jsonb(OLD);
+    v_record_id := OLD.id;
+  ELSE
+    v_row := to_jsonb(NEW);
+    v_record_id := NEW.id;
+  END IF;
+
+  -- Safely extract org_id (NULL for tables like user_profiles that lack it)
+  v_org_id := (v_row ->> 'organization_id')::UUID;
+
+  IF TG_OP = 'DELETE' THEN
+    INSERT INTO audit_logs (organization_id, table_name, record_id, action, old_data, performed_by)
+    VALUES (v_org_id, TG_TABLE_NAME, v_record_id, 'DELETE', to_jsonb(OLD), auth.uid());
+    RETURN OLD;
+  ELSIF TG_OP = 'UPDATE' THEN
+    INSERT INTO audit_logs (organization_id, table_name, record_id, action, old_data, new_data, performed_by)
+    VALUES (v_org_id, TG_TABLE_NAME, v_record_id, 'UPDATE', to_jsonb(OLD), to_jsonb(NEW), auth.uid());
+    RETURN NEW;
+  ELSIF TG_OP = 'INSERT' THEN
+    INSERT INTO audit_logs (organization_id, table_name, record_id, action, new_data, performed_by)
+    VALUES (v_org_id, TG_TABLE_NAME, v_record_id, 'INSERT', to_jsonb(NEW), auth.uid());
+    RETURN NEW;
+  END IF;
+  RETURN NULL;
+END;
+$$;
