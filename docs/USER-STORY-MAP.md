@@ -14,7 +14,7 @@
 |-----|---------|
 | ✅ BUILT | Already shipped in Phase 0–2.7 |
 | 🔶 2.6 | Phase 2.6 — shipped, tag preserved for historical traceability |
-| 🔷 2.7 | Phase 2.7 — UX polish (in progress) |
+| 🔷 2.7 | Phase 2.7 — UX polish (complete — all stories ✅ BUILT) |
 | 🟢 P3 | Phase 3 — Interviews + scorecards |
 | 🟣 P4 | Phase 4 — Offers |
 | 🔵 P5 | Phase 5 — Billing |

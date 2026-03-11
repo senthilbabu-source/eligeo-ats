@@ -23,9 +23,11 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 
 ## Current State
 
-- **Phase:** Build — Phase 2 complete. **PIVOTED** per ADR-011: horizontal pass (2.5 → 2.6 → 2.7) before vertical features.
-- **Build order:** Phase 0 ✅ → Phase 1 ✅ → Phase 2 ✅ → **Phase 2.5 (foundations)** → **Phase 2.6 (command bar + AI)** → **Phase 2.7 (UX polish)** → Phase 3 (interviews) → Phase 4 (offers) → Phase 5 (billing)
+- **Phase:** Build — **Phase 2.7 (UX polish) COMPLETE. Next: Phase 3 (Interviews + Scorecards).**
+- **Build order:** Phase 0 ✅ → Phase 1 ✅ → Phase 2 ✅ → Phase 2.5 ✅ → Phase 2.6 ✅ → Phase 2.7 ✅ → **Phase 3 (interviews) ← NEXT** → Phase 4 (offers) → Phase 5 (billing)
 - **Documentation:** ALL 30 docs complete. Spec docs describe WHAT; build order changed per ADR-011.
+- **Test count:** 583 Vitest + 45 E2E = 628 total. All passing.
+- **Migrations:** 20 total (000–020). Migration 020 adds `pronouns` to `candidates`.
 - **Key rule:** Every new feature ships with AI-assisted mode from Day 1. No more "AI deferred to v2.0."
 - **Rules:** 90 rules in `docs/AI-RULES.md` (§1-§21)
 - **Governance:** Post-build audit (§13), pre-start gate (§21), downstream impact (§14)
