@@ -1,31 +1,28 @@
 /**
- * RLS Tests: job_openings
- * D24 §6.2 — generator pattern
+ * RLS Tests: talent_pool_members
+ * D24 §6.2 — generator pattern, full 5 roles × 4 ops
  *
- * Policies (migration 008, cross-cut 013):
+ * talent_pool_members (migration 012):
  *   SELECT: is_org_member — all roles
- *   INSERT: owner, admin, recruiter (NOT hiring_manager, NOT interviewer)
+ *   INSERT: owner, admin, recruiter
  *   UPDATE: owner, admin, recruiter
- *   DELETE: owner, admin only
+ *   DELETE: owner, admin, recruiter
  */
 
 import { TENANT_A } from "@/__fixtures__/golden-tenant";
 import { generateRLSTests } from "./rls-test-generator";
 
 generateRLSTests({
-  table: "job_openings",
-  tenantARecordId: TENANT_A.jobs.seniorEngineer.id,
-  tenantBRecordId: undefined, // No Globex jobs in seed
+  table: "talent_pool_members",
+  tenantARecordId: "11111111-6009-4000-a000-000000000001",
   sampleInsert: {
     organization_id: TENANT_A.org.id,
-    pipeline_template_id: TENANT_A.pipeline.template.id,
-    title: "RLS Test Job",
-    slug: `rls-test-job-${Date.now()}`,
-    status: "draft",
-    location_type: "remote",
-    employment_type: "full_time",
+    talent_pool_id: "11111111-6005-4000-a000-000000000001",
+    candidate_id: TENANT_A.candidates.bob.id,
+    added_by: TENANT_A.users.owner.id,
+    notes: "RLS test member",
   },
-  sampleUpdate: { department: "RLS Test Dept" },
+  sampleUpdate: { notes: "Updated by RLS test" },
   roles: [
     {
       email: TENANT_A.users.owner.email,
@@ -42,8 +39,8 @@ generateRLSTests({
     {
       email: TENANT_A.users.recruiter.email,
       role: "recruiter",
-      allowed: ["SELECT", "INSERT", "UPDATE"],
-      denied: ["DELETE"],
+      allowed: ["SELECT", "INSERT", "UPDATE", "DELETE"],
+      denied: [],
     },
     {
       email: TENANT_A.users.hiringManager.email,

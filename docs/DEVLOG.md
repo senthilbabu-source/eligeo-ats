@@ -15,6 +15,52 @@
 
 ---
 
+## 2026-03-11 — Comprehensive Audit + 5-Wave Fix Plan (Waves 1–5)
+
+**Phase:** Post-Phase 2.6 audit
+**Scope:** Full codebase audit → 28 findings → 5-wave dependency-ordered fix plan
+
+### Wave 1 (P0 Security + Code Quality) ✅
+- **SEC-01:** Open redirect fix — `getSafeRedirectPath()` in auth callback
+- **SEC-02:** Defense-in-depth org_id filters on ALL page queries (jobs, candidates, pipeline, command-bar, AI actions)
+- **SEC-03:** SQL LIKE injection prevention — `escapeLikeQuery()` in command-bar search
+- **SEC-04:** ADR-001 exception documentation for service role usage in public-apply
+- **SEC-06:** Error message sanitization — 5 AI action catch blocks now log server-side, return generic messages
+- **SEC-10:** Supabase minimum password length 6 → 8
+- **CODE-01:** Soft-delete `deleted_at IS NULL` filters added to all missing queries (moveStage, rejectApplication, createApplication)
+- **CODE-04:** Merged duplicate imports in AI actions
+- **BUILD-01:** ESLint `_`-prefix rule for unused vars, removed unused TENANT_B import
+
+### Wave 2 (Infrastructure Hardening) ✅
+- **CODE-02:** Sentry SDK — `instrumentation.ts` + `instrumentation-client.ts` + `Sentry.captureException()` in all 5 AI catch blocks
+- **SEC-05:** Upstash rate limiting in `proxy.ts` — public (60/min), form (5/min), health endpoint
+- **SEC-07:** Content-Security-Policy header in `next.config.ts` (self, supabase, sentry, openai)
+- **CODE-03:** Centralized `CONFIG` constants — replaced 11 magic numbers across AI modules + pagination
+
+### Wave 3 (API Protection) ✅
+- **SEC-08:** AI per-IP rate limiting (20/min) in `proxy.ts` for `/api/ai/*` endpoints
+- **SEC-09:** CSRF origin/referer validation — `checkCsrf()` utility applied to AI streaming route
+
+### Wave 4 (Test Coverage) ✅
+- **TEST-01:** RLS tests for 4 missing tables — skills (26), candidate_skills (22), job_required_skills (22), talent_pool_members (26) = +96 tests
+- **TEST-04:** AI utility tests — csrf (11), ai-generate (9), ai-resume-parser (4) = +24 tests
+- **TEST-03:** API route tests — health (4), AI streaming (7) = +11 tests
+- Seed data: deterministic UUIDs added for skills, candidate_skills, job_required_skills, talent_pool_members
+- **Test count: 391 → 520** (+129 new tests)
+
+### Wave 5 (E2E + Docs + Cleanup) ✅
+- **TEST-05:** E2E test for public career portal application form (3 scenarios)
+- **DOC-01:** DEVLOG updated, MEMORY.md updated
+- **BUILD-02:** .docx binaries removed from git tracking, added to .gitignore
+
+### Summary
+- **28 findings resolved**, zero remaining debt
+- **Security:** open redirect, org isolation, LIKE injection, error leaks, rate limiting, CSP, CSRF, password policy
+- **Tests:** 391 → 523+ (RLS, AI, API, CSRF, E2E)
+- **Infrastructure:** Sentry, Upstash rate limiting, centralized config, CSP headers
+
+[PLAYBOOK] Comprehensive audit-then-fix pattern: 6-agent parallel audit → prioritized findings → dependency-ordered waves → verify after each wave. Prevents fix-introduces-bug cycles.
+
 ### 2026-03-11 — [INFRA] Migrate AI layer from raw OpenAI SDK to Vercel AI SDK
 
 - **What:** Replaced `openai` package with `@ai-sdk/openai` + `ai` (Vercel AI SDK)

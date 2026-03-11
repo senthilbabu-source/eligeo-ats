@@ -361,14 +361,23 @@ INSERT INTO talent_pools (id, organization_id, name, description, created_by) VA
     '11111111-1001-4000-a000-000000000003'
   );
 
-INSERT INTO talent_pool_members (organization_id, talent_pool_id, candidate_id, added_by, notes) VALUES
-  (
-    '11111111-2001-4000-a000-000000000001',
-    '11111111-6005-4000-a000-000000000001',
-    '11111111-4001-4000-a000-000000000003',
-    '11111111-1001-4000-a000-000000000003',
-    'Strong enterprise background, keep warm for next senior role'
-  );
+-- ─── Skills (Phase 2 — RLS test fixtures) ────────────────
+INSERT INTO skills (id, organization_id, name, category, is_system) VALUES
+  ('11111111-6006-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', 'TypeScript', 'programming', FALSE),
+  ('11111111-6006-4000-a000-000000000002', '11111111-2001-4000-a000-000000000001', 'React', 'framework', FALSE),
+  ('22222222-6006-4000-a000-000000000001', '22222222-2001-4000-a000-000000000001', 'Python', 'programming', FALSE);
+
+-- ─── Candidate Skills ────────────────────────────────────
+INSERT INTO candidate_skills (id, organization_id, candidate_id, skill_id, proficiency, source) VALUES
+  ('11111111-6007-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', '11111111-4001-4000-a000-000000000001', '11111111-6006-4000-a000-000000000001', 'advanced', 'self_reported');
+
+-- ─── Job Required Skills ─────────────────────────────────
+INSERT INTO job_required_skills (id, organization_id, job_id, skill_id, importance) VALUES
+  ('11111111-6008-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', '11111111-3001-4000-a000-000000000001', '11111111-6006-4000-a000-000000000001', 'must_have');
+
+-- ─── Talent Pool Members (deterministic ID) ──────────────
+INSERT INTO talent_pool_members (id, organization_id, talent_pool_id, candidate_id, added_by, notes) VALUES
+  ('11111111-6009-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', '11111111-6005-4000-a000-000000000001', '11111111-4001-4000-a000-000000000003', '11111111-1001-4000-a000-000000000003', 'Strong enterprise background, keep warm for next senior role');
 
 -- ============================================================
 -- Phase 3+ seed data will be appended below
