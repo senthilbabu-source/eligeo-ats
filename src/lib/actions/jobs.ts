@@ -1,10 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
 import { assertCan } from "@/lib/constants/roles";
 import { z } from "zod/v4";
+import {
+  generateAndStoreEmbedding,
+  buildJobEmbeddingText,
+} from "@/lib/ai/embeddings";
 
 // ── Validation Schemas ─────────────────────────────────────
 
@@ -39,6 +44,36 @@ function slugify(title: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+/**
+ * Find the next available slug for an org, using numeric suffixes on collision.
+ * e.g. "senior-engineer" → "senior-engineer-2" → "senior-engineer-3"
+ * Exported for unit testing.
+ */
+export async function findAvailableSlug(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  baseSlug: string,
+): Promise<string> {
+  const { data } = await supabase
+    .from("job_openings")
+    .select("slug")
+    .eq("organization_id", orgId)
+    .or(`slug.eq.${baseSlug},slug.like.${baseSlug}-%`)
+    .is("deleted_at", null);
+
+  if (!data || data.length === 0) return baseSlug;
+
+  const existing = new Set(data.map((r: { slug: string }) => r.slug));
+  if (!existing.has(baseSlug)) return baseSlug;
+
+  for (let i = 2; i <= 99; i++) {
+    const candidate = `${baseSlug}-${i}`;
+    if (!existing.has(candidate)) return candidate;
+  }
+
+  return `${baseSlug}-${Date.now()}`; // extreme fallback: >99 clones of same title
 }
 
 // ── Create Job ─────────────────────────────────────────────
@@ -210,6 +245,7 @@ export async function cloneJob(jobId: string) {
 
   const supabase = await createClient();
 
+  // 1. Fetch source job (org-scoped — prevents cross-tenant clone)
   const { data: source } = await supabase
     .from("job_openings")
     .select(
@@ -224,15 +260,24 @@ export async function cloneJob(jobId: string) {
     return { error: "Job not found." };
   }
 
-  const cloneTitle = `${source.title} (Copy)`;
+  // 2. Fetch required skills from source (these feed AI matching)
+  const { data: sourceSkills } = await supabase
+    .from("job_required_skills")
+    .select("skill_id, importance")
+    .eq("job_id", jobId)
+    .is("deleted_at", null);
 
+  // 3. Find a clean, collision-safe slug (no timestamp, no "(Copy)")
+  const slug = await findAvailableSlug(supabase, session.orgId, slugify(source.title));
+
+  // 4. Insert the cloned job
   const { data: clone, error } = await supabase
     .from("job_openings")
     .insert({
       organization_id: session.orgId,
       pipeline_template_id: source.pipeline_template_id,
-      title: cloneTitle,
-      slug: slugify(cloneTitle) + "-" + Date.now(),
+      title: source.title,
+      slug,
       description: source.description,
       department: source.department,
       location: source.location,
@@ -250,6 +295,34 @@ export async function cloneJob(jobId: string) {
   if (error) {
     return { error: "Failed to clone job." };
   }
+
+  // 5. Copy required skills to the cloned job
+  if (sourceSkills && sourceSkills.length > 0) {
+    const skillRows = sourceSkills.map((s) => ({
+      organization_id: session.orgId,
+      job_id: clone.id,
+      skill_id: s.skill_id,
+      importance: s.importance,
+    }));
+    await supabase.from("job_required_skills").insert(skillRows);
+  }
+
+  // 6. Queue embedding generation (non-blocking — failure doesn't fail the clone).
+  // Uses title + description only; recruiter can regenerate via "Generate Embedding"
+  // after updating skills for full accuracy. TODO: move to Inngest when first function is wired.
+  const embeddingText = buildJobEmbeddingText({
+    title: source.title,
+    description: source.description,
+  });
+  void generateAndStoreEmbedding({
+    organizationId: session.orgId,
+    userId: session.userId,
+    entityType: "job_opening",
+    entityId: clone.id,
+    text: embeddingText,
+  }).catch((err: unknown) =>
+    Sentry.captureException(err, { extra: { jobId: clone.id, context: "post-clone-embedding" } }),
+  );
 
   revalidatePath("/jobs");
   return { success: true, id: clone.id };
@@ -291,9 +364,10 @@ export async function rewriteJobDescription(jobId: string) {
     return { error: result.error ?? "AI generation failed." };
   }
 
+  // Store the original before overwriting so the recruiter can revert.
   const { error: updateError } = await supabase
     .from("job_openings")
-    .update({ description: result.text })
+    .update({ description: result.text, description_previous: job.description })
     .eq("id", jobId)
     .eq("organization_id", session.orgId);
 

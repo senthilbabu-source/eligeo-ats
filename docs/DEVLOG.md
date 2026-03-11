@@ -4,6 +4,48 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] Strategic Audit: J3 + Dashboard P0/P1 Bug Fixes
+
+**Phase:** Build — Phase 2.7 (UX Polish), strategic audit pass
+**Scope:** User stories J3 (clone job), R1/R3/R4 (dashboard) — technically functional but strategically incomplete
+
+### J3 P0 Bug Fixes (4 silent defects)
+
+**Bug 1 — Required skills not cloned (AI matching broken)**
+- `cloneJob()` now fetches `job_required_skills` from source and INSERTs copies with correct `job_id`, `skill_id`, `importance`. Before: every cloned job had zero skills → AI match panel failed silently on every clone.
+
+**Bug 2 — `job_embedding` NULL after clone (AI matching dead)**
+- After skills are copied, `generateAndStoreEmbedding()` called fire-and-forget (service client, no auth needed). Errors go to Sentry. TODO: move to Inngest when first function is wired.
+
+**Bug 3 — AI Rewrite destructive overwrite (no undo)**
+- Migration 00019: `ALTER TABLE job_openings ADD COLUMN description_previous TEXT`
+- `rewriteJobDescription()` now writes `{ description: new, description_previous: original }` in a single UPDATE. Original always recoverable.
+
+**Bug 4 — Slug contains timestamp + "(Copy)" (public URL broken)**
+- New `findAvailableSlug()` helper: one DB query, picks `baseSlug` → `baseSlug-2` → `baseSlug-3` on collision. No timestamp, no "(Copy)" in title or slug.
+
+### Dashboard P0/P1 Bugs Discovered (not yet fixed)
+
+**P0 — Bug 1:** `status="published"` in Active Jobs query → always 0. Schema only allows `('draft','open','paused','closed','archived')`. Fix: `status="open"`.
+**P0 — Bug 3:** Source attribution reads `candidates.source` (freeform TEXT) instead of `source_id → candidate_sources.name`. "linkedin" / "LinkedIn" / "Linked In" aggregate separately. Fix: join via `source_id`.
+**P1 — Bug 2:** Source bars use `activeApplications` (total org count) as denominator. Top source bar never reaches 100% width, visually misleading. Fix: use max of top sources as denominator.
+**P1 — Bug 4:** Pipeline funnel has no template filter — multiple templates produce duplicate stage-name bars. Fix: filter to default pipeline template.
+**Bug 5 (NOT a bug):** `applicationsThisWeek` has no status filter. Correctly counts "new applications received this week". Label and data are consistent.
+
+### Tests
+- +6 Vitest unit (clone-job.test.ts): title no "(Copy)", clean slug, skills copied, cross-tenant isolation, description_previous stored, credits-exhausted no overwrite
+- **Total: 543 Vitest + 42 E2E = 585**
+
+### Files
+- `supabase/migrations/00019_add_description_previous.sql` (new)
+- `src/lib/actions/jobs.ts` (cloneJob + rewriteJobDescription fixed, findAvailableSlug added)
+- `src/__tests__/clone-job.test.ts` (new, 6 unit tests)
+
+### What's next
+- Dashboard P0 fixes (Bug 1 + Bug 3) → Dashboard P1 fixes (Bug 2 + Bug 4) → C2/M3 mobile polish
+
+---
+
 ## 2026-03-11 — [Phase 2.7] J3: Clone Job + AI Rewrite
 
 **Phase:** Build — Phase 2.7 (UX Polish), deliverable 5 of 6

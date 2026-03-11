@@ -32,7 +32,7 @@
 |---|-------|-------|------|-------|
 | J1 | AI generates full job description from title + bullets | 🔶 2.6 | Growth+ | OpenAI structured output. Command bar: "create job Senior Engineer" |
 | J2 | AI suggests required skills based on role title | 🔶 2.6 | Growth+ | Embedding similarity against skills taxonomy |
-| J3 | Clone job + AI auto-updates for new location/level | 🔷 2.7 | All | Clone is CRUD, AI rewrite is Growth+ |
+| J3 | Clone job + AI auto-updates for new location/level | ✅ BUILT | All | Clone is CRUD, AI rewrite is Growth+. P0 bugs fixed: skills cloned, embedding queued, slug clean, description_previous stored before rewrite |
 | J4 | Approval workflows for job requisitions | 🟠 v2.0 | Pro+ | Small teams don't need this at launch |
 | J5 | AI warns about biased/exclusionary language | 🔶 2.6 | Growth+ | OpenAI moderation pass before publish |
 
@@ -318,10 +318,10 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| R1 | Real-time dashboard: time-to-hire, drop-off, diversity metrics | ✅ BUILT | All | 4 metric cards, pipeline funnel, source attribution, recent apps — parallel queries (Phase 2.7). DEI in v3.0 |
+| R1 | Real-time dashboard: time-to-hire, drop-off, diversity metrics | ✅ BUILT | All | 4 metric cards, pipeline funnel, source attribution, recent apps — parallel queries (Phase 2.7). DEI in v3.0. **P0 open:** Active Jobs query uses `status="published"` (invalid — always 0). Fix pending |
 | R2 | AI proactively surfaces insights ("acceptance rate dropped 20%") | 🟠 v2.0 | Pro+ | Requires historical data baseline |
-| R3 | Pipeline velocity reports (where candidates stall) | ✅ BUILT | Growth+ | Pipeline funnel with stage-level application counts shipped in dashboard (Phase 2.7) |
-| R4 | Source attribution: which channel delivered each hire | ✅ BUILT | All | Top-5 sources by application count with proportional bars shipped in dashboard (Phase 2.7) |
+| R3 | Pipeline velocity reports (where candidates stall) | ✅ BUILT | Growth+ | Pipeline funnel shipped in dashboard (Phase 2.7). **P1 open:** No template filter — multi-template orgs see duplicate stage-name bars. Fix pending |
+| R4 | Source attribution: which channel delivered each hire | ✅ BUILT | All | Top-5 sources shipped in dashboard (Phase 2.7). **P0 open:** reads `candidates.source` (freeform TEXT) not `source_id → candidate_sources`. **P1 open:** bar denominator uses total apps, not top-N max. Fixes pending |
 | R5 | Scheduled reports to stakeholders | 🟠 v2.0 | Pro+ | Inngest cron + PDF/email generation |
 | R6 | DEI funnel reports by gender/ethnicity/age | 🔴 v3.0+ | Pro+ | candidate_dei_data table exists. UI + compliance in v3.0 |
 | R7 | Cost-per-hire and recruiter productivity | 🟠 v2.0 | Pro+ | Requires billing + time tracking data |
@@ -431,15 +431,16 @@
 
 ## Phase 2.7 Priority Stack (remaining work, in order)
 
-1. **J3** — Clone job + AI rewrite ← **NEXT**
-2. **JD1/JD2/JD3/JD4** — Job description quality panel (score + inline bias highlighting)
-3. **AR4/AR5** — Inline candidate actions + sequential review queue
-4. **CP2/CP4/CP7/CP8** — Candidate profile detail improvements
-5. **CL2** — Multi-dimensional candidate list filters
-6. **T10** — Sequential candidate navigation in pipeline view
-7. **JI1/JI3** — Per-job dashboard sidebar and stage count
-8. **SR6** — Personalized recruiter dashboard filter by recruiter_id
-9. **C2/M3** — Mobile polish (spacing, touch targets)
+1. ~~**J3** — Clone job + AI rewrite~~ ✅ DONE (P0 bugs fixed 2026-03-11)
+2. **R1/R3/R4 dashboard P0 fixes** — `status="open"`, source attribution via `source_id`, denominator fix, template filter ← **NEXT**
+3. **JD1/JD2/JD3/JD4** — Job description quality panel (score + inline bias highlighting)
+4. **AR4/AR5** — Inline candidate actions + sequential review queue
+5. **CP2/CP4/CP7/CP8** — Candidate profile detail improvements
+6. **CL2** — Multi-dimensional candidate list filters
+7. **T10** — Sequential candidate navigation in pipeline view
+8. **JI1/JI3** — Per-job dashboard sidebar and stage count
+9. **SR6** — Personalized recruiter dashboard filter by recruiter_id
+10. **C2/M3** — Mobile polish (spacing, touch targets)
 
 ---
 
