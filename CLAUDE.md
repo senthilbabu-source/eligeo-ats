@@ -47,29 +47,14 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 - **Source docs:** S1 (Phase 1 Review), S2 (Phase 2 Blueprint), S3 (Architect Pre-Plan) in `docs/`
 - **S3 has 6 known errors** (AC-1→AC-6) — all resolved via ADRs above. Never propagate S3 patterns that contradict the ADR table.
 
-## Parallel Tracks
+## SaaS Accelerator Playbook (separate product)
 
-1. **ATS** (`/Users/senthilbabu/Downloads/ATS/`) — product being built
-2. **SaaS Accelerator Playbook** (`/Users/senthilbabu/Downloads/SaaS-Playbook/`) — product being sold
+**Location:** `/Users/senthilbabu/Downloads/SaaS-Playbook/`
+**Purpose:** A standalone prompt product for SaaS founders and technical teams. NOT a dependency of ATS.
 
-Lessons flow one-way: ATS → Playbook (abstracted, product details stripped).
+ATS is the source of real-world lessons. Tag DEVLOG entries with `[PLAYBOOK]` when a pattern is universally applicable. The Playbook owns its own intake — ATS work is never blocked by Playbook extraction.
 
-### Playbook Extraction Protocol (MANDATORY)
-
-**Trigger:** Any DEVLOG entry tagged `[PLAYBOOK]`.
-
-**Rule:** Do NOT move to the next ATS deliverable until the `[PLAYBOOK]` extraction is done. This is a blocking gate, same as post-build audit.
-
-**Process:**
-1. After completing an ATS doc (post-build audit done, DEVLOG written), check: does the DEVLOG entry have a `[PLAYBOOK]` tag?
-2. If yes → extract immediately:
-   - Add abstracted JOURNEY-LOG entry in `/Users/senthilbabu/Downloads/SaaS-Playbook/JOURNEY-LOG.md`
-   - Add new principle to `PRINCIPLES.md` if a failure pattern warrants it (P-ID must be sequential)
-   - Add battle-test entry if an existing prompt was validated
-   - Commit to Playbook repo with `playbook(<scope>):` message
-3. Only then proceed to the next ATS deliverable.
-
-**Session Start Check:** After reading DEVLOG, count `[PLAYBOOK]` tags that don't have a corresponding "Bulk extraction" or extraction DEVLOG entry below them. If count > 0, flag to user: "N pending Playbook extractions found."
+**ATS-side responsibility:** Tag `[PLAYBOOK]` in DEVLOG when warranted. That's it. No blocking, no extraction protocol. ATS stays focused on ATS.
 
 ## Task-Based Reading (save tokens)
 
