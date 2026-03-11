@@ -88,7 +88,34 @@ INSERT INTO auth.users (
     'authenticated', 'authenticated', NOW(), NOW()
   );
 
+-- GoTrue requires all varchar columns to be non-NULL (Scan error on NULL→string).
+-- Set all nullable token/change columns to empty strings.
+UPDATE auth.users SET
+  confirmation_token = COALESCE(confirmation_token, ''),
+  recovery_token = COALESCE(recovery_token, ''),
+  email_change_token_new = COALESCE(email_change_token_new, ''),
+  email_change_token_current = COALESCE(email_change_token_current, ''),
+  email_change = COALESCE(email_change, ''),
+  phone_change_token = COALESCE(phone_change_token, ''),
+  phone_change = COALESCE(phone_change, ''),
+  reauthentication_token = COALESCE(reauthentication_token, '');
+
 -- handle_new_user trigger fires automatically → user_profiles created
+
+-- ─── Auth Identities (required for email/password login) ─────
+-- Supabase Auth checks auth.identities for sign-in. Without these,
+-- signInWithPassword returns "Invalid email or password".
+
+INSERT INTO auth.identities (
+  id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+) VALUES
+  ('11111111-1001-4000-a000-000000000001', '11111111-1001-4000-a000-000000000001', '{"sub":"11111111-1001-4000-a000-000000000001","email":"senthil@itecbrains.com"}'::jsonb, 'email', '11111111-1001-4000-a000-000000000001', NOW(), NOW(), NOW()),
+  ('11111111-1001-4000-a000-000000000002', '11111111-1001-4000-a000-000000000002', '{"sub":"11111111-1001-4000-a000-000000000002","email":"prem@itecbrains.com"}'::jsonb, 'email', '11111111-1001-4000-a000-000000000002', NOW(), NOW(), NOW()),
+  ('11111111-1001-4000-a000-000000000003', '11111111-1001-4000-a000-000000000003', '{"sub":"11111111-1001-4000-a000-000000000003","email":"roshelle@itecbrains.com"}'::jsonb, 'email', '11111111-1001-4000-a000-000000000003', NOW(), NOW(), NOW()),
+  ('11111111-1001-4000-a000-000000000004', '11111111-1001-4000-a000-000000000004', '{"sub":"11111111-1001-4000-a000-000000000004","email":"hm@itecbrains.com"}'::jsonb, 'email', '11111111-1001-4000-a000-000000000004', NOW(), NOW(), NOW()),
+  ('11111111-1001-4000-a000-000000000005', '11111111-1001-4000-a000-000000000005', '{"sub":"11111111-1001-4000-a000-000000000005","email":"interviewer@itecbrains.com"}'::jsonb, 'email', '11111111-1001-4000-a000-000000000005', NOW(), NOW(), NOW()),
+  ('22222222-1001-4000-a000-000000000001', '22222222-1001-4000-a000-000000000001', '{"sub":"22222222-1001-4000-a000-000000000001","email":"owner@globex-test.com"}'::jsonb, 'email', '22222222-1001-4000-a000-000000000001', NOW(), NOW(), NOW()),
+  ('22222222-1001-4000-a000-000000000002', '22222222-1001-4000-a000-000000000002', '{"sub":"22222222-1001-4000-a000-000000000002","email":"recruiter@globex-test.com"}'::jsonb, 'email', '22222222-1001-4000-a000-000000000002', NOW(), NOW(), NOW());
 
 -- ─── Organizations ─────────────────────────────────────────
 
