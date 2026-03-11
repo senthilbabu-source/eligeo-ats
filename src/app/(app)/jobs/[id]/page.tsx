@@ -85,6 +85,15 @@ export default async function JobDetailPage({
         )}
       </div>
 
+      <div className="mt-6">
+        <Link
+          href={`/jobs/${job.id}/pipeline`}
+          className="inline-flex h-9 items-center rounded-md bg-primary/10 px-4 text-sm font-medium text-primary hover:bg-primary/20"
+        >
+          View Pipeline Board
+        </Link>
+      </div>
+
       <div className="mt-8 grid gap-6 md:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-4 text-center">
           <p className="text-2xl font-semibold">{applicationCount ?? 0}</p>
