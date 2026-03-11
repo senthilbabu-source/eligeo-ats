@@ -27,7 +27,7 @@ Data Migration & Onboarding defines how new organizations get started with the A
 1. Email + password → Supabase Auth signup
 2. Create organization (name, slug)
 3. Create organization_member (role: 'owner')
-4. Set plan = 'starter' (free tier)
+4. Set plan = 'starter', subscription_status = 'trialing' (14-day trial, then $29/mo)
 5. JWT refresh → org_id injected into claims
 6. Redirect to onboarding wizard
 ```

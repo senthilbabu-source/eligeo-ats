@@ -83,6 +83,7 @@
 | D25 | **User Personas & Journey Maps** | `docs/USER-PERSONAS.md` | P2 | ✅ Complete (Review) | D00, D06–D12 | 5 persona profiles with goals/frequency/frustration thresholds. 4 journey maps (recruiter daily, hiring manager, candidate, admin setup). Notification priority matrix (5 personas × 15 events). Dashboard widgets by persona. Role-based navigation spec. |
 | D26 | **Error Taxonomy & Recovery Patterns** | `docs/ERROR-TAXONOMY.md` | P2 | ✅ Complete (Review) | D02, D14 | ATS-XXXX error code scheme (12 categories, 60+ codes), RFC 9457 response format with `code` extension, Server Action error pattern, graceful degradation matrix (7 services), circuit breaker pattern, retry strategies (6 failure types), React error boundary design (4 placement levels), user-facing message guidelines. |
 | D27 | **Product Roadmap & Release Strategy** | `docs/PRODUCT-ROADMAP.md` | P0 | ✅ Complete (Review) | D00, D03, D25, all modules | 5 release versions (v1.0–v3.0). v1.0: 26 features, 6 build phases over 12 weeks, 10 notification events, launch criteria checklist. Feature-to-plan mapping. Revenue projections ($540 MRR launch → $125K MRR at v3.0). Risk mitigation. Decision log (12 scope decisions). Determines ALL build order. |
+| D28 | **Environment Variables** | `docs/ENVIRONMENT-VARIABLES.md` | P0 | ✅ Complete (Review) | D01, D02, D03, D14, D15 | 30 env vars across 10 services. Public/secret classification, v1.0 vs v2.0+ required, `.env.example` template, security rules. |
 
 ---
 
@@ -170,6 +171,7 @@ docs/
 ├── USER-PERSONAS.md                     ← D25: Personas & journeys
 ├── ERROR-TAXONOMY.md                    ← D26: Error code scheme
 ├── PRODUCT-ROADMAP.md                   ← D27: Release strategy & build order
+├── ENVIRONMENT-VARIABLES.md             ← D28: Env var manifest
 │
 ├── templates/                        ← Document boilerplates
 │   ├── MODULE-TEMPLATE.md

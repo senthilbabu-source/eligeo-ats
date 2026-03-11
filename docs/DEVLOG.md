@@ -16,6 +16,14 @@
 
 ---
 
+### 2026-03-11 — [D01,D28,D03,D19] Pre-code audit — critical gap remediation
+
+- **D01 DATABASE-SCHEMA.md:** Added §Migration Ordering — 29-batch topological sort for 39 tables, FK dependency chain, seed data order, Realtime publication order, audit trigger attachment order. No circular dependencies.
+- **D28 ENVIRONMENT-VARIABLES.md:** New document — complete manifest of 30 env vars across 10 services. Organized by service, tagged public/secret, v1.0 vs v2.0+ required, includes `.env.example` template.
+- **D03 BILLING.md:** Fixed Starter plan contradiction — was "Starter plan is free", now correctly states all plans are paid ($29/mo+) with 14-day trial as the only free period.
+- **D19 ONBOARDING.md:** Fixed matching contradiction — signup flow now says `plan = 'starter', subscription_status = 'trialing'` instead of `(free tier)`.
+- Audit identified 14 total gaps (3 critical, 5 high, 6 medium). This commit resolves all 3 critical items. [PLAYBOOK]
+
 ### 2026-03-11 — [META] Brand rename: itecbrains ATS → Eligeo
 
 - Renamed all project references from "itecbrains ATS" to "Eligeo" (eligeo.io)

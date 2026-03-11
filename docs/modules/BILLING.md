@@ -468,7 +468,7 @@ const BillingUsageResponse = z.object({
 | Scenario | Handling |
 |----------|----------|
 | Stripe webhook delivered out of order | Idempotency via Stripe event ID. Each Inngest function checks current state before applying. |
-| Organization created without Stripe Customer | `stripe_customer_id` is NULL. Checkout flow creates Customer on first upgrade. Starter plan is free — no Stripe needed. |
+| Organization created without Stripe Customer | `stripe_customer_id` is NULL during trial. Checkout creates Customer when org adds payment method or trial ends. All plans are paid ($29/mo+); the 14-day trial is the only "free" period. |
 | Concurrent AI credit consumption | Atomic `UPDATE ... WHERE ai_credits_used < ai_credits_limit RETURNING` prevents overshoot. |
 | Member removed during billing cycle | Seat count synced to Stripe immediately. Proration credit applied. |
 | Stripe outage during checkout | Client-side retry. Checkout session has 24h expiry. No ATS state changed until webhook confirms. |

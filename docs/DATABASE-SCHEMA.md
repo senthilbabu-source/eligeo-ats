@@ -382,6 +382,54 @@ Channel naming: `org:{organization_id}:{table_name}` — RLS automatically scope
 
 ---
 
+## Migration Ordering
+
+39 tables grouped into migration batches following FK dependency order. No circular dependencies exist.
+
+**Run before any tables:** Extensions (`uuid-ossp`, `pgcrypto`, `vector`, `pg_trgm`) and helper functions (`set_updated_at()`, `is_org_member()`, `has_org_role()`, `current_user_org_id()`, `custom_access_token_hook()`, `audit_trigger_func()`). See [00-functions.md](schema/00-functions.md).
+
+| Batch | Tables | Depends On | Notes |
+|-------|--------|-----------|-------|
+| 1 | `organizations` | — | Anchor table. Every tenant-scoped table FKs here. |
+| 2 | `user_profiles` | `auth.users` (external) | Auth bridge. No dep on `organizations`. |
+| 3 | `organization_members` | `organizations`, `auth.users` | Self-ref `last_active_org_id` → `organizations`. |
+| 4 | `candidate_sources`, `rejection_reasons` | `organizations` | Lookup tables. Seed defaults after creation. |
+| 5 | `pipeline_templates` | `organizations` | — |
+| 6 | `pipeline_stages` | `organizations`, `pipeline_templates` | Ordered stages within templates. |
+| 7 | `job_openings` | `organizations`, `pipeline_templates` | — |
+| 8 | `candidates` | `organizations`, `candidate_sources` | — |
+| 9 | `skills` | `organizations` (optional) | Self-ref `parent_id`. Global skills have NULL `org_id`. |
+| 10 | `job_required_skills`, `candidate_skills` | `organizations`, `job_openings`/`candidates`, `skills` | Junction tables. |
+| 11 | `applications` | `organizations`, `candidates`, `job_openings`, `pipeline_stages`, `rejection_reasons`, `auth.users` | Central entity linking candidates to jobs. |
+| 12 | `application_stage_history` | `organizations`, `applications`, `pipeline_stages`, `auth.users` | Audit trail for stage moves. |
+| 13 | `talent_pools`, `talent_pool_members` | `organizations`, `candidates`, `auth.users` | Pool members FK both pools and candidates. |
+| 14 | `scorecard_templates` | `organizations`, `auth.users` | — |
+| 15 | `scorecard_categories` | `organizations`, `scorecard_templates` | — |
+| 16 | `scorecard_attributes` | `organizations`, `scorecard_categories` | — |
+| 17 | `interviews` | `organizations`, `applications`, `job_openings`, `auth.users`, `scorecard_templates` | — |
+| 18 | `scorecard_submissions` | `organizations`, `interviews`, `applications`, `auth.users` | — |
+| 19 | `scorecard_ratings` | `organizations`, `scorecard_submissions`, `scorecard_attributes` | — |
+| 20 | `offer_templates` | `organizations`, `auth.users` | — |
+| 21 | `offers` | `organizations`, `applications`, `candidates`, `job_openings`, `offer_templates`, `auth.users` | — |
+| 22 | `offer_approvals` | `organizations`, `offers`, `auth.users` | — |
+| 23 | `notes` | `organizations`, `auth.users`, `candidates` | Self-ref `parent_id` for threading. |
+| 24 | `email_templates`, `notification_preferences` | `organizations`, `auth.users` | — |
+| 25 | `files` | `organizations`, `auth.users` | Polymorphic `entity_type`/`entity_id` (no FK). |
+| 26 | `custom_field_definitions`, `custom_field_values` | `organizations`, `auth.users` | Polymorphic `entity_type`/`entity_id` (no FK). |
+| 27 | `ai_usage_logs`, `api_keys`, `webhook_endpoints`, `nylas_grants` | `organizations`, `auth.users` | System/integration tables. |
+| 28 | `candidate_dei_data`, `candidate_encryption_keys` | `organizations`, `candidates` | — |
+| 29 | `audit_logs`, `gdpr_erasure_log` | — (no FKs) | Append-only. Created last. Triggers attached after all tables exist. |
+
+**Self-referential columns (not circular):** `organization_members.last_active_org_id`, `skills.parent_id`, `notes.parent_id`. All reference their own table.
+
+**Seed data after batch 4:** Default `candidate_sources` (Referral, LinkedIn, Career Page, Job Board, Agency, Direct) and `rejection_reasons` (Not qualified, Position filled, Candidate withdrew, Failed assessment, Compensation mismatch, Culture fit, Other).
+
+**Realtime publication (after all tables):** `applications`, `notes`, `interviews`, `scorecard_submissions`, `offers`, `notification_preferences`.
+
+**Audit triggers (after all tables):** Attach `audit_trigger_func()` to every table except `audit_logs`, `gdpr_erasure_log`, and `candidate_encryption_keys`.
+
+---
+
 ## Sub-Documents
 
 | Document | Tables | Lines |
