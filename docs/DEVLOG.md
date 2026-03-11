@@ -16,6 +16,24 @@
 
 ---
 
+### 2026-03-11 — [D24] Consolidated Testing Strategy — complete first draft
+
+Consolidates all test requirements from ADR-004 and D06-D12 into executable plan. Vitest + Playwright configurations. Golden tenant fixture: 2 tenants (Acme Corp Pro, Globex Inc Starter) with 5 roles, pipeline, jobs, candidates, applications, scorecard templates. MSW mock registry: 9 external services (Stripe, Resend, Nylas, Typesense, OpenAI, Merge.dev, Dropbox Sign, Inngest, Slack) with handler overrides per test.
+
+RLS test matrix: ~238 cases generated via test generator pattern (4 ops × 5 roles × 2 tenants per table). E2E scenario registry: 15 positive scenarios (signup flow, hiring flow, GDPR erasure, billing upgrade, etc.) + 5 failure scenarios. CI parallelization: 3 unit shards + 1 RLS suite + 2 E2E shards = ~4 min wall time. Test database reset: full `supabase db reset` between suites, targeted `reset_test_data()` function between tests. Inngest function test patterns with mock step runner. State machine test generators for application lifecycle and offer workflow.
+
+---
+
+### 2026-03-11 — [D26] Error Taxonomy & Recovery Patterns — complete first draft
+
+ATS-XXXX error code scheme: 12 module categories (AU, VL, WF, OF, IV, SR, BL, FL, NT, CP, MG, SY) with 60+ specific error codes. Each code has HTTP status, title, user-facing message, and developer detail. RFC 9457 response format extended with `code` field. Server Action error pattern using `ActionResult<T>` return type.
+
+Graceful degradation matrix: 7 external services with fallback strategies (Typesense → PostgreSQL ILIKE, OpenAI → manual review, Resend → queue for retry, etc.). Circuit breaker implementation: 5-failure threshold, 60s reset timeout. Retry strategies by failure type: retryable (429, 5xx, network) vs non-retryable (400, 403, 422). Client-side retry utility with exponential backoff + jitter. Inngest retry configuration per function type.
+
+React error boundary design: 4 placement levels (root, page, widget, form). Next.js error.tsx files at each route segment. User-facing error message guidelines with templates. Error logging standards (what to log vs never log).
+
+---
+
 ### 2026-03-11 — [D22] Security Threat Model — complete first draft
 
 STRIDE analysis across 6 threat categories with 30+ identified threats mapped to existing controls. Attack surface inventory (6 external, 5 internal surfaces). PII data flow diagram with classification (Restricted/Confidential/Internal/Public) and third-party service PII mapping (9 services). 35+ attack vector → control mappings across authentication, authorization, injection, data exposure, and supply chain categories.
