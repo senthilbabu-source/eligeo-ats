@@ -67,7 +67,7 @@ export function JobActions({
           onClick={handleRewrite}
           disabled={isRewriting}
           className="inline-flex h-9 items-center rounded-md border border-primary/30 bg-primary/5 px-4 text-sm font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
-          title="AI rewrites the job description"
+          title="✦ AI Rewrite (3 credits)"
         >
           {isRewriting ? "Rewriting…" : "✦ AI Rewrite"}
         </button>

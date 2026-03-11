@@ -249,7 +249,7 @@ export async function cloneJob(jobId: string) {
   const { data: source } = await supabase
     .from("job_openings")
     .select(
-      "title, description, department, location, location_type, employment_type, salary_min, salary_max, salary_currency, headcount, pipeline_template_id",
+      "title, description, department, location, location_type, employment_type, salary_min, salary_max, salary_currency, headcount, pipeline_template_id, hiring_manager_id, recruiter_id",
     )
     .eq("id", jobId)
     .eq("organization_id", session.orgId)
@@ -287,6 +287,8 @@ export async function cloneJob(jobId: string) {
       salary_max: source.salary_max,
       salary_currency: source.salary_currency,
       headcount: source.headcount,
+      hiring_manager_id: source.hiring_manager_id,
+      recruiter_id: source.recruiter_id,
       status: "draft",
     })
     .select("id")

@@ -77,6 +77,8 @@ const sourceJob = {
   salary_currency: "USD",
   headcount: 1,
   pipeline_template_id: TENANT_A.pipeline.template.id,
+  hiring_manager_id: TENANT_A.users.owner.id,
+  recruiter_id: TENANT_A.users.admin.id,
 };
 
 const sourceSkills = [
@@ -209,6 +211,56 @@ describe("cloneJob", () => {
 
     // Verify no INSERT was attempted
     expect(notFoundChain.insert).not.toHaveBeenCalled();
+  });
+
+  it("should clone hiring_manager_id and recruiter_id from the source job", async () => {
+    const sourceFetchChain = createChainMock({ data: sourceJob, error: null });
+    const skillsFetchChain = createChainMock({ data: [], error: null });
+    const slugCheckChain = createChainMock({ data: [], error: null });
+    const insertChain = createChainMock({ data: { id: "new-clone-id" }, error: null });
+
+    let jobOpeningsCall = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "job_openings") {
+        jobOpeningsCall++;
+        if (jobOpeningsCall === 1) return sourceFetchChain;
+        if (jobOpeningsCall === 2) return slugCheckChain;
+        return insertChain;
+      }
+      return table === "job_required_skills" ? skillsFetchChain : createChainMock();
+    });
+
+    await cloneJob(SOURCE_JOB_ID);
+
+    const insertCall = insertChain.insert!.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
+    expect(insertCall?.hiring_manager_id).toBe(TENANT_A.users.owner.id);
+    expect(insertCall?.recruiter_id).toBe(TENANT_A.users.admin.id);
+  });
+
+  it("should queue embedding generation for the cloned job", async () => {
+    const { generateAndStoreEmbedding } = await import("@/lib/ai/embeddings");
+
+    const sourceFetchChain = createChainMock({ data: sourceJob, error: null });
+    const skillsFetchChain = createChainMock({ data: [], error: null });
+    const slugCheckChain = createChainMock({ data: [], error: null });
+    const insertChain = createChainMock({ data: { id: "new-clone-id" }, error: null });
+
+    let jobOpeningsCall = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "job_openings") {
+        jobOpeningsCall++;
+        if (jobOpeningsCall === 1) return sourceFetchChain;
+        if (jobOpeningsCall === 2) return slugCheckChain;
+        return insertChain;
+      }
+      return table === "job_required_skills" ? skillsFetchChain : createChainMock();
+    });
+
+    await cloneJob(SOURCE_JOB_ID);
+
+    expect(generateAndStoreEmbedding).toHaveBeenCalledWith(
+      expect.objectContaining({ entityId: "new-clone-id", entityType: "job_opening" }),
+    );
   });
 });
 

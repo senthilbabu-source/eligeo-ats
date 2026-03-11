@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] J3 Wave 1 — Clone team fields + test coverage
+
+**Phase:** Build — Phase 2.7 (UX Polish)
+**Scope:** J3 Wave 1 — hiring_manager_id/recruiter_id cloned, embedding assertion, credit tooltip
+
+### Changes
+- **Fixed: `cloneJob()` now copies `hiring_manager_id` and `recruiter_id`** from source job. Both columns existed in schema (migration 008) but were silently omitted from the insert payload — every cloned job had NULL team assignments, breaking R4 source attribution and hiring manager workflows.
+- **Fixed: credit cost tooltip** on AI Rewrite button — `"✦ AI Rewrite (3 credits)"` (was generic description)
+
+### Tests
+- Added `should clone hiring_manager_id and recruiter_id from the source job` — asserts both IDs in insert payload
+- Added `should queue embedding generation for the cloned job` — asserts `generateAndStoreEmbedding` called with `entityId: "new-clone-id"` (test 16 was wired but never asserted)
+- Added `hiring_manager_id` + `recruiter_id` to `sourceJob` fixture in `clone-job.test.ts`
+- **Count: 553 → 555 Vitest. All passing. Typecheck clean.**
+
+---
+
 ## 2026-03-11 — [Phase 2.7] R3/R4 Dashboard P1 Fixes
 
 **Phase:** Build — Phase 2.7 (UX Polish)
