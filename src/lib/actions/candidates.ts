@@ -28,7 +28,7 @@ const updateCandidateSchema = createCandidateSchema.partial().extend({
 
 // ── Create Candidate ───────────────────────────────────────
 
-export async function createCandidate(formData: FormData) {
+export async function createCandidate(_prev: unknown, formData: FormData) {
   const session = await requireAuth();
   assertCan(session.orgRole, "candidates:create");
 

@@ -43,7 +43,7 @@ function slugify(title: string): string {
 
 // ── Create Job ─────────────────────────────────────────────
 
-export async function createJob(formData: FormData) {
+export async function createJob(_prev: unknown, formData: FormData) {
   const session = await requireAuth();
   assertCan(session.orgRole, "jobs:create");
 
