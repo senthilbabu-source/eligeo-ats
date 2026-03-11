@@ -120,7 +120,7 @@ interface BrandingConfig {
 
 // Defaults applied when branding_config fields are null/empty
 const BRANDING_DEFAULTS: Required<BrandingConfig> = {
-  logo_url: '/images/default-logo.svg',           // itecbrains logo
+  logo_url: '/images/default-logo.svg',           // Eligeo logo
   primary_color: '222.2 84% 4.9%',                // D05 system foreground
   secondary_color: '210 40% 96.1%',               // D05 system muted
   font_family: 'Inter',                            // D05 system font

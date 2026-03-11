@@ -12,7 +12,7 @@
 
 ## 1. Overview
 
-Five distinct personas use itecbrains ATS. Each has different goals, workflows, frequency of use, and pain thresholds. This document defines who they are, what they do daily, how they move through the system, and where friction lives.
+Five distinct personas use Eligeo. Each has different goals, workflows, frequency of use, and pain thresholds. This document defines who they are, what they do daily, how they move through the system, and where friction lives.
 
 **Design principle:** The system must serve all five personas without requiring any of them to understand the others' complexity. A hiring manager should never see recruiter admin. A candidate should never need to create an account.
 

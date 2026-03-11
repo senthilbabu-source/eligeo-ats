@@ -1,4 +1,4 @@
-# itecbrains ATS — Pre-Build Planning Assessment
+# Eligeo — Pre-Build Planning Assessment
 
 > **Purpose:** Gap analysis of existing documentation against what's needed to build the full SaaS product.
 > **Status:** Approved

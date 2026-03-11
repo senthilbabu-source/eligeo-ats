@@ -308,7 +308,7 @@ All 39 tables are created in Phase 0 migrations (future-proofing). But only thes
 
 ### 6.1 v2.1 Launch Criteria
 
-- [ ] Greenhouse → itecbrains migration works end-to-end with real data
+- [ ] Greenhouse → Eligeo migration works end-to-end with real data
 - [ ] API authentication (JWT + API key) both working
 - [ ] Webhook delivery with HMAC signing and retry
 - [ ] GDPR erasure crypto-shreds candidate data irreversibly
@@ -325,7 +325,7 @@ All 39 tables are created in Phase 0 migrations (future-proofing). But only thes
 | # | Feature | Spec | Plan Gate | Revenue Impact |
 |---|---------|------|-----------|---------------|
 | 1 | White-label / custom domains | D20 | Enterprise | Brand control — enterprise requirement |
-| 2 | Custom email sender domain (SPF/DKIM) | D20 §3 | Enterprise | Emails from `@customer.com` not `@itecbrains.com` |
+| 2 | Custom email sender domain (SPF/DKIM) | D20 §3 | Enterprise | Emails from `@customer.com` not `@eligeo.io` |
 | 3 | i18n (multi-language) | D21 | All | EU market expansion |
 | 4 | SSO/SAML | D03 | Enterprise | Procurement requirement for 500+ employee companies |
 | 5 | DEI reporting (EEO-1 export) | D13 §6, D17 | Pro+ | US compliance requirement for 100+ employee orgs |

@@ -181,7 +181,7 @@ All errors use RFC 9457 `application/problem+json` (defined in D02 §7). This do
 ```typescript
 interface ATSProblemDetail {
   // RFC 9457 standard fields
-  type: string;            // e.g., "https://docs.ats.itecbrains.com/errors/validation-error"
+  type: string;            // e.g., "https://docs.eligeo.io/errors/validation-error"
   title: string;           // e.g., "Validation failed."
   status: number;          // HTTP status code
   detail?: string;         // Human-readable explanation for this specific occurrence
@@ -214,7 +214,7 @@ export function problemResponse(
 ): NextResponse {
   return NextResponse.json(
     {
-      type: `https://docs.ats.itecbrains.com/errors/${title.toLowerCase().replace(/\s+/g, '-').replace(/\./g, '')}`,
+      type: `https://docs.eligeo.io/errors/${title.toLowerCase().replace(/\s+/g, '-').replace(/\./g, '')}`,
       title,
       status,
       detail,

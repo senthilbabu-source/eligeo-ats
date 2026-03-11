@@ -224,7 +224,7 @@ X-RateLimit-Reset: 1710072000
 
 ```json
 {
-  "type": "https://docs.ats.itecbrains.com/errors/rate-limit-exceeded",
+  "type": "https://docs.eligeo.io/errors/rate-limit-exceeded",
   "title": "Rate limit exceeded.",
   "status": 429,
   "detail": "You have exceeded your plan's request limit. Upgrade for higher limits.",
@@ -267,7 +267,7 @@ interface ProblemDetail {
 
 ```json
 {
-  "type": "https://docs.ats.itecbrains.com/errors/validation-error",
+  "type": "https://docs.eligeo.io/errors/validation-error",
   "title": "Validation failed.",
   "status": 400,
   "detail": "2 fields failed validation.",
@@ -430,8 +430,8 @@ export async function GET() {
   const generator = new OpenApiGeneratorV31(registry.definitions);
   const doc = generator.generateDocument({
     openapi: '3.1.0',
-    info: { title: 'itecbrains ATS API', version: '1.0.0' },
-    servers: [{ url: 'https://api.ats.itecbrains.com' }],
+    info: { title: 'Eligeo API', version: '1.0.0' },
+    servers: [{ url: 'https://api.eligeo.io' }],
   });
   return Response.json(doc);
 }

@@ -41,8 +41,8 @@ BetterUptime alert: `/api/health` returning non-200 for > 2 minutes.
    curl -s https://<project>.supabase.co/rest/v1/ -H "apikey: <anon_key>"
 
    # Check health endpoints
-   curl -s https://ats.itecbrains.com/api/health
-   curl -s https://ats.itecbrains.com/api/health/ready
+   curl -s https://eligeo.io/api/health
+   curl -s https://eligeo.io/api/health/ready
    ```
 
 2. **If application down (Vercel):**
@@ -198,7 +198,7 @@ vercel env add SECRET_NAME production
 vercel deploy --prod
 
 # 4. Verify health
-curl -f https://ats.itecbrains.com/api/health/ready
+curl -f https://eligeo.io/api/health/ready
 ```
 
 ---

@@ -1,4 +1,4 @@
-# itecbrains ATS — Claude Code Rules
+# Eligeo — Claude Code Rules
 
 ## Resolved Architecture (ALL decisions final — do NOT re-debate)
 

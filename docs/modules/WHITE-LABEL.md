@@ -13,7 +13,7 @@
 
 ## 1. Overview
 
-White-Label / Custom Domain defines how organizations can fully brand their ATS presence: custom domains for career pages, email sender domains, extended branding configuration, and removal of itecbrains branding. This is an Enterprise-tier feature.
+White-Label / Custom Domain defines how organizations can fully brand their ATS presence: custom domains for career pages, email sender domains, extended branding configuration, and removal of Eligeo branding. This is an Enterprise-tier feature.
 
 **Scope:**
 - In scope: Custom domain setup, DNS/SSL verification, email domain configuration, extended branding_config, white-label badge removal, proxy.ts routing for custom domains.
@@ -25,9 +25,9 @@ White-Label / Custom Domain defines how organizations can fully brand their ATS 
 
 | Type | Default | Custom | Example |
 |------|---------|--------|---------|
-| Career page | `careers.ats.itecbrains.com/{slug}` | `careers.acme.com` | Enterprise plan |
-| API (candidate portal) | `ats.itecbrains.com/api/v1/portal/*` | `api.careers.acme.com/v1/*` | Enterprise plan |
-| Email sender | `noreply@mail.itecbrains.com` | `noreply@acme.com` | Enterprise plan |
+| Career page | `careers.eligeo.io/{slug}` | `careers.acme.com` | Enterprise plan |
+| API (candidate portal) | `eligeo.io/api/v1/portal/*` | `api.careers.acme.com/v1/*` | Enterprise plan |
+| Email sender | `noreply@mail.eligeo.io` | `noreply@acme.com` | Enterprise plan |
 
 ### 2.2 DNS Setup Flow
 
@@ -52,7 +52,7 @@ export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') ?? '';
 
   // Check if hostname is a custom domain
-  if (!hostname.endsWith('.itecbrains.com') && !hostname.includes('localhost')) {
+  if (!hostname.endsWith('.eligeo.io') && !hostname.includes('localhost')) {
     // Look up organization by custom_domain
     // Note: this lookup is cached at the edge (Vercel Edge Config or KV)
     const orgSlug = await lookupCustomDomain(hostname);
@@ -115,7 +115,7 @@ export const whitelabelDomainVerify = inngest.createFunction(
 
 ### 3.1 Sender Domain Setup
 
-For custom email sender identity (`noreply@acme.com` instead of `noreply@mail.itecbrains.com`):
+For custom email sender identity (`noreply@acme.com` instead of `noreply@mail.eligeo.io`):
 
 ```
 1. Admin enters sender domain in Settings → White-Label → Email
@@ -169,7 +169,7 @@ interface BrandingConfigEnterprise extends BrandingConfig {
   career_page_header_html?: string;
 
   // Enterprise-only extensions
-  hide_powered_by?: boolean;         // Remove "Powered by itecbrains" badge
+  hide_powered_by?: boolean;         // Remove "Powered by Eligeo" badge
   custom_footer_html?: string;       // Sanitized footer HTML
   email_logo_url?: string;           // Logo for email templates (different from career page)
   email_footer_html?: string;        // Custom email footer
@@ -181,7 +181,7 @@ interface BrandingConfigEnterprise extends BrandingConfig {
 
 ### 4.2 "Powered By" Badge
 
-- **Starter/Growth/Pro:** "Powered by itecbrains" badge shown in career page footer and email footer.
+- **Starter/Growth/Pro:** "Powered by Eligeo" badge shown in career page footer and email footer.
 - **Enterprise:** Badge removed when `hide_powered_by = true`.
 
 ## 5. API Endpoints

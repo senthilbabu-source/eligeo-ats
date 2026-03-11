@@ -25,8 +25,8 @@ CI/CD Pipeline defines the automated build, test, and deployment workflow for th
 |-------------|--------|-----|----------|---------|
 | **Development** | Feature branches | Local (`localhost:3000`) | Local Supabase (`supabase start`) | Developer workstation |
 | **Preview** | PR branches | `*.vercel.app` | Supabase preview branch | PR review, integration testing |
-| **Staging** | `staging` | `staging.ats.itecbrains.com` | Supabase staging project | Pre-production validation |
-| **Production** | `main` | `ats.itecbrains.com` | Supabase production project | Live system |
+| **Staging** | `staging` | `staging.eligeo.io` | Supabase staging project | Pre-production validation |
+| **Production** | `main` | `eligeo.io` | Supabase production project | Live system |
 
 ### 2.1 Environment Variables
 
@@ -165,8 +165,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -f https://staging.ats.itecbrains.com/api/health || exit 1
-          curl -f https://staging.ats.itecbrains.com/api/health/ready || exit 1
+          curl -f https://staging.eligeo.io/api/health || exit 1
+          curl -f https://staging.eligeo.io/api/health/ready || exit 1
 ```
 
 ### 3.3 Deploy to Production (`deploy-production.yml`)
@@ -207,12 +207,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -f https://ats.itecbrains.com/api/health/ready || exit 1
+          curl -f https://eligeo.io/api/health/ready || exit 1
       - name: Create Sentry release
         uses: getsentry/action-release@v1
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: itecbrains
+          SENTRY_ORG: eligeo
           SENTRY_PROJECT: ats
         with:
           environment: production

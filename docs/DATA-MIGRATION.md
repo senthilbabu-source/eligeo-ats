@@ -207,7 +207,7 @@ Merge.dev normalizes ATS data into a common schema. Our transformation maps from
 
 ### 4.2 Candidate Mapping
 
-| Merge.dev Field | itecbrains Field | Transform | Notes |
+| Merge.dev Field | Eligeo Field | Transform | Notes |
 |----------------|------------------|-----------|-------|
 | `first_name` + `last_name` | `candidates.full_name` | Concatenate with space | Merge.dev splits name; we use full_name |
 | `email_addresses[0].value` | `candidates.email` | Take primary email | Validate email format |
@@ -223,7 +223,7 @@ Merge.dev normalizes ATS data into a common schema. Our transformation maps from
 
 ### 4.3 Application Mapping
 
-| Merge.dev Field | itecbrains Field | Transform | Notes |
+| Merge.dev Field | Eligeo Field | Transform | Notes |
 |----------------|------------------|-----------|-------|
 | `id` | `staging_applications.source_id` | Reference | For dedup |
 | `candidate` | `applications.candidate_id` | Resolve via staging lookup | Must map to loaded candidate |
@@ -236,7 +236,7 @@ Merge.dev normalizes ATS data into a common schema. Our transformation maps from
 
 ### 4.4 Job Mapping
 
-| Merge.dev Field | itecbrains Field | Transform | Notes |
+| Merge.dev Field | Eligeo Field | Transform | Notes |
 |----------------|------------------|-----------|-------|
 | `name` | `job_openings.title` | Direct | Truncate to 200 chars |
 | `departments[0].name` | `job_openings.department` | Direct | — |

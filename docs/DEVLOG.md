@@ -1,4 +1,4 @@
-# itecbrains ATS — Documentation Dev Log
+# Eligeo — Documentation Dev Log
 
 > Chronological record of all documentation work. Newest entries at top.
 > Every change to any document in `docs/` gets an entry here.
@@ -15,6 +15,14 @@
 ```
 
 ---
+
+### 2026-03-11 — [META] Brand rename: itecbrains ATS → Eligeo
+
+- Renamed all project references from "itecbrains ATS" to "Eligeo" (eligeo.io)
+- Updated 19 files: CLAUDE.md, MEMORY.md, INDEX.md, DEVLOG.md, PLAN.md, AI-RULES.md, CI-CD.md, API-SPECIFICATION.md, PERFORMANCE.md, WHITE-LABEL.md, CANDIDATE-PORTAL.md, DATA-MIGRATION.md, USER-PERSONAS.md, SECURITY-THREAT-MODEL.md, ERROR-TAXONOMY.md, PRODUCT-ROADMAP.md, COMPETITIVE-ANALYSIS.md, SECURITY-RUNBOOKS.md, DESIGN-SYSTEM.md
+- Domain mapping: ats.itecbrains.com → eligeo.io, staging/api/docs/careers subdomains updated
+- Preserved: docs/source/ files (provenance), INDEX.md source file path references (actual filenames)
+- Brand: Eligeo — from Latin "eligere" (to select/elect), domain: eligeo.io
 
 ### 2026-03-11 — [D27] Product Roadmap & Release Strategy — complete first draft
 

@@ -306,7 +306,7 @@ export const options = {
 };
 
 export default function () {
-  const res = http.get('https://staging.ats.itecbrains.com/careers/demo-org');
+  const res = http.get('https://staging.eligeo.io/careers/demo-org');
   check(res, { 'status is 200': (r) => r.status === 200 });
   sleep(1);
 }

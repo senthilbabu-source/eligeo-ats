@@ -1,4 +1,4 @@
-# itecbrains ATS — Documentation Index
+# Eligeo — Documentation Index
 
 > Master registry of all documentation. Every document has a status, owner, and dependency chain.
 > **Last updated:** 2026-03-10

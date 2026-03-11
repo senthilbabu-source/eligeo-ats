@@ -13,7 +13,7 @@
 
 ## 1. Overview
 
-This document defines the security threat model for the itecbrains ATS. It identifies attack surfaces, applies STRIDE analysis to each component, maps attack vectors to existing controls, diagrams PII data flows, and specifies a penetration test plan. The goal is to validate that our architecture addresses enterprise-grade security requirements before writing any code.
+This document defines the security threat model for Eligeo. It identifies attack surfaces, applies STRIDE analysis to each component, maps attack vectors to existing controls, diagrams PII data flows, and specifies a penetration test plan. The goal is to validate that our architecture addresses enterprise-grade security requirements before writing any code.
 
 **Scope:**
 - In scope: Application-level threats, authentication/authorization, data protection, API security, third-party integrations, supply chain, insider threats.

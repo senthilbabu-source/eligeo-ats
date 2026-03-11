@@ -45,7 +45,7 @@ The global ATS market is valued at approximately **$2.7B (2025)** and projected 
                          │
                     SMB-focused
 
-  ★ itecbrains target: Modern + Mid-market to Enterprise
+  ★ Eligeo target: Modern + Mid-market to Enterprise
 ```
 
 ---
@@ -246,7 +246,7 @@ The global ATS market is valued at approximately **$2.7B (2025)** and projected 
 
 ---
 
-## 4. Pain Point → itecbrains Architecture Mapping
+## 4. Pain Point → Eligeo Architecture Mapping
 
 This is the core of the competitive analysis: every major pain point mapped to our existing architecture decisions.
 
@@ -310,7 +310,7 @@ This is the core of the competitive analysis: every major pain point mapped to o
 
 ### 5.2 Feature-Tier Benchmarking (Industry Patterns)
 
-| Feature | Typically Available At | itecbrains Tier | Competitive Position |
+| Feature | Typically Available At | Eligeo Tier | Competitive Position |
 |---------|----------------------|-----------------|---------------------|
 | Basic ATS (post, track, hire) | All tiers | Starter ($29) | ✅ Undercuts most |
 | Custom fields | Mid tier | Growth ($79) | ✅ Matches market |
@@ -324,7 +324,7 @@ This is the core of the competitive analysis: every major pain point mapped to o
 | White-label | Enterprise | Enterprise ($499) | ✅ Standard |
 | Bulk import | Mid+ tier | Growth ($79) | ✅ Matches market |
 
-### 5.3 itecbrains Pricing Assessment
+### 5.3 Eligeo Pricing Assessment
 
 | Tier | Price | Competitive Position |
 |------|-------|---------------------|
@@ -353,7 +353,7 @@ This is the core of the competitive analysis: every major pain point mapped to o
 | **JazzHR** | Workable, Breezy HR | Outdated UI, billing abuse |
 | **Greenhouse** | Ashby | Performance issues, cost, better analytics |
 
-### 6.2 itecbrains Migration Opportunity
+### 6.2 Eligeo Migration Opportunity
 
 **Highest-value targets for initial positioning:**
 
@@ -371,7 +371,7 @@ This is the core of the competitive analysis: every major pain point mapped to o
 
 ### 7.1 Core Positioning Statement
 
-> **itecbrains ATS:** The modern ATS that's fast by architecture, secure by design, and priced for growth — not for enterprise budgets.
+> **Eligeo:** The modern ATS that's fast by architecture, secure by design, and priced for growth — not for enterprise budgets.
 
 ### 7.2 Defensible Differentiators
 
@@ -418,7 +418,7 @@ These are claims rooted in our actual architecture, not marketing aspiration:
 #### vs. Workday Recruiting
 - "Workday's ATS loses 70% of applicants. Ours requires zero account creation."
 - "Workday needs a full-time HRIS specialist. We're self-serve."
-- "Keep Workday for HRIS. Use itecbrains for recruiting. They sync via Merge.dev."
+- "Keep Workday for HRIS. Use Eligeo for recruiting. They sync via Merge.dev."
 
 #### vs. BambooHR
 - "BambooHR's ATS is great until you hit 100 employees. We scale from 10 to 10,000."

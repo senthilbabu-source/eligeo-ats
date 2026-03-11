@@ -372,7 +372,7 @@ The candidate-facing portal (`D09`) respects `branding_config` from `organizatio
 
 | Property | CSS Variable Override | Fallback |
 |----------|----------------------|----------|
-| `logo_url` | — (rendered as `<img>`) | itecbrains ATS logo |
+| `logo_url` | — (rendered as `<img>`) | Eligeo logo |
 | `primary_color` | `--primary` | `217 91% 50%` |
 | `secondary_color` | `--secondary` | `210 20% 96%` |
 | `font_family` | `--font-sans` | Inter |

@@ -1,6 +1,6 @@
 # AI-Assisted Documentation Rules
 
-> Standards for all documentation produced in the itecbrains ATS project.
+> Standards for all documentation produced in the Eligeo project.
 > Both human-written and AI-assisted documents MUST follow these rules.
 
 ---
