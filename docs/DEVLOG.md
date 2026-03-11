@@ -15,6 +15,34 @@
 
 ---
 
+### 2026-03-11 — [TEST] RLS integration test infrastructure + 140 tests
+
+- **RLS test helpers** (`src/__tests__/helpers.ts`):
+  - `createTestClient(email)` — authenticates as seed user via Supabase Auth, returns client with JWT claims
+  - `createServiceClient()` — service role for setup/teardown (bypasses RLS)
+  - `assertTenantIsolation()` — verifies cross-tenant SELECT invisibility
+  - `assertCanSelect()`, `assertInsertDenied()`, `assertUpdateDenied()`, `assertDeleteDenied()`
+  - Client caching to avoid re-auth per test, `clearClientCache()` in afterAll
+- **RLS test generator** (`src/__tests__/rls/rls-test-generator.ts`):
+  - Takes `RLSTestConfig` (table, record IDs, sample insert/update, role configs)
+  - Generates tenant isolation tests (A↛B, B↛A, cross-tenant INSERT/UPDATE/DELETE)
+  - Generates role enforcement tests (SELECT, INSERT, UPDATE, DELETE per role)
+  - DELETE tests use disposable records (insert via service, delete via role)
+- **140 RLS tests across 10 files** (all against local Supabase):
+  - `organizations.rls.test.ts` — 15 tests: isolation, all-roles SELECT, owner/admin UPDATE, DELETE=FALSE
+  - `user-profiles.rls.test.ts` — 9 tests: isolation, co-org visibility, self-only UPDATE, DELETE=FALSE
+  - `organization-members.rls.test.ts` — 12 tests: isolation, 5-member count, owner/admin/self UPDATE, owner-only DELETE
+  - `job-openings.rls.test.ts` — 26 tests (generator): isolation, 5 roles × 4 ops
+  - `candidates.rls.test.ts` — 27 tests (generator): isolation, hiring_manager INSERT (M013 fix), 5 roles × 4 ops
+  - `applications.rls.test.ts` — 18 tests: isolation, all-roles SELECT, HM UPDATE, append-only stage_history
+  - `pipelines.rls.test.ts` — 12 tests: templates + stages isolation, interviewer denied
+  - `lookups.rls.test.ts` — 10 tests: sources + reasons isolation, role-gated INSERT/UPDATE
+  - `talent-pools.rls.test.ts` — 10 tests: pools + members isolation, interviewer denied
+  - `ai-usage-logs.rls.test.ts` — 6 tests: SELECT by org member, INSERT=FALSE, UPDATE/DELETE=FALSE
+- **Total: 223 Vitest tests (83 unit + 140 RLS)** — up from 83. All passing.
+- **Bug fix:** `ai_usage_logs` column names `tokens_input`/`tokens_output` (not `input_tokens`/`output_tokens`)
+- `[PLAYBOOK]` RLS test generator pattern — define a table config, auto-generate 4 ops × N roles × 2 tenants tests. Catches policy regressions on every migration.
+
 ### 2026-03-11 — [TEST] Test debt payoff (Phases 2, 2.5, 2.6)
 
 - **Unit tests (72 total, up from 14):**
