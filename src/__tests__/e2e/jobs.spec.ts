@@ -66,4 +66,27 @@ test.describe("Job Management", () => {
     // Should stay on the form page (not redirect to a detail page)
     await expect(page).toHaveURL(/\/jobs\/new/);
   });
+
+  test("Clone button is visible on job detail and creates copy", async ({ page }) => {
+    await page.goto("/jobs");
+    const firstJob = page.getByRole("link").filter({ hasText: /senior/i }).first();
+    await firstJob.click();
+    await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/);
+
+    // Clone button should be present
+    await expect(page.getByRole("button", { name: /clone/i })).toBeVisible({ timeout: 5000 });
+
+    // Click clone — should redirect to new draft job
+    await page.getByRole("button", { name: /clone/i }).click();
+    await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/, { timeout: 10000 });
+    await expect(page.getByText(/copy/i).first()).toBeVisible();
+  });
+
+  test("AI Rewrite button is visible on job detail", async ({ page }) => {
+    await page.goto("/jobs");
+    const firstJob = page.getByRole("link").filter({ hasText: /senior/i }).first();
+    await firstJob.click();
+    await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/);
+    await expect(page.getByRole("button", { name: /ai rewrite/i })).toBeVisible({ timeout: 5000 });
+  });
 });

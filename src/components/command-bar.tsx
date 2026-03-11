@@ -75,6 +75,8 @@ export function CommandBar() {
           dashboard: "/dashboard",
           settings: "/settings",
           pipelines: "/settings/pipelines",
+          pools: "/talent-pools",
+          "talent-pools": "/talent-pools",
         };
         const href = pageMap[response.intent.params.page];
         if (href) {

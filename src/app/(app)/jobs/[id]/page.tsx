@@ -85,8 +85,13 @@ export default async function JobDetailPage({
             )}
           </div>
         </div>
-        {can(session.orgRole, "jobs:edit") && (
-          <JobActions jobId={job.id} status={job.status} />
+        {(can(session.orgRole, "jobs:edit") || can(session.orgRole, "jobs:create")) && (
+          <JobActions
+            jobId={job.id}
+            status={job.status}
+            canEdit={can(session.orgRole, "jobs:edit")}
+            canCreate={can(session.orgRole, "jobs:create")}
+          />
         )}
       </div>
 

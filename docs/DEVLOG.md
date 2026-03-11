@@ -4,6 +4,120 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] J3: Clone Job + AI Rewrite
+
+**Phase:** Build — Phase 2.7 (UX Polish), deliverable 5 of 6
+**Scope:** User story J3 — Clone a job posting; AI rewrite its description
+
+### Changes
+- **New: `cloneJob(jobId)`** — copies all job fields, appends " (Copy)", sets status=draft, unique slug via timestamp suffix
+- **New: `rewriteJobDescription(jobId)`** — calls `generateJobDescription` with existing title/dept/description as context, saves result to DB, revalidates page
+- **Updated: `job-actions.tsx`** — added Clone button (redirects to clone), AI Rewrite button (refreshes page with new description), loading states, `canEdit`/`canCreate` props
+- **Updated: `jobs/[id]/page.tsx`** — passes both permission props to JobActions
+
+### Tests
+- +2 E2E (Playwright): clone button creates copy, AI Rewrite button visible
+- **Total: 537 Vitest + 42 E2E = 579**
+
+### Files
+- `src/lib/actions/jobs.ts` (cloneJob + rewriteJobDescription added)
+- `src/app/(app)/jobs/[id]/job-actions.tsx` (rewritten)
+- `src/app/(app)/jobs/[id]/page.tsx` (updated props)
+- `src/__tests__/e2e/jobs.spec.ts` (+2 tests)
+
+### What's next
+- J3 complete. Next: **C2/M3 — Mobile polish pass** (final Phase 2.7 deliverable)
+
+---
+
+## 2026-03-11 — [Phase 2.7] P5: Talent Pool UI + Filters
+
+**Phase:** Build — Phase 2.7 (UX Polish), deliverable 4 of 6
+**Scope:** User story P5 — Talent pool list, detail, create, add/remove members, search filter
+
+### Changes
+- **New: /talent-pools** — list with member counts, empty state, "New Pool" button
+- **New: /talent-pools/new** — create form (name + description, redirects to detail on success)
+- **New: /talent-pools/[id]** — detail with member list, URL-based search filter (q=), add candidate dropdown, remove member button, delete pool
+- **New: server actions** — `src/lib/actions/talent-pools.ts`: createPool, deletePool, addMember, removeMember (all org-scoped, soft delete, assertCan)
+- **Nav:** "Pools" added to app nav; `talent-pools` / `pools` added to command bar pageMap
+- **Client component:** `pool-actions.tsx` — AddCandidateForm, RemoveMemberButton, DeletePoolButton
+
+### Tests
+- +5 E2E (Playwright): list loads, detail shows members, search filter, new pool form, nav link
+- **Total: 537 Vitest + 40 E2E = 577**
+
+### Files
+- `src/lib/actions/talent-pools.ts` (new)
+- `src/app/(app)/talent-pools/` (new — page, new/page, [id]/page, [id]/pool-actions)
+- `src/app/(app)/app-nav.tsx` (Pools nav item added)
+- `src/components/command-bar.tsx` (pools/talent-pools pageMap)
+- `src/__tests__/e2e/talent-pools.spec.ts` (new)
+
+### What's next
+- P5 complete. Next: **J3 — Clone job + AI rewrite**
+
+---
+
+## 2026-03-11 — [Phase 2.7] R1/R3/R4: Dashboard with Metrics
+
+**Phase:** Build — Phase 2.7 (UX Polish), deliverable 3 of 6
+**Scope:** User stories R1 (dashboard), R3 (pipeline velocity), R4 (source attribution)
+
+### Changes
+- **Rewrite: /dashboard** — replaced placeholder with live metrics dashboard
+- **4 metric cards:** Active Jobs, Candidates, Active Applications, This Week (new apps)
+- **Pipeline Funnel** — horizontal bar chart of active applications per stage, sorted by stage_order
+- **Source Attribution** — top 5 sources by application count with proportional bars
+- **Recent Applications** — last 5 applications with candidate name + job title + date
+- **Parallel queries** — 7 Supabase queries with `Promise.all` for fast load
+- All queries: org-scoped + soft-delete filtered
+
+### Tests
+- +5 E2E (Playwright): metric cards render, funnel section, source section, recent apps, card navigation
+- **Total: 537 Vitest + 35 E2E = 572**
+
+### Files
+- `src/app/(app)/dashboard/page.tsx` (rewritten)
+- `src/__tests__/e2e/dashboard.spec.ts` (new)
+
+### What's next
+- R1/R3/R4 complete. Next: **P5 — Talent pool UI + filters**
+
+---
+
+## 2026-03-11 — [Phase 2.7] M1: Drag-Drop Kanban Board
+
+**Phase:** Build — Phase 2.7 (UX Polish), deliverable 2 of 6
+**Scope:** User story M1 — Drag-and-drop candidate cards on pipeline board
+
+### Changes
+- **Rewrite: Pipeline board** — replaced arrow-button-only Kanban with @dnd-kit cross-column drag-and-drop
+- **DndContext + useDroppable/useDraggable** — stage columns are drop targets, candidate cards are draggable items
+- **Optimistic UI** — card moves instantly on drop, server action persists in background, rollback on failure
+- **DragOverlay** — floating card preview during drag with scale 1.02, shadow elevation, spring-eased drop (300ms)
+- **Drop zone highlighting** — active column gets primary border + bg tint, empty columns show "Drop here" placeholder
+- **Arrow buttons preserved** — mobile/accessibility fallback, same optimistic pattern
+- **Error handling** — error banner on failed moves, pending indicator during server action
+
+### Design Decisions
+- Reused @dnd-kit from W1 (pipeline editor) instead of adding Framer Motion — keeps bundle lean, consistent DnD lib
+- D05 §8.2 spring animation achieved via CSS `cubic-bezier(0.2, 0, 0, 1)` on DragOverlay dropAnimation
+- Cards use `useDraggable` (not `useSortable`) since within-column reordering isn't needed — only cross-column moves
+
+### Tests
+- +4 E2E (Playwright): stage columns render, arrow button move, drag handles present, empty column placeholders
+- **Total: 537 Vitest + 30 E2E = 567**
+
+### Files
+- `src/app/(app)/jobs/[id]/pipeline/pipeline-board.tsx` (rewritten — DndContext, DraggableCard, StageColumn, OverlayCard)
+- `src/__tests__/e2e/kanban.spec.ts` (new)
+
+### What's next
+- M1 complete. Next: **R1/R3/R4 — Dashboard with metrics** (time-to-hire, pipeline velocity, source attribution)
+
+---
+
 ## 2026-03-11 — [Phase 2.7] W1: Pipeline Builder (Settings Page + DnD Editor)
 
 **Phase:** Build — Phase 2.7 (UX Polish), deliverable 1 of 6
