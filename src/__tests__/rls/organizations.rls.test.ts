@@ -90,14 +90,6 @@ describe("RLS: organizations", () => {
   // ─── SELECT: all 5 roles can see own org ────────────────
 
   describe("SELECT", () => {
-    const roleClients = () => [
-      ["owner", ownerClient],
-      ["admin", adminClient],
-      ["recruiter", recruiterClient],
-      ["hiring_manager", hmClient],
-      ["interviewer", interviewerClient],
-    ] as const;
-
     for (const [name] of [["owner"], ["admin"], ["recruiter"], ["hiring_manager"], ["interviewer"]] as const) {
       it(`${name} can SELECT own org`, async () => {
         const clients = { owner: ownerClient, admin: adminClient, recruiter: recruiterClient, hiring_manager: hmClient, interviewer: interviewerClient };

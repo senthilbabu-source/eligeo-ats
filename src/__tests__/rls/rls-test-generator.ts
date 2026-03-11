@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { TENANT_A, TENANT_B } from "@/__fixtures__/golden-tenant";
+import { TENANT_B } from "@/__fixtures__/golden-tenant";
 import {
   createTestClient,
   assertTenantIsolation,
