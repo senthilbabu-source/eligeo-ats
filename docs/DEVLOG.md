@@ -15,6 +15,26 @@
 
 ---
 
+### 2026-03-11 — [META] ADR-011: AI-First Build Pivot
+
+- **Legacy pitfall audit** — comprehensive review of UI, workflows, AI architecture, and performance
+- **Findings (6 critical):**
+  1. Dated UI — pages feel like database admin tools, zero role-aware views
+  2. High click-count — 4–6 clicks per common action, no inline editing or keyboard shortcuts
+  3. Zero customization UI — schema supports tenant config, no settings pages
+  4. Dead-end career portal — no application form, "coming soon" placeholder
+  5. No pagination — all list pages fetch all rows, breaks at 500+ records
+  6. Bolt-on AI — zero AI code exists, "AI-first" claim is unsupported
+- **Decision:** Abandon sequential phase order (Phase 3→4→5→6). Switch to horizontal pass:
+  - Phase 2.5: Foundation fixes (pagination, application form, indexes, org-scoped career portal)
+  - Phase 2.6: Command bar (⌘K) + AI core (resume parsing, fit scoring, NL search)
+  - Phase 2.7: UX polish (drag-drop Kanban, settings pages, dashboard metrics, role-aware views)
+  - Then resume vertical: Phase 3 (interviews) → Phase 4 (offers) → Phase 5 (billing)
+- **Key rule change:** Every new feature ships with AI-assisted mode from Day 1. No deferring AI to v2.0.
+- **What stays:** All 10 ADRs, 39-table schema, Supabase RLS, Inngest, audit logging, 30 spec docs
+- **What changes:** Build ORDER only. Command bar becomes primary interaction model.
+- **[PLAYBOOK]** Legacy pitfall audit as standard practice — evaluate against dated UI, click counts, customization, candidate experience, performance, and AI-first claims before shipping MVP. Catches "building yesterday's product" before it's too late.
+
 ### 2026-03-11 — [JOBS] Phase 2: Jobs + Career Portal (Complete)
 
 - **Pipeline Kanban board** — `/jobs/[id]/pipeline`:

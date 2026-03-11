@@ -16,14 +16,16 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 | Enums | CHECK constraints for system values, lookup tables for tenant values. No PG ENUMs. | ADR-008 |
 | File storage | `files` metadata table + Supabase Storage. No inline URL columns. | ADR-009 |
 | GDPR erasure | Per-candidate encryption keys. `erase_candidate()` crypto-shreds + anonymizes. | ADR-010 |
+| Build pivot | AI-first horizontal pass. Command bar + AI core before vertical features. | ADR-011 |
 
-**Stack (decided, from S3):** Supabase Auth · Inngest (jobs) · pgvector + Typesense (search) · UUID v4 everywhere · REST/OpenAPI · Merge.dev (HRIS) · Nylas (calendar) · Dropbox Sign (e-sign)
+**Stack (decided, from S3):** Supabase Auth · Inngest (jobs) · pgvector + Typesense (search) · UUID v4 everywhere · REST/OpenAPI · Merge.dev (HRIS) · Nylas (calendar) · Dropbox Sign (e-sign) · **OpenAI API** (embeddings, structured output, NL intent)
 
 ## Current State
 
-- **Phase:** Build — Phase 0 (Infrastructure) complete. Phase 1 (Auth + Core Tenancy) next.
-- **Documentation:** ALL 30 documents complete (Review). Pre-code audit passed (14 gaps resolved).
-- **Project:** Next.js 16.1.6, React 19, Tailwind v4, Supabase initialized, Vitest + Playwright configured.
+- **Phase:** Build — Phase 2 complete. **PIVOTED** per ADR-011: horizontal pass (2.5 → 2.6 → 2.7) before vertical features.
+- **Build order:** Phase 0 ✅ → Phase 1 ✅ → Phase 2 ✅ → **Phase 2.5 (foundations)** → **Phase 2.6 (command bar + AI)** → **Phase 2.7 (UX polish)** → Phase 3 (interviews) → Phase 4 (offers) → Phase 5 (billing)
+- **Documentation:** ALL 30 docs complete. Spec docs describe WHAT; build order changed per ADR-011.
+- **Key rule:** Every new feature ships with AI-assisted mode from Day 1. No more "AI deferred to v2.0."
 - **Rules:** 90 rules in `docs/AI-RULES.md` (§1-§21)
 - **Governance:** Post-build audit (§13), pre-start gate (§21), downstream impact (§14)
 
