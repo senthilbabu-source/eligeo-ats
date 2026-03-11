@@ -35,7 +35,8 @@ These are enforced by ADRs. Violating any of them requires a new ADR.
 
 ## Table Inventory
 
-39 tables across 8 clusters. Sub-documents contain full DDL, RLS, indexes, and triggers.
+40 tables across 8 clusters. Sub-documents contain full DDL, RLS, indexes, and triggers.
+<!-- +1: org_daily_briefings added in Migration 021 (Wave 3 dashboard briefing cache) -->
 
 ### Cluster 1: Core Tenancy ([schema/01-core-tenancy.md](schema/01-core-tenancy.md))
 
@@ -109,6 +110,7 @@ These are enforced by ADRs. Violating any of them requires a new ADR.
 |-------|---------|----------------------------|-------------------------------|
 | `audit_logs` | Immutable mutation log | 50,000 / 250,000 | 25M / 125M |
 | `ai_usage_logs` | AI credit consumption tracking | 2,000 / 10,000 | 1M / 5M |
+| `org_daily_briefings` | Cached AI daily briefing per org per day (Migration 021) | 365 / 1,095 | 182K / 547K |
 | `api_keys` | External API access tokens | 3 / 10 | 1.5K / 5K |
 | `webhook_endpoints` | Outbound webhook subscriptions | 5 / 15 | 2.5K / 7.5K |
 | `nylas_grants` | Calendar integration grants | 10 / 25 | 5K / 12.5K |
@@ -442,7 +444,7 @@ Channel naming: `org:{organization_id}:{table_name}` — RLS automatically scope
 | [05-interviews-scorecards.md](schema/05-interviews-scorecards.md) | interviews, scorecard_* (5 tables) | ~350 |
 | [06-offers.md](schema/06-offers.md) | offer_templates, offers, offer_approvals | ~250 |
 | [07-communications-files.md](schema/07-communications-files.md) | notes, email_templates, notification_preferences, files, custom_fields | ~400 |
-| [08-system-compliance.md](schema/08-system-compliance.md) | audit_logs, ai_usage_logs, api_keys, webhooks, nylas_grants, DEI, GDPR | ~400 |
+| [08-system-compliance.md](schema/08-system-compliance.md) | audit_logs, ai_usage_logs, org_daily_briefings, api_keys, webhooks, nylas_grants, DEI, GDPR | ~450 |
 
 ---
 

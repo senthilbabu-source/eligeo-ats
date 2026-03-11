@@ -3,7 +3,7 @@
 > **ID:** D17
 > **Status:** Review
 > **Priority:** P2
-> **Last updated:** 2026-03-10
+> **Last updated:** 2026-03-11
 > **Depends on:** D01 (schema — applications, application_stage_history, interviews, offers), D12 (Workflow — stage transitions, SLA events), D13 (Compliance — DEI aggregation rules)
 > **Depended on by:** — (terminal document)
 > **Last validated against deps:** 2026-03-10
@@ -60,7 +60,8 @@ Analytics & Reporting defines the metrics, data model, and reporting capabilitie
 | Query Type | Approach | Rationale |
 |-----------|----------|-----------|
 | Dashboard widgets (counts) | Direct SQL with date range | Fast with indexes, sub-100ms |
-| Pipeline funnel | `application_stage_history` aggregation | Append-only table, index on `(org, created_at)` |
+| Current stage distribution | `applications.current_stage_id` aggregation | **Current implementation (Phase 2.7).** Snapshot of where candidates are now — not passthrough rates. Fast, no history table needed. |
+| Pipeline funnel (flow-through) | `application_stage_history` aggregation | **Phase 3 upgrade path.** Counts unique `application_id` per `to_stage_id` — shows cumulative passthrough, not just current occupancy. Blocked until Phase 3 populates the table. |
 | Time-in-stage | Window function on `application_stage_history` | Calculated on-the-fly per request |
 | DEI reporting | Aggregation with D13 suppression rules | Small data volume, no materialization needed |
 | Historical trends | Materialized view, refreshed daily | Expensive cross-table joins |
@@ -97,6 +98,11 @@ $$;
 
 ```sql
 -- Monthly hiring summary
+-- NOTE: This materialized view is a Phase 3 target. Until application_stage_history has
+-- sufficient data, Time-to-Hire is computed on-the-fly via direct query on applications
+-- (WHERE status = 'hired' AND hired_at IS NOT NULL). The direct query uses:
+-- AVG(EXTRACT(EPOCH FROM (hired_at - applied_at)) / 86400) to return days as a float,
+-- not a Postgres interval type. Switch to this materialized view once Phase 3 data is rich.
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_monthly_hiring_summary AS
 SELECT
   organization_id,
@@ -159,12 +165,39 @@ WHERE ash.application_id = $1
 ORDER BY ash.created_at;
 ```
 
-## 5. Pipeline Funnel
+## 5. Pipeline Stage Distribution & Funnel
 
-### 5.1 Funnel Query
+### 5.1 Current Implementation — Stage Distribution (Phase 2.7)
+
+The dashboard widget is labelled **"Current Stage Distribution"** (not "Pipeline Funnel"). It shows a snapshot of where active candidates are right now — how many applications have `current_stage_id = X` at query time. This is a pipeline depth view, not a passthrough funnel.
+
+**Why this distinction matters:** If 40 candidates entered Phone Screen and 38 were rejected there, the snapshot shows Phone Screen = 2 (currently sitting there). A real funnel would show Phone Screen = 40 (cumulative entrants). The snapshot is useful for workload distribution; the funnel is useful for diagnosing drop-off. Both are valid but different.
 
 ```typescript
-// Server Action: get pipeline funnel for a job
+// dashboard/page.tsx — current stage distribution (Phase 2.7 implementation)
+// Groups active applications by current_stage_id, filters to default template (R3)
+const { data: stageRows } = await supabase
+  .from('applications')
+  .select(`
+    current_stage_id,
+    pipeline_stages!inner(name, stage_order, stage_type, pipeline_template_id)
+  `)
+  .eq('organization_id', orgId)
+  .eq('status', 'active')
+  .is('deleted_at', null);
+
+// aggregateFunnel() in lib/utils/dashboard.ts:
+// Groups by current_stage_id, filters to defaultTemplateId, sorts by stage_order
+```
+
+Each bar links to `/candidates?stage=<stage_id>` — the candidates list supports a `stage` filter param that pre-fetches candidate IDs from `applications WHERE current_stage_id = stage`.
+
+### 5.2 Phase 3 Upgrade — True Passthrough Funnel
+
+When `application_stage_history` has sufficient data (Phase 3), switch the query source from `applications.current_stage_id` to `application_stage_history.to_stage_id`, counting unique `application_id` per stage. This shows cumulative entrants, not current occupancy.
+
+```typescript
+// Phase 3 target: get pipeline funnel for a job using stage history
 async function getPipelineFunnel(jobId: string, dateRange: DateRange) {
   const supabase = await createClient();
 
@@ -184,7 +217,7 @@ async function getPipelineFunnel(jobId: string, dateRange: DateRange) {
     .lte('created_at', dateRange.to)
     .is('deleted_at', null);
 
-  // Count unique candidates per stage
+  // Count unique candidates per stage (cumulative entrants)
   const stageCounts = stages.map((stage) => {
     const uniqueApps = new Set(
       transitions
@@ -209,9 +242,11 @@ async function getPipelineFunnel(jobId: string, dateRange: DateRange) {
 }
 ```
 
-### 5.2 Funnel Visualization
+### 5.3 Visualization
 
-Horizontal bar chart showing candidate volume at each stage with passthrough percentages between stages. D05 Design System colors: primary for bars, muted for labels.
+Current Stage Distribution: horizontal bar chart, bars link to `/candidates?stage=<id>`. D05 Design System colors: primary for bars, muted for labels.
+
+Phase 3 funnel: same layout, adds passthrough rate percentages between bars.
 
 ## 6. DEI Reporting
 
@@ -263,23 +298,30 @@ async function getDEIReport(orgId: string, dimension: string, dateRange: DateRan
 
 ## 8. Inngest Functions
 
-| Function ID | Trigger | Purpose |
-|-------------|---------|---------|
-| `analytics-refresh-views` | `cron: 0 2 * * *` | Refresh materialized views daily |
-| `analytics-export` | `analytics/export-requested` | Generate analytics CSV export |
+| Function ID | Trigger | Purpose | Phase |
+|-------------|---------|---------|-------|
+| `analytics/refresh-views` | `cron: 0 2 * * *` | Refresh materialized views daily | v1.1 |
+| `analytics/export` | `ats/analytics.export-requested` | Generate analytics CSV export | v1.1 |
+| `analytics/generate-briefing` | `ats/analytics.briefing-requested` (on-demand) or piggybacked on `analytics/refresh-views` | Generate and cache daily AI briefing per org. Reads pipeline snapshot, calls OpenAI structured output, upserts `org_daily_briefings(org_id, date)`. Cache-first: skips OpenAI if today's row exists. Logs to `ai_usage_logs` with `action = 'daily_briefing'`. | v1.0 (Wave 3) |
 
 ## 9. Dashboard Widgets
 
-| Widget | Data | Refresh |
-|--------|------|---------|
-| Open Requisitions | Count of open jobs | On page load |
-| Applications This Week | Count with date filter | On page load |
-| Time to Hire (avg) | From `mv_monthly_hiring_summary` | Daily (materialized) |
-| Hires This Month | Count from `applications.hired_at` | On page load |
-| Pipeline Funnel | Stage counts for selected job | On page load |
-| Source Breakdown | Pie chart by `source_id` | On page load |
-| Stage Velocity | Avg time-in-stage by stage type | Daily (materialized) |
-| Offer Acceptance Rate | Signed / total offers | On page load |
+> Phase column: ✅ = built (Phase 2.7) · Wave N = upcoming enhancement · P3/P4 = phase-gated
+
+| Widget | Data Source | Refresh | Phase |
+|--------|------------|---------|-------|
+| Active Jobs | `job_openings WHERE status='open'` | On page load | ✅ |
+| Hires This Month + avg Time to Hire | `applications WHERE status='hired' AND hired_at >= start_of_month`; avg via `EXTRACT(EPOCH FROM (hired_at - applied_at))/86400` | On page load | Wave 1 |
+| Active Applications | `applications WHERE status='active'` | On page load | ✅ |
+| Received (this week) | `applications WHERE applied_at >= 7 days ago` | On page load | ✅ |
+| Current Stage Distribution | `applications.current_stage_id` grouped by stage, filtered to default template. Bars link to `/candidates?stage=<id>` | On page load | Wave 1 (renamed + interactive) |
+| Source Volume + Quality | Active apps by source (volume); hired apps by source (hire rate, min cohort 5 per D13) | On page load | Wave 2 |
+| At-Risk Jobs | Open jobs ≥21 days AND <3 active apps AND no app in last 7 days. Always renders (green empty state when all jobs healthy) | On page load | Wave 2 |
+| Recent Applications | Latest 5 apps with candidate name, job title, stage, status. Each row links to `/candidates/<id>` | On page load | Wave 1 (enhanced) |
+| Daily AI Briefing | Cached `org_daily_briefings` (today). Cache miss → OpenAI structured output (win, blocker, action). Regenerate button (admin only). Suspense boundary. | Cached daily; on-demand for admin regen | Wave 3 |
+| Data Freshness | Server render timestamp ("as of HH:MM") | On page load | Wave 1 |
+| Stage Velocity | Avg days per stage from `application_stage_history` window function | Daily (materialized) | Phase 3 |
+| Offer Acceptance Rate | Signed / total offers from `offers` table | On page load | Phase 4 |
 
 ## 10. Plan Gating
 

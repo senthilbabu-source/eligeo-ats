@@ -4,6 +4,48 @@
 
 ---
 
+## 2026-03-11 — [Docs] R1/R3/R4 dashboard enhancement — doc sync before build
+
+**Phase:** Pre-build doc sync (R1/R3/R4 dashboard enhancements)
+**Scope:** Audit and correct all documents affected by the dashboard enhancement plan (Waves 1–3). Retroactive accuracy fix + proactive spec for upcoming build.
+
+### Documents updated
+
+#### D17 (ANALYTICS.md) — major correction
+- **§3.1 Query Strategy:** Fixed incorrect claim that pipeline funnel uses `application_stage_history`. Current implementation (Phase 2.7) uses `applications.current_stage_id` (stage snapshot). Phase 3 upgrade path documented.
+- **§3.2 Materialized Views:** `mv_monthly_hiring_summary` marked as Phase 3 target. Added note that Time-to-Hire currently uses direct query with `EXTRACT(EPOCH FROM ...)/ 86400` cast — not an interval type.
+- **§5 Pipeline Funnel → Stage Distribution:** Full rewrite. Documents current snapshot implementation vs. Phase 3 passthrough funnel. Notes that bars link to `/candidates?stage=<id>` (Wave 1).
+- **§8 Inngest Functions:** Added `analytics/generate-briefing` (v1.0, Wave 3). Cache-first, concurrency 1 per org.
+- **§9 Dashboard Widgets:** Complete reconciliation. 11 widgets total — 4 existing ✅, 5 for Waves 1–3, 2 Phase-gated (Stage Velocity Phase 3, Offer Acceptance Rate Phase 4).
+
+#### D30 (USER-STORY-MAP.md) — §23 additions
+- R3: Added snapshot caveat — current "Pipeline funnel" is stage distribution, not passthrough. Phase 3 note added.
+- R4: Updated to note source quality (hire rate) added in Wave 2.
+- R8–R13: 6 new stories added for all dashboard enhancement waves with full implementation notes.
+
+#### D24 (TESTING-STRATEGY.md) — 3 additions
+- §5.1: Added `Analytics/Dashboard` module row with coverage targets.
+- §6.2: Added `org_daily_briefings` (8 cases, pre-migration spec for Migration 021). Total RLS cases: ~238 → ~246.
+- §7.2: Added E2E-16 (mine mode cookie), E2E-17 (at-risk empty state), E2E-18 (recent apps nav). Total E2E: 15 → 18.
+
+#### D29 (INNGEST-REGISTRY.md)
+- §4.7 Analytics: Added `analytics/generate-briefing` (function #41). Module count: 2 → 3 functions.
+- §8 v1.0 Scope: Added Analytics row (1 function). v1.0 total: 39 → 40 functions.
+
+#### D01 (DATABASE-SCHEMA.md) + schema/08-system-compliance.md
+- Table count: 39 → 40 (adds `org_daily_briefings` from Migration 021).
+- Cluster 8 inventory: `org_daily_briefings` added.
+- `ai_usage_logs.action` CHECK: `'daily_briefing'` added to spec (Migration 021 applies to DB).
+- `org_daily_briefings` full DDL, indexes, RLS (4 policies) added to schema sub-doc.
+
+#### INDEX.md
+- D01, D17, D24, D29, D30 descriptions updated to reflect changes. Last updated: 2026-03-11.
+
+### No code written this session — docs only.
+### Test count: unchanged. Build not started.
+
+---
+
 ## 2026-03-11 — [Phase 2.7] J3 final close — command bar deep-link + RLS gap (job_required_skills)
 
 **Phase:** Build — Phase 2.7 post-audit (J3 fully closed, ADR-004 violation resolved)

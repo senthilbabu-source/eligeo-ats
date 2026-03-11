@@ -109,12 +109,20 @@ Functions only override these defaults when documented in the registry table bel
 | 37 | `search/full-reindex` | `ats/search.reindex-requested` | 0 | — | No (v2.0) |
 | 38 | `search/sync-health-check` | Cron: `*/5 * * * *` (every 5 min) | default (3) | — | No (v2.0) |
 
-### 4.7 Analytics (2 functions) — v1.1+
+### 4.7 Analytics (3 functions) — v1.0 (briefing) + v1.1+ (views/export)
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
 | 39 | `analytics/refresh-views` | Cron: `0 2 * * *` (daily 2AM UTC) | default (3) | — | No (v1.1) |
 | 40 | `analytics/export` | `ats/analytics.export-requested` | default (3) | — | No (v1.1) |
+| 41 | `analytics/generate-briefing` | `ats/analytics.briefing-requested` (on-demand per org) | 2 | 1 per org | Yes (Wave 3) |
+
+**`analytics/generate-briefing` details:**
+- **Cache-first:** checks `org_daily_briefings WHERE org_id = $1 AND date = CURRENT_DATE`. If row exists, returns cached content — no OpenAI call.
+- **On miss:** reads pipeline snapshot (open jobs, active apps, hires this week, zero-app jobs 7+ days), calls OpenAI structured output → `{ win: string, blocker: string, action: string }`, upserts `org_daily_briefings` on `(org_id, date)` conflict.
+- **Logging:** logs to `ai_usage_logs` with `action = 'daily_briefing'` (requires Migration 021 to add this value to the CHECK constraint).
+- **Admin regen:** a Server Action deletes today's `org_daily_briefings` row then dispatches `ats/analytics.briefing-requested` to Inngest — triggers a fresh generation.
+- **Concurrency:** `1 per org` — prevents duplicate OpenAI calls if admin hits regen quickly.
 
 ### 4.8 Onboarding (3 functions)
 
@@ -202,9 +210,10 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 | Workflow | 6 | All except `workflow/application-withdrawn` (deferred to v1.1) |
 | Onboarding | 2 | `csv-import` and `demo-seed` only; `merge-sync` is v2.1 |
 | Compliance | 4 | All functions |
-| **Total** | **39** | |
+| Analytics | 1 | `analytics/generate-briefing` only (Wave 3). `analytics/refresh-views` and `analytics/export` are v1.1. |
+| **Total** | **40** | |
 
-> The initial estimate of ~33 was based on excluding compliance and onboarding stubs. With compliance (4) and onboarding (2) included, the v1.0 count is **39 functions**.
+> The initial estimate of ~33 was based on excluding compliance and onboarding stubs. With compliance (4), onboarding (2), and analytics briefing (1) included, the v1.0 count is **40 functions**.
 
 ### Deferred
 

@@ -533,6 +533,7 @@ it('should handle Stripe webhook failure', async () => {
 | **Notifications** (D08) | 80% | Template + preferences | 1 scenario | Per module |
 | **Billing** (D03) | 80% | Webhook handlers | 2 scenarios | Per module |
 | **GDPR** (D13) | 90% | Erasure + export | 1 scenario | Per module |
+| **Analytics/Dashboard** (D17) | 80% pure util functions (`calcTimeToHire`, `aggregateSourceQuality`, `findAtRiskJobs`, `generateDailyBriefing` cache paths) | MSW for OpenAI briefing call | 3 scenarios (E2E-16–18) | Per module |
 
 ### 5.2 Global Minimums (CI Gate)
 
@@ -611,7 +612,8 @@ export function generateRLSTests(config: RLSTestConfig) {
 | offers | owner/admin/recruiter | owner/admin/recruiter | owner/admin/recruiter | owner/admin | 20 |
 | audit_logs | admin+ | trigger only | DENIED ALL | DENIED ALL | 10 |
 | notes | all roles | all roles | author | owner/admin | 20 |
-| **Total** | | | | | **~238 cases** |
+| org_daily_briefings | org members (SELECT only) | service role only | DENIED ALL | DENIED ALL | 8 (pre-migration spec — Migration 021) |
+| **Total** | | | | | **~246 cases** |
 
 ---
 
@@ -641,6 +643,9 @@ export function generateRLSTests(config: RLSTestConfig) {
 | E2E-13 | **Billing Upgrade** | Start on Starter → hit limit → upgrade to Growth → verify features unlocked | D03 |
 | E2E-14 | **Notification Preferences** | Set preferences → trigger event → verify correct channel delivery | D08 |
 | E2E-15 | **Search & AI Matching** | Create job with skills → run AI match → verify ranked results | D10 |
+| E2E-16 | **Mine Mode Cookie Persistence** | Login → navigate to dashboard → click "My Jobs" toggle → reload page → assert "My Jobs" is still active (cookie persisted) | D17, R13 |
+| E2E-17 | **At-Risk Jobs Empty State** | Seed org with recently-active jobs → navigate to dashboard → assert at-risk widget shows green empty state ("All open roles have active pipeline activity") | D17, R10 |
+| E2E-18 | **Recent Apps Navigation** | Navigate to dashboard → click a recent application row → assert navigation to `/candidates/<id>` with stage and status visible | D17, R12 |
 
 ### 7.3 Failure Scenarios
 

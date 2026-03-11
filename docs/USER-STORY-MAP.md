@@ -320,11 +320,17 @@
 |---|-------|-------|------|-------|
 | R1 | Real-time dashboard: time-to-hire, drop-off, diversity metrics | ✅ BUILT | All | 4 metric cards, pipeline funnel, source attribution, recent apps — parallel queries (Phase 2.7). DEI in v3.0. P0 fixed 2026-03-11: Active Jobs uses `status="open"` |
 | R2 | AI proactively surfaces insights ("acceptance rate dropped 20%") | 🟠 v2.0 | Pro+ | Requires historical data baseline |
-| R3 | Pipeline velocity reports (where candidates stall) | ✅ BUILT | Growth+ | Pipeline funnel shipped in dashboard (Phase 2.7). P1 fixed 2026-03-11: `aggregateFunnel()` filters to default template — no more duplicate stage bars in multi-template orgs |
-| R4 | Source attribution: which channel delivered each hire | ✅ BUILT | All | Top-5 sources shipped (Phase 2.7). P0 fixed 2026-03-11: joins `candidate_sources` via `source_id` FK. P1 fixed 2026-03-11: `calcSourcePct()` uses top-source max as denominator — leading bar fills to 100% |
+| R3 | Pipeline velocity reports (where candidates stall) | ✅ BUILT | Growth+ | **Current implementation is a stage snapshot ("Current Stage Distribution"), not passthrough funnel.** Shows `applications.current_stage_id` — where candidates are now. Passthrough funnel (using `application_stage_history`) is Phase 3. P1 fixed 2026-03-11: `aggregateFunnel()` filters to default template. Bars link to `/candidates?stage=<id>` (Wave 1). |
+| R4 | Source attribution: which channel delivered each hire | ✅ BUILT | All | Top-5 source volume shipped (Phase 2.7). P0/P1 fixed 2026-03-11: canonical source name + proportional bars. Source quality (hire rate per source, min cohort 5) added in Wave 2. |
 | R5 | Scheduled reports to stakeholders | 🟠 v2.0 | Pro+ | Inngest cron + PDF/email generation |
 | R6 | DEI funnel reports by gender/ethnicity/age | 🔴 v3.0+ | Pro+ | candidate_dei_data table exists. UI + compliance in v3.0 |
 | R7 | Cost-per-hire and recruiter productivity | 🟠 v2.0 | Pro+ | Requires billing + time tracking data |
+| R8 | Hires This Month + avg Time to Hire metric card | ✅ Wave 1 | All | Replaces "Candidates in DB" card. Direct query: `applications WHERE status='hired'`, count + `AVG(EXTRACT(EPOCH FROM (hired_at-applied_at))/86400)`. `hired_at` nullable — guarded with `IS NOT NULL`. `calcTimeToHire()` in `lib/utils/dashboard.ts`. |
+| R9 | Source quality: hire rate per source with minimum cohort | ✅ Wave 2 | Growth+ | Volume bar + hire rate badge side-by-side. Rate suppressed when source has < 5 total applications (D13 cohort rule). `aggregateSourceQuality(activeRows, hiredRows, minCohort=5)`. |
+| R10 | At-risk jobs widget with healthy empty state | ✅ Wave 2 | All | At-risk = open ≥21 days AND <3 active apps AND no new app in 7 days. CTAs: "Refresh JD" + "Clone" (J3 deep-link). **Always renders** — green empty state when all jobs healthy. `findAtRiskJobs()` in `lib/utils/dashboard.ts`. |
+| R11 | Daily AI Briefing card (cached per org per day) | ✅ Wave 3 | Growth+ | OpenAI structured output: `{win, blocker, action}`. Cache-first via `org_daily_briefings(org_id, date)`. Regenerate button (admin only). Suspense boundary. Logs `action='daily_briefing'` to `ai_usage_logs`. Migration 021 required. |
+| R12 | Recent apps: links + stage + status | ✅ Wave 1 | All | Each row `<Link href="/candidates/<id>">`. Stage name badge + status chip (hired=green, rejected=muted, active=default). |
+| R13 | Mine mode cookie persistence + data freshness timestamp | ✅ Wave 1 | All | `mine_mode` cookie (7-day, sameSite strict) as default; URL param overrides. `<MineToggle>` client component sets cookie on click. "as of HH:MM" server-rendered below page title. |
 
 ---
 
