@@ -1,9 +1,11 @@
+import { CONFIG } from "@/lib/constants/config";
+
 /**
  * Server-side pagination utilities.
  * Used by list pages to compute offset/limit from searchParams.
  */
 
-export const DEFAULT_PAGE_SIZE = 25;
+export const DEFAULT_PAGE_SIZE = CONFIG.PAGINATION.DEFAULT_PAGE_SIZE;
 
 export interface PaginationParams {
   page: number;
@@ -27,14 +29,14 @@ export interface PaginationMeta {
  */
 export function parsePagination(
   searchParams: Record<string, string | string[] | undefined>,
-  defaultPageSize = DEFAULT_PAGE_SIZE,
+  defaultPageSize: number = DEFAULT_PAGE_SIZE,
 ): PaginationParams {
   const rawPage = searchParams.page;
   const rawSize = searchParams.pageSize;
 
   const page = Math.max(1, parseInt(typeof rawPage === "string" ? rawPage : "1", 10) || 1);
   const pageSize = Math.min(
-    100,
+    CONFIG.PAGINATION.MAX_PAGE_SIZE,
     Math.max(1, parseInt(typeof rawSize === "string" ? rawSize : String(defaultPageSize), 10) || defaultPageSize),
   );
 
