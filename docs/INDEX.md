@@ -86,6 +86,7 @@
 | D28 | **Environment Variables** | `docs/ENVIRONMENT-VARIABLES.md` | P0 | ✅ Complete (Review) | D01, D02, D03, D14, D15 | 30 env vars across 10 services. Public/secret classification, v1.0 vs v2.0+ required, `.env.example` template, security rules. |
 | D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 54 Inngest functions across 10 modules. Triggers, retries, concurrency, dead-letter handling. 9 cron schedules. v1.0 scope (39 functions). Global defaults. |
 | D30 | **User Story Map** | `docs/USER-STORY-MAP.md` | P1 | ✅ Complete | D27, ADR-011 | 98 user stories across 18 categories. Each tagged to phase (2.6/2.7/P3/P4/v1.1/v2.0/v3.0+), plan tier, and build status. 54 stories in v1.0 boundary. 5 excluded with rationale. Phase 2.6 priority stack (18 AI stories ranked by impact). |
+| D31 | **Brand Guide** | `docs/BRAND.md` | P3 | ✅ Complete | ADR-012 | Logo narrative (3-candidate selection metaphor), brand voice guidelines, marketing copy for `/about` page, technical logo specs, animated variant plan. |
 
 ---
 

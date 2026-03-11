@@ -44,7 +44,7 @@ eligeo.io/careers/{org-slug}/thanks       → Marketing renders confirmation
 
 **Resources:** `/blog` (CMS-driven), `/docs` (v2.0), `/changelog`
 
-**Company:** `/about`, `/careers/{org-slug}` (bridge), `/contact`, `/privacy`, `/terms`
+**Company:** `/about` (includes brand story + logo narrative), `/careers/{org-slug}` (bridge), `/contact`, `/privacy`, `/terms`
 
 **Candidate-facing:** `/careers/{org-slug}/{job-slug}`, `/application-status`
 
