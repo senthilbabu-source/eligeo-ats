@@ -1,8 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { publishJob, closeJob, cloneJob, rewriteJobDescription } from "@/lib/actions/jobs";
+import { CloneIntentModal } from "@/components/clone-intent-modal";
+import type { CloneIntent } from "@/lib/types/ground-truth";
 
 export function JobActions({
   jobId,
@@ -18,11 +20,13 @@ export function JobActions({
   const router = useRouter();
   const [isCloning, startClone] = useTransition();
   const [isRewriting, startRewrite] = useTransition();
+  const [modalOpen, setModalOpen] = useState(false);
 
-  function handleClone() {
+  function handleCloneConfirm(intent: CloneIntent | null) {
     startClone(async () => {
-      const result = await cloneJob(jobId);
+      const result = await cloneJob(jobId, intent);
       if (result.success && result.id) {
+        setModalOpen(false);
         router.push(`/jobs/${result.id}`);
       }
     });
@@ -36,42 +40,51 @@ export function JobActions({
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {canEdit && (status === "draft" || status === "paused") && (
-        <button
-          onClick={() => publishJob(jobId)}
-          className="inline-flex h-9 items-center rounded-md bg-success px-4 text-sm font-medium text-white hover:bg-success/90"
-        >
-          Publish
-        </button>
-      )}
-      {canEdit && (status === "open" || status === "paused") && (
-        <button
-          onClick={() => closeJob(jobId)}
-          className="inline-flex h-9 items-center rounded-md border border-border px-4 text-sm font-medium hover:bg-muted"
-        >
-          Close
-        </button>
-      )}
-      {canCreate && (
-        <button
-          onClick={handleClone}
-          disabled={isCloning}
-          className="inline-flex h-9 items-center rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
-        >
-          {isCloning ? "Cloning…" : "Clone"}
-        </button>
-      )}
-      {canEdit && (
-        <button
-          onClick={handleRewrite}
-          disabled={isRewriting}
-          className="inline-flex h-9 items-center rounded-md border border-primary/30 bg-primary/5 px-4 text-sm font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
-          title="✦ AI Rewrite (3 credits)"
-        >
-          {isRewriting ? "Rewriting…" : "✦ AI Rewrite"}
-        </button>
-      )}
-    </div>
+    <>
+      <div className="flex flex-wrap gap-2">
+        {canEdit && (status === "draft" || status === "paused") && (
+          <button
+            onClick={() => publishJob(jobId)}
+            className="inline-flex h-9 items-center rounded-md bg-success px-4 text-sm font-medium text-white hover:bg-success/90"
+          >
+            Publish
+          </button>
+        )}
+        {canEdit && (status === "open" || status === "paused") && (
+          <button
+            onClick={() => closeJob(jobId)}
+            className="inline-flex h-9 items-center rounded-md border border-border px-4 text-sm font-medium hover:bg-muted"
+          >
+            Close
+          </button>
+        )}
+        {canCreate && (
+          <button
+            onClick={() => setModalOpen(true)}
+            disabled={isCloning}
+            className="inline-flex h-9 items-center rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            {isCloning ? "Cloning…" : "Clone"}
+          </button>
+        )}
+        {canEdit && (
+          <button
+            onClick={handleRewrite}
+            disabled={isRewriting}
+            className="inline-flex h-9 items-center rounded-md border border-primary/30 bg-primary/5 px-4 text-sm font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+            title="✦ AI Rewrite (3 credits)"
+          >
+            {isRewriting ? "Rewriting…" : "✦ AI Rewrite"}
+          </button>
+        )}
+      </div>
+
+      <CloneIntentModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onConfirm={handleCloneConfirm}
+        isPending={isCloning}
+      />
+    </>
   );
 }

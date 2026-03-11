@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] J3 Wave 2 — Clone intent modal
+
+**Phase:** Build — Phase 2.7 (UX Polish)
+**Scope:** J3 Wave 2 (B1) — clone intent capture; foundation for context-aware AI rewrite (Wave 3)
+
+### Changes
+- **New type `CloneIntent`** in `src/lib/types/ground-truth.ts` — 4 reasons: `new_location`, `new_level`, `repost`, `different_team`. Optional `newLocation` / `newLevel` detail fields. Extended `JobMetadata` with `clone_intent?`.
+- **Updated `cloneJob(jobId, intent?)`** — stores intent as `metadata.clone_intent` when provided, empty `{}` when skipped. No migration needed (`metadata JSONB` already exists).
+- **New `<CloneIntentModal>`** (`src/components/clone-intent-modal.tsx`) — 4 option cards, conditional text inputs for location/level, Skip link, Cancel/Clone footer.
+- **Updated `<JobActions>`** — Clone button opens modal; `handleCloneConfirm(intent)` dispatches clone after modal confirm or skip.
+
+### Tests
+- `should store clone_intent in metadata when intent is provided`
+- `should use empty metadata when intent is null (skip)`
+- **Count: 555 → 557 Vitest. All passing. Typecheck clean.**
+
+---
+
 ## 2026-03-11 — [Phase 2.7] J3 Wave 1 — Clone team fields + test coverage
 
 **Phase:** Build — Phase 2.7 (UX Polish)

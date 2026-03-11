@@ -93,6 +93,16 @@ export interface CustomPermissions {
 
 // ── Phase 2: Jobs + Candidates JSONB Types ─────────────────
 
+/**
+ * Clone intent captured at clone time — stored in job_openings.metadata.clone_intent.
+ * Drives context-aware AI rewrite (Wave 3) and skills delta suggestion (Wave 4).
+ */
+export interface CloneIntent {
+  reason: "new_location" | "new_level" | "repost" | "different_team";
+  newLocation?: string; // e.g. "London" — set when reason = new_location
+  newLevel?: string;    // e.g. "Staff" — set when reason = new_level
+}
+
 /** Job metadata stored in job_openings.metadata JSONB */
 export interface JobMetadata {
   external_ids?: {
@@ -103,6 +113,7 @@ export interface JobMetadata {
   };
   application_form_id?: string;
   internal_notes?: string;
+  clone_intent?: CloneIntent;
   [key: string]: unknown;
 }
 

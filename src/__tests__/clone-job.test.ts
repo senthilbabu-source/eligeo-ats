@@ -237,6 +237,53 @@ describe("cloneJob", () => {
     expect(insertCall?.recruiter_id).toBe(TENANT_A.users.admin.id);
   });
 
+  it("should store clone_intent in metadata when intent is provided", async () => {
+    const sourceFetchChain = createChainMock({ data: sourceJob, error: null });
+    const skillsFetchChain = createChainMock({ data: [], error: null });
+    const slugCheckChain = createChainMock({ data: [], error: null });
+    const insertChain = createChainMock({ data: { id: "new-clone-id" }, error: null });
+
+    let jobOpeningsCall = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "job_openings") {
+        jobOpeningsCall++;
+        if (jobOpeningsCall === 1) return sourceFetchChain;
+        if (jobOpeningsCall === 2) return slugCheckChain;
+        return insertChain;
+      }
+      return table === "job_required_skills" ? skillsFetchChain : createChainMock();
+    });
+
+    const intent = { reason: "new_location" as const, newLocation: "London" };
+    await cloneJob(SOURCE_JOB_ID, intent);
+
+    const insertCall = insertChain.insert!.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
+    expect(insertCall?.metadata).toEqual({ clone_intent: intent });
+  });
+
+  it("should use empty metadata when intent is null (skip)", async () => {
+    const sourceFetchChain = createChainMock({ data: sourceJob, error: null });
+    const skillsFetchChain = createChainMock({ data: [], error: null });
+    const slugCheckChain = createChainMock({ data: [], error: null });
+    const insertChain = createChainMock({ data: { id: "new-clone-id" }, error: null });
+
+    let jobOpeningsCall = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "job_openings") {
+        jobOpeningsCall++;
+        if (jobOpeningsCall === 1) return sourceFetchChain;
+        if (jobOpeningsCall === 2) return slugCheckChain;
+        return insertChain;
+      }
+      return table === "job_required_skills" ? skillsFetchChain : createChainMock();
+    });
+
+    await cloneJob(SOURCE_JOB_ID, null);
+
+    const insertCall = insertChain.insert!.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
+    expect(insertCall?.metadata).toEqual({});
+  });
+
   it("should queue embedding generation for the cloned job", async () => {
     const { generateAndStoreEmbedding } = await import("@/lib/ai/embeddings");
 

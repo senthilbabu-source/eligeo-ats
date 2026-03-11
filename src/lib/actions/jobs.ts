@@ -10,6 +10,7 @@ import {
   generateAndStoreEmbedding,
   buildJobEmbeddingText,
 } from "@/lib/ai/embeddings";
+import type { CloneIntent } from "@/lib/types/ground-truth";
 
 // ── Validation Schemas ─────────────────────────────────────
 
@@ -239,7 +240,7 @@ export async function closeJob(jobId: string) {
 
 // ── Clone Job ──────────────────────────────────────────────
 
-export async function cloneJob(jobId: string) {
+export async function cloneJob(jobId: string, intent?: CloneIntent | null) {
   const session = await requireAuth();
   assertCan(session.orgRole, "jobs:create");
 
@@ -290,6 +291,7 @@ export async function cloneJob(jobId: string) {
       hiring_manager_id: source.hiring_manager_id,
       recruiter_id: source.recruiter_id,
       status: "draft",
+      metadata: intent ? { clone_intent: intent } : {},
     })
     .select("id")
     .single();
