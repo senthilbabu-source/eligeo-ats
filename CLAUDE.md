@@ -54,6 +54,23 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 
 Lessons flow one-way: ATS → Playbook (abstracted, product details stripped).
 
+### Playbook Extraction Protocol (MANDATORY)
+
+**Trigger:** Any DEVLOG entry tagged `[PLAYBOOK]`.
+
+**Rule:** Do NOT move to the next ATS deliverable until the `[PLAYBOOK]` extraction is done. This is a blocking gate, same as post-build audit.
+
+**Process:**
+1. After completing an ATS doc (post-build audit done, DEVLOG written), check: does the DEVLOG entry have a `[PLAYBOOK]` tag?
+2. If yes → extract immediately:
+   - Add abstracted JOURNEY-LOG entry in `/Users/senthilbabu/Downloads/SaaS-Playbook/JOURNEY-LOG.md`
+   - Add new principle to `PRINCIPLES.md` if a failure pattern warrants it (P-ID must be sequential)
+   - Add battle-test entry if an existing prompt was validated
+   - Commit to Playbook repo with `playbook(<scope>):` message
+3. Only then proceed to the next ATS deliverable.
+
+**Session Start Check:** After reading DEVLOG, count `[PLAYBOOK]` tags that don't have a corresponding "Bulk extraction" or extraction DEVLOG entry below them. If count > 0, flag to user: "N pending Playbook extractions found."
+
 ## Task-Based Reading (save tokens)
 
 | Task | Read | Optional |
