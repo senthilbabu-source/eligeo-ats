@@ -100,7 +100,7 @@ export async function parseIntent(params: {
       organizationId,
       userId,
       action: "nl_intent",
-      model: AI_MODELS.chat,
+      model: AI_MODELS.fast,
       tokensInput: usage?.inputTokens,
       tokensOutput: usage?.outputTokens,
       latencyMs,

@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useCompletion } from "@ai-sdk/react";
 import { createJob } from "@/lib/actions/jobs";
 
 interface Pipeline {
@@ -19,7 +20,7 @@ function Label({ htmlFor, children }: { htmlFor: string; children: React.ReactNo
   );
 }
 
-function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+function Input(props: React.ComponentProps<"input">) {
   return (
     <input
       {...props}
@@ -46,12 +47,39 @@ export function JobForm({
 }) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(createJob, null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  const { completion, isLoading: isGenerating, complete } = useCompletion({
+    api: "/api/ai/generate-description",
+  });
+
+  // Sync streamed completion into the textarea
+  useEffect(() => {
+    if (completion && descriptionRef.current) {
+      descriptionRef.current.value = completion;
+    }
+  }, [completion]);
 
   useEffect(() => {
     if (state && "id" in state && state.id) {
       router.push(`/jobs/${state.id}`);
     }
   }, [state, router]);
+
+  function handleGenerate() {
+    const title = titleRef.current?.value?.trim();
+    if (!title) return;
+
+    const form = titleRef.current?.form;
+    const department = form
+      ? (new FormData(form).get("department") as string) || undefined
+      : undefined;
+
+    complete("", {
+      body: { title, department },
+    });
+  }
 
   return (
     <form action={formAction} className="space-y-6">
@@ -63,15 +91,33 @@ export function JobForm({
 
       <div>
         <Label htmlFor="title">Job Title *</Label>
-        <Input id="title" name="title" required placeholder="e.g. Senior Software Engineer" />
+        <Input ref={titleRef} id="title" name="title" required placeholder="e.g. Senior Software Engineer" />
       </div>
 
       <div>
-        <Label htmlFor="description">Description</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="description">Description</Label>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
+          >
+            {isGenerating ? (
+              <>
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Generating...
+              </>
+            ) : (
+              "AI Generate"
+            )}
+          </button>
+        </div>
         <textarea
+          ref={descriptionRef}
           id="description"
           name="description"
-          rows={6}
+          rows={isGenerating || completion ? 16 : 6}
           placeholder="Job responsibilities, requirements, and benefits..."
           className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />

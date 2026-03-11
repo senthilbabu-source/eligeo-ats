@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { chatModel, AI_MODELS } from "./client";
+import { smartModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
 
 /**
@@ -76,7 +76,7 @@ export async function parseResume(params: {
 
   try {
     const { object, usage } = await generateObject({
-      model: chatModel,
+      model: smartModel,
       schema: parsedResumeSchema,
       system: RESUME_PARSE_PROMPT,
       prompt: resumeText.slice(0, 15000),
@@ -90,7 +90,7 @@ export async function parseResume(params: {
       action: "resume_parse",
       entityType: "candidate",
       entityId,
-      model: AI_MODELS.chat,
+      model: AI_MODELS.smart,
       tokensInput: usage?.inputTokens,
       tokensOutput: usage?.outputTokens,
       latencyMs,

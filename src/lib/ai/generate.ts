@@ -1,4 +1,4 @@
-import { generateText, generateObject } from "ai";
+import { generateText, generateObject, streamText } from "ai";
 import { z } from "zod";
 import { chatModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
@@ -57,7 +57,7 @@ export async function generateJobDescription(params: {
       userId,
       action: "job_description_generate",
       entityType: "job_opening",
-      model: AI_MODELS.chat,
+      model: AI_MODELS.fast,
       tokensInput: usage?.inputTokens,
       tokensOutput: usage?.outputTokens,
       latencyMs,
@@ -152,7 +152,7 @@ Body should be plain text with line breaks, not HTML.`,
       organizationId,
       userId,
       action: "email_draft",
-      model: AI_MODELS.chat,
+      model: AI_MODELS.fast,
       tokensInput: usage?.inputTokens,
       tokensOutput: usage?.outputTokens,
       latencyMs,
@@ -176,4 +176,68 @@ Body should be plain text with line breaks, not HTML.`,
     });
     return { subject: null, body: null, error: message };
   }
+}
+
+/**
+ * Stream a job description in real-time via AI SDK.
+ * Returns a streamText result for use with toDataStreamResponse().
+ * Credit check and usage logging handled here.
+ */
+export async function streamJobDescription(params: {
+  title: string;
+  department?: string;
+  keyPoints?: string;
+  organizationId: string;
+  userId?: string;
+}) {
+  const { title, department, keyPoints, organizationId, userId } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "job_description_generate");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "job_description_generate",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return null;
+  }
+
+  const prompt = [
+    `Write a professional job description for the role: ${title}`,
+    department && `Department: ${department}`,
+    keyPoints && `Key points to include:\n${keyPoints}`,
+    "",
+    "Format with sections: About the Role, Responsibilities, Requirements, Nice to Have, What We Offer.",
+    "Use clear, inclusive language. Avoid jargon and gendered terms.",
+    "Keep it concise — aim for 400-600 words.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const result = streamText({
+    model: chatModel,
+    system:
+      "You are a talent acquisition expert who writes compelling, inclusive job descriptions. Return plain text with section headers.",
+    prompt,
+    maxOutputTokens: 1500,
+    async onFinish({ usage }) {
+      const latencyMs = Date.now() - startTime;
+      await logAiUsage({
+        organizationId,
+        userId,
+        action: "job_description_generate",
+        entityType: "job_opening",
+        model: AI_MODELS.fast,
+        tokensInput: usage?.inputTokens,
+        tokensOutput: usage?.outputTokens,
+        latencyMs,
+        status: "success",
+      });
+    },
+  });
+
+  return result;
 }
