@@ -16,6 +16,16 @@
 
 ---
 
+### 2026-03-11 — [D25] User Personas & Journey Maps — complete first draft
+
+5 personas defined: Admin, Recruiter, Hiring Manager, Interviewer, Candidate. Each with goals, frequency, tech comfort, frustration thresholds, key screens, and competitor pains they escaped (mapped to D00).
+
+4 journey maps: recruiter daily workflow, hiring manager notification-driven flow, candidate zero-account journey, admin onboarding (target: signup to first job in < 30 min). Notification priority matrix (5 personas × 15 event types). Dashboard widget specs by persona. Role-based navigation showing progressive disclosure per role.
+
+**Key design insight:** Hiring managers and interviewers don't live in the ATS — the ATS must come to THEM via notifications. Candidates never enter the internal system — they get a separate portal with stateless auth.
+
+---
+
 ### 2026-03-11 — [D00] Competitive Analysis & Market Positioning — complete first draft
 
 **Scope:** 17 ATS products analyzed across 3 segments: modern (Ashby, Lever, Greenhouse, Teamtailor, Workable), legacy (Taleo, iCIMS, Workday, SAP SuccessFactors, BambooHR), mid-market/niche (JazzHR, Breezy HR, Recruitee, SmartRecruiters, Zoho Recruit, Bullhorn).
