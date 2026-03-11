@@ -40,14 +40,14 @@
 | G-015 | D01 | D08 (Notifications) | `email_templates` has `body_html`/`body_text` columns but no spec on template variable syntax — Handlebars `{{candidate.name}}`? Liquid? Custom? Must be consistent with D20 (i18n). | P2 | RESOLVED |
 | G-016 | D01 | D10 (Search & AI) | `match_candidates_for_job()` returns top 50 by cosine similarity, but no spec on how stale embeddings are handled — what triggers re-embedding when a candidate updates their profile? | P1 | RESOLVED |
 | G-017 | D03 | D10 (Search & AI) | AI credit costs vary by action (resume parse vs. matching vs. summarization). D03 uses flat "1 credit per action" but doesn't define per-action costs. D10 should specify credit weights. | P2 | RESOLVED |
-| G-018 | D01 | D12 (Workflow) | `talent_pool_members` links candidates to pools, but no spec on automatic pool membership rules (e.g., "all silver medalists auto-added to 'Strong Rejects' pool"). D12 must decide — this is workflow automation, not real-time. | P2 | OPEN |
+| G-018 | D01 | D12 (Workflow) | `talent_pool_members` links candidates to pools, but no spec on automatic pool membership rules (e.g., "all silver medalists auto-added to 'Strong Rejects' pool"). D12 must decide — this is workflow automation, not real-time. | P2 | RESOLVED |
 | G-019 | D01 | D17 (Analytics) | `candidate_dei_data` has restricted RLS (only owner/admin), but D17 needs to define aggregation rules — minimum cohort size for statistical reporting to prevent de-identification. | P1 | OPEN |
 | G-020 | D05 | D09 (Candidate Portal) | Design System specifies `branding_config` drives career page theming, but doesn't define fallback behavior when `branding_config` fields are null/empty. D09 must specify defaults. | P2 | OPEN |
 | G-021 | D02 | D08 (Notifications) | Webhook outbound auto-disables after 10 consecutive failures (D02 §8). But no spec on re-enablement — manual only? Auto-retry after 24h? Admin notification before disable? | P2 | RESOLVED |
 | G-022 | D01 | D06 (Offers) | `offer_approvals.sequence_order` defines approval chain, but no spec on what happens when an approver is removed from the organization mid-approval flow. Skip? Reassign? Block? | P1 | RESOLVED |
 | G-023 | D07 | D09 (Candidate Portal) | Self-scheduling UI: candidate time slot picker, confirmation flow, 3-reschedule limit, 7-day link expiry. D09 must implement the candidate-facing side of D07 §4.3. | P1 | OPEN |
 | G-024 | D07 | D08 (Notifications) | Interview notification emails: scheduled confirmation, cancellation, feedback reminder (overdue), scorecard submitted (to recruiter). 4 email triggers from D07. | P1 | RESOLVED |
-| G-025 | D07 | D12 (Workflow) | Auto-advance from interview stage: when all scheduled interviews for an application reach `completed` and all scorecards are submitted, workflow engine should optionally auto-advance to next pipeline stage. | P2 | OPEN |
+| G-025 | D07 | D12 (Workflow) | Auto-advance from interview stage: when all scheduled interviews for an application reach `completed` and all scorecards are submitted, workflow engine should optionally auto-advance to next pipeline stage. | P2 | RESOLVED |
 | G-026 | D08 | D09 (Candidate Portal) | Candidate-facing email delivery (application_received, interview_scheduled/cancelled, offer_sent, rejection) — defined in D08 §4.3 but delivery must be implemented in D09's candidate auth context (magic link, no ATS login). | P1 | OPEN |
 | G-027 | D08 | D11 (Real-Time) | Supabase Realtime channel naming convention for notification broadcast: org-scoped + user-filtered channels. D11 must define the channel schema and subscription pattern. | P2 | RESOLVED |
 | G-028 | D10 | D03 (Billing) | D03 uses inline `ai_credits_used + 1` SQL. D10 introduces `consume_ai_credits(p_org_id, p_amount)` function with variable weights. D03 should adopt function at code time. Non-blocking. | P3 | OPEN |
@@ -94,6 +94,8 @@
 | G-016 | 2026-03-10 | (this commit) | D10 §6.3: Re-embed on content change (resume_text, skills, title, company). No TTL. Stale if no credits — keeps old embedding. |
 | G-017 | 2026-03-10 | (this commit) | D10 §6.4: Differentiated weights — resume_parse=2, candidate_match=1, job_desc_generate=3, email_draft=1, feedback_summarize=1. `consume_ai_credits()` function. |
 | G-027 | 2026-03-10 | (this commit) | D11 §4: Channel naming `{scope}:{org_id}:{resource}[:{id}]`. 7 channel patterns defined. Tenant isolation via RLS + JWT-derived org_id. |
+| G-018 | 2026-03-10 | (this commit) | D12 §6: Talent pool auto-membership via `add_to_pool` auto-action on pipeline stages. Condition-based (`always` or `if_rejected`). Idempotent insert. |
+| G-025 | 2026-03-10 | (this commit) | D12 §5: Auto-advance via `auto_advance` auto-action + Inngest `workflow-auto-advance` function. Triggered on `interview/scorecard-submitted`. Loop prevention: auto-advance doesn't cascade. |
 
 ---
 

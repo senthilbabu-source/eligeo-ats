@@ -45,7 +45,7 @@
 | D09 | **Candidate Portal** | `docs/modules/CANDIDATE-PORTAL.md` | P1 | ⬜ Not Started | D01, D05 | Candidate auth (magic link). Career page theming. Application form builder. Status tracking. GDPR consent. File upload flow. |
 | D10 | **Search Architecture** | `docs/modules/SEARCH.md` | P1 | ✅ Complete (Review) | D01, D02, D03 | Two-engine search (Typesense full-text + pgvector semantic), collection schemas, Postgres→Typesense sync via Inngest, AI matching with composite scoring, embedding lifecycle, differentiated AI credit weights, 6 API endpoints, 4 Inngest functions. Post-build audit: 7/7 PASS. |
 | D11 | **Real-Time Features** | `docs/modules/REALTIME.md` | P1 | ✅ Complete (Review) | D01, D02, D08 | Supabase Realtime (Postgres Changes + Broadcast + Presence), channel naming convention, 7 subscribed tables, notification broadcast, page + team presence, optimistic UI with dedup, connection management, ChannelManager cleanup. Post-build audit: 7/7 PASS. |
-| D12 | **Workflow & State Machine** | `docs/modules/WORKFLOW-ENGINE.md` | P1 | ⬜ Not Started | D01 | Application lifecycle state machine. Valid transitions. auto_triggers spec. SLA enforcement. |
+| D12 | **Workflow & State Machine** | `docs/modules/WORKFLOW.md` | P1 | ✅ Complete (Review) | D01, D07, D08, D10 | Application lifecycle state machine (4 statuses, 7 stage types), `auto_actions` JSONB schema (6 action types), auto-advance on interview completion (G-025), talent pool automation (G-018), SLA enforcement with delayed Inngest events, bulk operations (50 limit), rejection flow with pool automation, 9 API endpoints, 6 Inngest functions. Post-build audit: 7/7 PASS. |
 
 ---
 
@@ -120,7 +120,7 @@ docs/
 │   ├── CANDIDATE-PORTAL.md
 │   ├── SEARCH.md
 │   ├── REALTIME.md
-│   ├── WORKFLOW-ENGINE.md
+│   ├── WORKFLOW.md
 │   ├── ANALYTICS.md
 │   ├── ONBOARDING.md
 │   ├── WHITE-LABEL.md

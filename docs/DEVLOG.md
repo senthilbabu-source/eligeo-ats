@@ -16,6 +16,38 @@
 
 ---
 
+### 2026-03-10 — [D12] Workflow & State Machine — complete first draft
+
+**Files created:**
+- `docs/modules/WORKFLOW.md` — 15 sections (470+ lines): application status state machine (active/hired/rejected/withdrawn), stage transition validation (forward/backward/skip), `auto_actions` JSONB schema (6 action types: send_email, add_to_pool, notify_team, set_sla, webhook, auto_advance), Zod validation, auto-advance on interview completion (G-025), talent pool automation via conditional pool membership (G-018), SLA enforcement with delayed Inngest events, workflow execution engine (stage-changed + rejection handlers), bulk operations (50 limit), rejection flow with pool automation, plan gating (auto-advance Pro+, webhook Enterprise only).
+
+**Files updated:**
+- `docs/INDEX.md` — D12 status: `⬜ Not Started` → `✅ Complete (Review)`. Path corrected from `WORKFLOW-ENGINE.md` to `WORKFLOW.md`.
+- `docs/GAPS.md` — G-018 resolved (talent pool auto-membership via `add_to_pool` action). G-025 resolved (auto-advance via Inngest function with loop prevention).
+
+**Key decisions:**
+- `auto_actions` is an array of typed actions (discriminated union), not a flat config object. Max 10 actions per stage. Validated at save time via Zod, not at runtime.
+- Auto-advance uses `interview/scorecard-submitted` event as trigger, checks all interviews + scorecards, then moves candidate. Infinite loop prevention: auto-advance events don't trigger subsequent auto-advance actions.
+- Talent pool automation lives in `auto_actions` — no separate "pool rules" table. Keeps all workflow config in one place.
+- SLA timers use Inngest delayed events. No explicit cancellation — idempotent check at execution time (re-read current stage).
+- Bulk operations cap at 50 per request. Sequential processing (not parallel) to maintain audit trail ordering.
+- System user UUID (`00000000-...`) for auto-advance `transitioned_by` — sentinel value, not a real user.
+
+**Post-build audit:** 7/7 categories PASS. No fixes needed.
+
+**Contracts exported:**
+- D09 (Candidate Portal): application status changes trigger notification events; candidate sees status via polling.
+- D16 (Performance): bulk operations may spike DB writes; connection pooling must handle 50 sequential updates.
+- D17 (Analytics): pipeline throughput metrics derive from `application_stage_history`; SLA breach counts from `notification/dispatch` events.
+
+**[PLAYBOOK]** Extractable patterns: `auto_actions` JSONB schema for configurable workflow automation, auto-advance with loop prevention, SLA via delayed events (no timer table), talent pool automation as stage action.
+
+**Status:** Review.
+
+**Next:** D09 (Candidate Portal) — last Phase 1 doc. 6 gaps to resolve (G-013, G-020, G-023, G-026, G-029, G-030).
+
+---
+
 ### 2026-03-10 — [D11] Real-Time Features — complete first draft
 
 **Files created:**
