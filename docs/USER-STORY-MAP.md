@@ -42,10 +42,10 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| JD1 | Live quality score before publishing | 🔷 2.7 | Growth+ | Readability + completeness + bias signal combined into single score |
-| JD2 | Biased words highlighted inline with neutral replacement suggestions | 🔷 2.7 | Growth+ | Frontend layer on J5 bias check — surface inline in editor, one-click replace |
-| JD3 | Completeness check: salary, reporting line, reading level | 🔷 2.7 | All | Rule-based heuristics. Warn panel before publish. Zero AI cost |
-| JD4 | Gender-coded language balance meter (masculine vs. feminine) | 🔷 2.7 | Growth+ | Known word-list analysis (Textio vocabulary). Runs on description body |
+| JD1 | Live quality score before publishing | ✅ BUILT | Growth+ | Readability + completeness + bias signal combined into single score |
+| JD2 | Biased words highlighted inline with neutral replacement suggestions | ✅ BUILT | Growth+ | Frontend layer on J5 bias check — surface inline in editor, one-click replace |
+| JD3 | Completeness check: salary, reporting line, reading level | ✅ BUILT | All | Rule-based heuristics. Warn panel before publish. Zero AI cost |
+| JD4 | Gender-coded language balance meter (masculine vs. feminine) | ✅ BUILT | Growth+ | Known word-list analysis (Textio vocabulary). Runs on description body |
 
 ---
 
@@ -79,7 +79,7 @@
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
 | C1 | Apply with LinkedIn profile or resume only — no account | ✅ BUILT | All | Career portal app form (Phase 2.5). Resume upload in 2.6 |
-| C2 | Mobile-first application under 3 minutes | 🔷 2.7 | All | Current form works on mobile; polish in 2.7 |
+| C2 | Mobile-first application under 3 minutes | ✅ BUILT | All | Current form works on mobile; polish in 2.7 |
 | C3 | Instant confirmation after applying with timeline | 🟢 P3 | All | Confirmation email via Inngest + Resend |
 | C4 | Track application status without logging in | 🟡 v1.1 | All | Magic link to status page (D09 candidate portal) |
 | C5 | Timely updates at every stage change | 🟢 P3 | All | Notification triggers on stage move (D08) |
@@ -118,8 +118,8 @@
 | AR1 | Review resumes in anonymized mode — names, photos, contact hidden | 🟠 v2.0 | Growth+ | `is_anonymized` flag exists (D2). Toggle UI + PDF redaction pipeline needed |
 | AR2 | Exact and similar keyword matches highlighted on resume | 🟡 v1.1 | Growth+ | Frontend highlight pass against job required skills. No backend change |
 | AR3 | AI extracts and surfaces top skills and language proficiencies | ✅ BUILT | Growth+ | Phase 2.6 resume parser (`parseResume()` + `extractSkills()`) |
-| AR4 | Advance, reject, or leave feedback without leaving the resume screen | 🔷 2.7 | All | Inline action panel on candidate detail. Extends AR5 sequential view |
-| AR5 | Sequential navigation through all applicants in a review queue | 🔷 2.7 | All | Prev/next controls with position indicator. Uses existing application list |
+| AR4 | Advance, reject, or leave feedback without leaving the resume screen | ✅ BUILT | All | Inline action panel on candidate detail. Extends AR5 sequential view |
+| AR5 | Sequential navigation through all applicants in a review queue | ✅ BUILT | All | Prev/next controls with position indicator. Uses existing application list |
 | AR6 | Admin enforces anonymized review as default for specific roles or org-wide | 🟠 v2.0 | Growth+ | Pipeline-stage setting + org-level config. Depends on AR1 |
 
 ---
@@ -129,13 +129,13 @@
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
 | CP1 | Unified profile: interviews, recordings, AI highlights, all activity in one view | 🟢 P3 | All | Recordings require P3. Current profile shows applications + stage history |
-| CP2 | Days in current stage visible on candidate profile | 🔷 2.7 | All | Calculate from application_stage_history.moved_at. Simple UI addition |
+| CP2 | Days in current stage visible on candidate profile | ✅ BUILT | All | Calculate from application_stage_history.moved_at. Simple UI addition |
 | CP3 | AI flags candidates at closing risk | 🟡 v1.1 | Growth+ | Inngest cron: no activity 5+ days + offer-pending pattern |
-| CP4 | Referral source automatically tagged on profile | 🔷 2.7 | All | candidate_sources FK already on candidates table. Surface in profile header |
+| CP4 | Referral source automatically tagged on profile | ✅ BUILT | All | candidate_sources FK already on candidates table. Surface in profile header |
 | CP5 | AI highlights aggregated across all of a candidate's interviews | 🟢 P3 | Pro+ | Requires scorecard data from P3. gpt-4o summary pass |
 | CP6 | Dedicated debrief workflow on profile — panel aligns before hire/no-hire | 🟢 P3 | All | Panel view + decision + notes. Separate from scorecard |
-| CP7 | Candidate pronouns displayed on profile | 🔷 2.7 | All | Add pronouns field to candidates table. One migration + UI |
-| CP8 | Profile header: has portfolio, has resume, was a referral indicators | 🔷 2.7 | All | Derived from files table + candidate_sources. Badge row in header |
+| CP7 | Candidate pronouns displayed on profile | ✅ BUILT | All | Add pronouns field to candidates table. One migration + UI |
+| CP8 | Profile header: has portfolio, has resume, was a referral indicators | ✅ BUILT | All | Derived from files table + candidate_sources. Badge row in header |
 
 ---
 
@@ -144,7 +144,7 @@
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
 | CL1 | Full text search across all candidate resumes and notes | 🟠 v2.0 | Pro+ | Requires Typesense (v2.0 per ADR). pgvector NL search as interim path |
-| CL2 | Multi-dimensional filter: source, job, application type, profile details | 🔷 2.7 | All | Extend /candidates filter bar with source + job dropdowns |
+| CL2 | Multi-dimensional filter: source, job, application type, profile details | ✅ BUILT | All | Extend /candidates filter bar with source + job dropdowns |
 | CL3 | Auto-flag duplicate candidate profiles for merge or dismiss | 🟠 v2.0 | Growth+ | Email + name fuzzy match. Inngest background dedup job |
 | CL4 | Bulk actions: move stage, send email, reject — across selected candidates | 🟡 v1.1 | All | Checkbox select + floating action bar. High recruiter time-saver |
 | CL5 | Next required action visible on each candidate in list view | 🟡 v1.1 | Growth+ | Computed: pending feedback, days stalled, no contact in N days |
@@ -192,7 +192,7 @@
 | T7 | Toggle between individual scorecard view and attribute summary view | 🟢 P3 | All | Two-tab layout on scorecards page |
 | T8 | Each competency rated visually by every panellist (alignment heatmap) | 🟢 P3 | All | Per-panellist columns on attribute summary. Spot consensus vs. disagreement |
 | T9 | Comment counts visible per competency in summary view | 🟢 P3 | All | Count badge on each attribute row. Shows where panel had most discussion |
-| T10 | Sequential candidate navigation inside pipeline without returning to list | 🔷 2.7 | All | Prev/next controls on candidate detail when opened from pipeline view |
+| T10 | Sequential candidate navigation inside pipeline without returning to list | ✅ BUILT | All | Prev/next controls on candidate detail when opened from pipeline view |
 
 ---
 
@@ -282,9 +282,9 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| JI1 | Dedicated dashboard per job: pipeline health, source quality, AI insights | 🔷 2.7 | All | Job detail page enhancements. Reuse dashboard query patterns from R1 |
+| JI1 | Dedicated dashboard per job: pipeline health, source quality, AI insights | ✅ BUILT | All | Job detail page enhancements. Reuse dashboard query patterns from R1 |
 | JI2 | Which sources produce actual hires per job (quality, not volume) | 🟡 v1.1 | Growth+ | Join applications + stage_history + candidate_sources. Source quality metric |
-| JI3 | Live pipeline stage count per role (bottleneck view) | 🔷 2.7 | All | Count per stage on job detail sidebar. Parallel query |
+| JI3 | Live pipeline stage count per role (bottleneck view) | ✅ BUILT | All | Count per stage on job detail sidebar. Parallel query |
 | JI4 | AI proactively surfaces pre-matched candidates before sourcing starts | 🟠 v2.0 | Pro+ | Trigger match on job publish. Requires talent pool + embeddings |
 
 ---
@@ -310,7 +310,7 @@
 | SR3 | Follow specific open roles to receive activity notifications | 🟡 v1.1 | Growth+ | Notification subscription on job_openings. Inngest-delivered |
 | SR4 | Create and manage recruiting events (career fairs, campus drives) | 🟠 v2.0 | Growth+ | New events module. Prospect capture → pipeline applications |
 | SR5 | Career fair mobile/tablet app for on-spot resume capture | 🔴 v3.0+ | Enterprise | Native or PWA app. Significant scope |
-| SR6 | Personalized recruiter dashboard (my metrics + my jobs) | 🔷 2.7 | All | Filter main dashboard by recruiter_id. Same infra as R1–R4 |
+| SR6 | Personalized recruiter dashboard (my metrics + my jobs) | ✅ BUILT | All | Filter main dashboard by recruiter_id. Same infra as R1–R4 |
 
 ---
 
@@ -347,7 +347,7 @@
 |---|-------|-------|------|-------|
 | M1 | Review/score/move candidates from phone | ✅ BUILT | All | Kanban rewritten with dnd-kit, optimistic UI, DragOverlay, arrow-button fallback (Phase 2.7) |
 | M2 | Mobile interview feedback form | 🟢 P3 | All | Scorecard form designed mobile-first |
-| M3 | Mobile application experience for candidates | 🔷 2.7 | All | Career portal already works; polish spacing/touch targets |
+| M3 | Mobile application experience for candidates | ✅ BUILT | All | Career portal already works; polish spacing/touch targets |
 | M4 | Push notifications on phone | 🟠 v2.0 | Growth+ | Requires PWA or native app — significant effort |
 
 ---
@@ -426,27 +426,26 @@
 > **2026-03-11 delta (original):** +11 stories (TI1–TI11, §28). S1 moved v2.0→v1.1 (talent_pools built). Built: 15→21. Phase 2.7 remaining: 3 (J3, C2, M3). Total: 98→113.
 >
 > **2026-03-11 delta (new stories from full story map review):** +60 stories across 8 new sections (JD, BE, AR, CP, CL, IP, CI, SR) and 4 expanded sections (T, N/ET, H, AD). New v1.0 pre-launch: JD1-4 (🔷), AR4-5 (🔷), CP2/4/7/8 (🔷), CL2 (🔷), T7-10 (🟢+🔷), ET1-4 (🟢), JI1/3 (🔷), SR6 (🔷), AR3 (✅). New post-launch: BE1-5, AR1/2/6, CP3/5/6, CL1/3-6, IP1-6, CI1-7, H5-8, SR1-5, AD6-7, JI2/4. New ❌ OUT: BE4, IP2/3, H5. Total: 113→173.
+>
+> **2026-03-11 delta (Phase 2.7 final pass):** All Phase 2.7 user stories completed. Marked ✅ BUILT: JI1, JI3, SR6, CP2, CP4, CP7, CP8, CL2, AR4, AR5, T10, JD1, JD2, JD3, JD4, C2, M3. Phase 2.7 is complete. Next: Phase 3 (interviews + scorecards with AI summarization).
 
 ---
 
-## Phase 2.7 Priority Stack (remaining work, in order)
+## Phase 2.7 Priority Stack — ✅ ALL COMPLETE
 
-1. ~~**J3** — Clone job + AI rewrite~~ ✅ DONE (P0 bugs fixed 2026-03-11)
-   - ~~Wave 1: skills/team fields cloned, clean slug, embedding asserted~~ ✅
-   - ~~Wave 2: CloneIntentModal, intent stored in metadata~~ ✅
-   - ~~Wave 3: streaming RewritePanel, intent-aware prompt, accept/revert~~ ✅
-   - ~~Wave 4: bias check (D1), AI title suggestion (D2), AI skills delta (D3)~~ ✅
-   - **Wave 5: post-clone checklist (D4), command bar intent (E2)** ← next J3 sub-wave
-2. ~~**R1/R4 dashboard P0 fixes**~~ ✅ DONE (status="open", source_id join — 2026-03-11)
-3. ~~**R3/R4 dashboard P1 fixes**~~ ✅ DONE (denominator fix + template filter — 2026-03-11)
-4. **JD1/JD2/JD3/JD4** — Job description quality panel (score + inline bias highlighting) ← **NEXT**
-5. **AR4/AR5** — Inline candidate actions + sequential review queue
-6. **CP2/CP4/CP7/CP8** — Candidate profile detail improvements
-7. **CL2** — Multi-dimensional candidate list filters
-8. **T10** — Sequential candidate navigation in pipeline view
-9. **JI1/JI3** — Per-job dashboard sidebar and stage count
-10. **SR6** — Personalized recruiter dashboard filter by recruiter_id
-11. **C2/M3** — Mobile polish (spacing, touch targets)
+1. ~~**J3** — Clone job + AI rewrite~~ ✅ DONE
+2. ~~**R1/R4 dashboard P0 fixes**~~ ✅ DONE
+3. ~~**R3/R4 dashboard P1 fixes**~~ ✅ DONE
+4. ~~**J3 Wave 5: post-clone checklist (D4), command bar intent (E2)**~~ ✅ DONE
+5. ~~**JD1/JD2/JD3/JD4** — Job description quality panel~~ ✅ DONE
+6. ~~**JI1/JI3** — Per-job stage counts + pipeline breakdown~~ ✅ DONE
+7. ~~**SR6** — Recruiter dashboard personalization~~ ✅ DONE
+8. ~~**CP2/CP4/CP7/CP8** — Candidate profile improvements + migration~~ ✅ DONE
+9. ~~**CL2** — Multi-dimensional candidate filters~~ ✅ DONE
+10. ~~**AR4/AR5 + T10** — Inline actions + sequential navigation~~ ✅ DONE
+11. ~~**C2/M3** — Mobile polish~~ ✅ DONE
+
+**Phase 3 is next:** Interviews + scorecard templates + AI interview summarization.
 
 ---
 

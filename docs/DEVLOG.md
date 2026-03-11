@@ -4,6 +4,57 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] Phase 2.7 final pass — JI1/JI3, SR6, CP2/4/7/8, CL2, AR4/5, T10, C2/M3
+
+**Phase:** Build — Phase 2.7 (UX Polish) — final horizontal pass
+**Scope:** All remaining Phase 2.7 user stories — job detail stage breakdown, recruiter dashboard, candidate profile improvements, candidate filters, inline actions, sequential navigation, mobile polish
+
+### Changes
+
+#### JI1/JI3 — Per-job stage counts + pipeline breakdown
+- `jobs/[id]/page.tsx` — parallel query for `application_stage_history` per-stage counts; renders Pipeline Breakdown bar chart sorted by `stage_order`
+
+#### SR6 — Recruiter dashboard personalization
+- `dashboard/page.tsx` — `?mine=1` toggle; pre-fetches recruiter job IDs and scopes all 5 application queries via `.in("job_opening_id", myJobIds)`; `noJobs` guard prevents full-table scans; "All Jobs / My Jobs" pill-toggle in header
+
+#### CP7 — Pronouns field
+- Migration 020: `ALTER TABLE candidates ADD COLUMN pronouns VARCHAR(50)` (nullable freeform, ADR-008 compliant)
+
+#### CP4 — Canonical source name
+- `candidates/[id]/page.tsx` — joins `candidate_sources:source_id (name)`; resolves canonical name from FK, falls back to freeform `source` text
+
+#### CP8 — Profile header badges
+- Resume (has `resume_url`), Portfolio (has `portfolio_url`), Referral (source name contains "referral") — colored pills in candidate header
+
+#### CP2 — Days in current stage
+- Fetches `application_stage_history` per application; most-recent entry = stage entry date; renders "Nd in stage" beside stage badge in applications list
+
+#### CL2 — Multi-dimensional candidate filters
+- `candidates/page.tsx` — URL-param filters for `q` (name/email/title LIKE), `source` (source_id FK), `job` (pre-fetches candidate IDs via applications)
+- `candidates/filter-bar.tsx` — `"use client"` search input + source dropdown + job dropdown; "Clear filters" resets all
+
+#### AR4 — Inline advance/reject
+- `candidates/[id]/inline-app-actions.tsx` — Advance (next stage via `moveStage`) + Reject (`rejectApplication`) buttons per active application; next stage computed server-side from template stages
+
+#### AR5/T10 — Sequential pipeline navigation
+- `pipeline-board.tsx` — candidate links now include `?jobId=` param
+- `candidates/[id]/page.tsx` — reads `jobId` from searchParams; fetches ordered application queue; renders Prev/Next arrow links to adjacent candidates
+
+#### C2/M3 — Mobile polish
+- `app-nav.tsx` — `overflow-x-auto` on nav, `hidden sm:block` for role/plan, responsive px/gap/text sizes; shrink-0 guards on logo + sign-out
+- Career portal pages — `px-4 sm:px-6 py-8 sm:py-12` reduced mobile padding
+- Application form inputs — `py-2.5` (iOS 44px touch target); submit button `h-11 sm:h-10`
+
+#### E2E
+- Added `candidates.spec.ts` — 3 tests: list loads, detail page renders, back-link present
+
+### Tests
+- **583 Vitest, 45 E2E (Playwright). All passing. Typecheck clean.**
+
+[PLAYBOOK] Pre-fetch + .in() pattern: when Supabase TypeScript type parser rejects conditional select strings with FK joins, pre-fetch related IDs in a separate query and use .in(). Cleaner, equally performant for small ID sets, avoids type-system fights.
+
+---
+
 ## 2026-03-11 — [Phase 2.7] J3 Wave 4 — Bias check, title suggestion, skills delta
 
 **Phase:** Build — Phase 2.7 (UX Polish)
