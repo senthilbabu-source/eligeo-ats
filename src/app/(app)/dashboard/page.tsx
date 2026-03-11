@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
+import { aggregateSources } from "@/lib/utils/dashboard";
 
 export const metadata: Metadata = {
   title: "Dashboard — Eligeo",
@@ -59,12 +60,12 @@ export default async function DashboardPage() {
     { data: stageRows },
     { data: recentApps },
   ] = await Promise.all([
-    // Active jobs
+    // Active jobs — status "open" is the only valid published state (schema CHECK constraint)
     supabase
       .from("job_openings")
       .select("*", { count: "exact", head: true })
       .eq("organization_id", orgId)
-      .eq("status", "published")
+      .eq("status", "open")
       .is("deleted_at", null),
 
     // Total candidates
@@ -90,10 +91,10 @@ export default async function DashboardPage() {
       .gte("applied_at", oneWeekAgo)
       .is("deleted_at", null),
 
-    // Source attribution — group by source
+    // Source attribution — canonical name via source_id FK, fallback to freeform source TEXT
     supabase
       .from("applications")
-      .select("candidates!inner(source)")
+      .select("candidates!inner(source, candidate_sources(name))")
       .eq("organization_id", orgId)
       .eq("status", "active")
       .is("deleted_at", null),
@@ -124,15 +125,7 @@ export default async function DashboardPage() {
   ]);
 
   // ── Aggregate source data ──────────────────────────────
-  const sourceCounts: Record<string, number> = {};
-  for (const row of sourceRows ?? []) {
-    const candidate = Array.isArray(row.candidates) ? row.candidates[0] : row.candidates;
-    const src = (candidate as { source?: string } | null)?.source ?? "Unknown";
-    sourceCounts[src] = (sourceCounts[src] ?? 0) + 1;
-  }
-  const topSources = Object.entries(sourceCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5);
+  const topSources = aggregateSources(sourceRows ?? []);
 
   // ── Aggregate pipeline funnel ──────────────────────────
   const stageCounts: Record<string, { name: string; order: number; count: number }> = {};
