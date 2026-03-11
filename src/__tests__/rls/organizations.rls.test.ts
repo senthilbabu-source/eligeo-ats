@@ -1,12 +1,12 @@
 /**
  * RLS Tests: organizations
- * D24 §6.2 — 4 ops × 2 tenants + role enforcement
+ * D24 §6.2 — full 5 roles × 4 ops + cross-tenant isolation
  *
  * Policies (migration 005):
  *   SELECT: is_org_member(id) — members see their org
  *   INSERT: TRUE (anyone, for signup flow)
  *   UPDATE: has_org_role(id, 'owner', 'admin') + WITH CHECK org_id match
- *   DELETE: FALSE (no hard deletes)
+ *   DELETE: FALSE (no hard deletes, ADR-006)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -76,20 +76,32 @@ describe("RLS: organizations", () => {
         .select("id");
       expect(data).toEqual([]);
     });
+
+    it("Tenant B cannot DELETE Tenant A org", async () => {
+      const { data } = await tenantBClient
+        .from("organizations")
+        .delete()
+        .eq("id", TENANT_A.org.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
   });
 
-  // ─── SELECT: all roles can see own org ──────────────────
+  // ─── SELECT: all 5 roles can see own org ────────────────
 
   describe("SELECT", () => {
-    for (const [name, client] of [
-      ["owner", () => ownerClient],
-      ["admin", () => adminClient],
-      ["recruiter", () => recruiterClient],
-      ["hiring_manager", () => hmClient],
-      ["interviewer", () => interviewerClient],
-    ] as const) {
+    const roleClients = () => [
+      ["owner", ownerClient],
+      ["admin", adminClient],
+      ["recruiter", recruiterClient],
+      ["hiring_manager", hmClient],
+      ["interviewer", interviewerClient],
+    ] as const;
+
+    for (const [name] of [["owner"], ["admin"], ["recruiter"], ["hiring_manager"], ["interviewer"]] as const) {
       it(`${name} can SELECT own org`, async () => {
-        const { data, error } = await (client as () => SupabaseClient)()
+        const clients = { owner: ownerClient, admin: adminClient, recruiter: recruiterClient, hiring_manager: hmClient, interviewer: interviewerClient };
+        const { data, error } = await clients[name]
           .from("organizations")
           .select("id")
           .eq("id", TENANT_A.org.id)
@@ -98,6 +110,26 @@ describe("RLS: organizations", () => {
         expect(data?.id).toBe(TENANT_A.org.id);
       });
     }
+  });
+
+  // ─── INSERT: policy is TRUE (signup flow) ───────────────
+
+  describe("INSERT", () => {
+    it("authenticated user can INSERT org (signup flow)", async () => {
+      const testId = crypto.randomUUID();
+      const { error } = await ownerClient
+        .from("organizations")
+        .insert({
+          id: testId,
+          name: "RLS Test Org",
+          slug: `rls-test-${Date.now()}`,
+          plan: "starter",
+        });
+      expect(error).toBeNull();
+      // Cleanup
+      const svc = createServiceClient();
+      await svc.from("organizations").delete().eq("id", testId);
+    });
   });
 
   // ─── UPDATE: owner and admin only ───────────────────────
@@ -123,20 +155,32 @@ describe("RLS: organizations", () => {
       expect(data?.length).toBeGreaterThan(0);
     });
 
-    for (const [name, client] of [
-      ["recruiter", () => recruiterClient],
-      ["hiring_manager", () => hmClient],
-      ["interviewer", () => interviewerClient],
-    ] as const) {
-      it(`${name} cannot UPDATE org`, async () => {
-        const { data } = await (client as () => SupabaseClient)()
-          .from("organizations")
-          .update({ name: "unauthorized" })
-          .eq("id", TENANT_A.org.id)
-          .select("id");
-        expect(!data || data.length === 0).toBe(true);
-      });
-    }
+    it("recruiter cannot UPDATE org", async () => {
+      const { data } = await recruiterClient
+        .from("organizations")
+        .update({ name: "unauthorized" })
+        .eq("id", TENANT_A.org.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
+
+    it("hiring_manager cannot UPDATE org", async () => {
+      const { data } = await hmClient
+        .from("organizations")
+        .update({ name: "unauthorized" })
+        .eq("id", TENANT_A.org.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
+
+    it("interviewer cannot UPDATE org", async () => {
+      const { data } = await interviewerClient
+        .from("organizations")
+        .update({ name: "unauthorized" })
+        .eq("id", TENANT_A.org.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
   });
 
   // ─── DELETE: always denied (ADR-006) ────────────────────
@@ -144,6 +188,42 @@ describe("RLS: organizations", () => {
   describe("DELETE", () => {
     it("owner cannot hard-delete org (policy: FALSE)", async () => {
       const { data } = await ownerClient
+        .from("organizations")
+        .delete()
+        .eq("id", TENANT_A.org.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
+
+    it("admin cannot hard-delete org", async () => {
+      const { data } = await adminClient
+        .from("organizations")
+        .delete()
+        .eq("id", TENANT_A.org.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
+
+    it("recruiter cannot hard-delete org", async () => {
+      const { data } = await recruiterClient
+        .from("organizations")
+        .delete()
+        .eq("id", TENANT_A.org.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
+
+    it("hiring_manager cannot hard-delete org", async () => {
+      const { data } = await hmClient
+        .from("organizations")
+        .delete()
+        .eq("id", TENANT_A.org.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
+
+    it("interviewer cannot hard-delete org", async () => {
+      const { data } = await interviewerClient
         .from("organizations")
         .delete()
         .eq("id", TENANT_A.org.id)

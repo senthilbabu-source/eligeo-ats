@@ -16,6 +16,9 @@ import { createTestClient, createServiceClient, clearClientCache } from "../help
 
 describe("RLS: ai_usage_logs", () => {
   let ownerClient: SupabaseClient;
+  let adminClient: SupabaseClient;
+  let recruiterClient: SupabaseClient;
+  let hmClient: SupabaseClient;
   let interviewerClient: SupabaseClient;
   let tenantBClient: SupabaseClient;
   let serviceClient: SupabaseClient;
@@ -23,6 +26,9 @@ describe("RLS: ai_usage_logs", () => {
 
   beforeAll(async () => {
     ownerClient = await createTestClient(TENANT_A.users.owner.email);
+    adminClient = await createTestClient(TENANT_A.users.admin.email);
+    recruiterClient = await createTestClient(TENANT_A.users.recruiter.email);
+    hmClient = await createTestClient(TENANT_A.users.hiringManager.email);
     interviewerClient = await createTestClient(TENANT_A.users.interviewer.email);
     tenantBClient = await createTestClient(TENANT_B.users.owner.email);
     serviceClient = createServiceClient();
@@ -52,6 +58,36 @@ describe("RLS: ai_usage_logs", () => {
 
   it("Tenant A owner can SELECT own AI logs", async () => {
     const { data, error } = await ownerClient
+      .from("ai_usage_logs")
+      .select("id")
+      .eq("id", testLogId)
+      .maybeSingle();
+    expect(error).toBeNull();
+    expect(data?.id).toBe(testLogId);
+  });
+
+  it("Tenant A admin can SELECT AI logs", async () => {
+    const { data, error } = await adminClient
+      .from("ai_usage_logs")
+      .select("id")
+      .eq("id", testLogId)
+      .maybeSingle();
+    expect(error).toBeNull();
+    expect(data?.id).toBe(testLogId);
+  });
+
+  it("Tenant A recruiter can SELECT AI logs", async () => {
+    const { data, error } = await recruiterClient
+      .from("ai_usage_logs")
+      .select("id")
+      .eq("id", testLogId)
+      .maybeSingle();
+    expect(error).toBeNull();
+    expect(data?.id).toBe(testLogId);
+  });
+
+  it("Tenant A hiring_manager can SELECT AI logs", async () => {
+    const { data, error } = await hmClient
       .from("ai_usage_logs")
       .select("id")
       .eq("id", testLogId)

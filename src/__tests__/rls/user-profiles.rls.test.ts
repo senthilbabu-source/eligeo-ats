@@ -1,11 +1,11 @@
 /**
  * RLS Tests: user_profiles
- * D24 §6.2 — 4 ops × 2 tenants + role enforcement
+ * D24 §6.2 — full 5 roles × 4 ops + cross-tenant isolation
  *
  * Policies (migration 005):
  *   SELECT: own profile OR profiles of shared org members
  *   INSERT: own profile only (id = auth.uid())
- *   UPDATE: own profile only
+ *   UPDATE: own profile only (id = auth.uid())
  *   DELETE: FALSE (no hard deletes)
  */
 
@@ -16,13 +16,17 @@ import { createTestClient, clearClientCache } from "../helpers";
 
 describe("RLS: user_profiles", () => {
   let ownerClient: SupabaseClient;
+  let adminClient: SupabaseClient;
   let recruiterClient: SupabaseClient;
+  let hmClient: SupabaseClient;
   let interviewerClient: SupabaseClient;
   let tenantBClient: SupabaseClient;
 
   beforeAll(async () => {
     ownerClient = await createTestClient(TENANT_A.users.owner.email);
+    adminClient = await createTestClient(TENANT_A.users.admin.email);
     recruiterClient = await createTestClient(TENANT_A.users.recruiter.email);
+    hmClient = await createTestClient(TENANT_A.users.hiringManager.email);
     interviewerClient = await createTestClient(TENANT_A.users.interviewer.email);
     tenantBClient = await createTestClient(TENANT_B.users.owner.email);
   });
@@ -32,26 +36,6 @@ describe("RLS: user_profiles", () => {
   // ─── Tenant Isolation ───────────────────────────────────
 
   describe("tenant isolation", () => {
-    it("Tenant A can see own profile", async () => {
-      const { data, error } = await ownerClient
-        .from("user_profiles")
-        .select("id")
-        .eq("id", TENANT_A.users.owner.id)
-        .single();
-      expect(error).toBeNull();
-      expect(data?.id).toBe(TENANT_A.users.owner.id);
-    });
-
-    it("Tenant A can see co-org member profiles", async () => {
-      const { data, error } = await ownerClient
-        .from("user_profiles")
-        .select("id")
-        .eq("id", TENANT_A.users.recruiter.id)
-        .single();
-      expect(error).toBeNull();
-      expect(data?.id).toBe(TENANT_A.users.recruiter.id);
-    });
-
     it("Tenant A cannot see Tenant B profiles", async () => {
       const { data } = await ownerClient
         .from("user_profiles")
@@ -69,12 +53,96 @@ describe("RLS: user_profiles", () => {
         .maybeSingle();
       expect(data).toBeNull();
     });
+
+    it("Tenant B cannot UPDATE Tenant A profile", async () => {
+      const { data } = await tenantBClient
+        .from("user_profiles")
+        .update({ full_name: "hacked" })
+        .eq("id", TENANT_A.users.owner.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
+  });
+
+  // ─── SELECT: all 5 roles can see own + co-org profiles ──
+
+  describe("SELECT", () => {
+    it("owner can see own profile", async () => {
+      const { data, error } = await ownerClient
+        .from("user_profiles")
+        .select("id")
+        .eq("id", TENANT_A.users.owner.id)
+        .single();
+      expect(error).toBeNull();
+      expect(data?.id).toBe(TENANT_A.users.owner.id);
+    });
+
+    it("owner can see co-org member profile", async () => {
+      const { data, error } = await ownerClient
+        .from("user_profiles")
+        .select("id")
+        .eq("id", TENANT_A.users.recruiter.id)
+        .single();
+      expect(error).toBeNull();
+      expect(data?.id).toBe(TENANT_A.users.recruiter.id);
+    });
+
+    it("admin can see co-org member profile", async () => {
+      const { data, error } = await adminClient
+        .from("user_profiles")
+        .select("id")
+        .eq("id", TENANT_A.users.owner.id)
+        .single();
+      expect(error).toBeNull();
+      expect(data?.id).toBe(TENANT_A.users.owner.id);
+    });
+
+    it("recruiter can see co-org member profile", async () => {
+      const { data, error } = await recruiterClient
+        .from("user_profiles")
+        .select("id")
+        .eq("id", TENANT_A.users.owner.id)
+        .single();
+      expect(error).toBeNull();
+      expect(data?.id).toBe(TENANT_A.users.owner.id);
+    });
+
+    it("hiring_manager can see co-org member profile", async () => {
+      const { data, error } = await hmClient
+        .from("user_profiles")
+        .select("id")
+        .eq("id", TENANT_A.users.owner.id)
+        .single();
+      expect(error).toBeNull();
+      expect(data?.id).toBe(TENANT_A.users.owner.id);
+    });
+
+    it("interviewer can see co-org member profile", async () => {
+      const { data, error } = await interviewerClient
+        .from("user_profiles")
+        .select("id")
+        .eq("id", TENANT_A.users.owner.id)
+        .single();
+      expect(error).toBeNull();
+      expect(data?.id).toBe(TENANT_A.users.owner.id);
+    });
+  });
+
+  // ─── INSERT: own profile only (auto-created by trigger) ─
+
+  describe("INSERT", () => {
+    it("user cannot INSERT profile for another user", async () => {
+      const { error } = await ownerClient
+        .from("user_profiles")
+        .insert({ id: crypto.randomUUID(), full_name: "Fake User" });
+      expect(error).not.toBeNull();
+    });
   });
 
   // ─── UPDATE: own profile only ───────────────────────────
 
   describe("UPDATE", () => {
-    it("user can update own profile", async () => {
+    it("owner can UPDATE own profile", async () => {
       const { data, error } = await ownerClient
         .from("user_profiles")
         .update({ full_name: TENANT_A.users.owner.full_name })
@@ -84,17 +152,37 @@ describe("RLS: user_profiles", () => {
       expect(data?.length).toBeGreaterThan(0);
     });
 
-    it("user cannot update another user's profile", async () => {
-      const { data } = await recruiterClient
+    it("admin can UPDATE own profile", async () => {
+      const { data, error } = await adminClient
+        .from("user_profiles")
+        .update({ full_name: TENANT_A.users.admin.full_name })
+        .eq("id", TENANT_A.users.admin.id)
+        .select("id");
+      expect(error).toBeNull();
+      expect(data?.length).toBeGreaterThan(0);
+    });
+
+    it("recruiter can UPDATE own profile", async () => {
+      const { data, error } = await recruiterClient
+        .from("user_profiles")
+        .update({ full_name: TENANT_A.users.recruiter.full_name })
+        .eq("id", TENANT_A.users.recruiter.id)
+        .select("id");
+      expect(error).toBeNull();
+      expect(data?.length).toBeGreaterThan(0);
+    });
+
+    it("owner cannot UPDATE another user's profile", async () => {
+      const { data } = await ownerClient
         .from("user_profiles")
         .update({ full_name: "hacked" })
-        .eq("id", TENANT_A.users.owner.id)
+        .eq("id", TENANT_A.users.recruiter.id)
         .select("id");
       expect(!data || data.length === 0).toBe(true);
     });
 
-    it("Tenant B cannot update Tenant A profile", async () => {
-      const { data } = await tenantBClient
+    it("recruiter cannot UPDATE another user's profile", async () => {
+      const { data } = await recruiterClient
         .from("user_profiles")
         .update({ full_name: "hacked" })
         .eq("id", TENANT_A.users.owner.id)
@@ -111,6 +199,15 @@ describe("RLS: user_profiles", () => {
         .from("user_profiles")
         .delete()
         .eq("id", TENANT_A.users.owner.id)
+        .select("id");
+      expect(!data || data.length === 0).toBe(true);
+    });
+
+    it("admin cannot hard-delete profile", async () => {
+      const { data } = await adminClient
+        .from("user_profiles")
+        .delete()
+        .eq("id", TENANT_A.users.admin.id)
         .select("id");
       expect(!data || data.length === 0).toBe(true);
     });

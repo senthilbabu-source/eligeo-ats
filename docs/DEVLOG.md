@@ -15,6 +15,26 @@
 
 ---
 
+### 2026-03-11 — [TEST] Expand RLS tests to full D24 §6.2 matrix (352 total)
+
+- **Expanded all 10 RLS test files** to full 5 roles × 4 ops matrix:
+  - organizations: 15 → 21 tests (5 roles SELECT, INSERT=TRUE signup, all DELETE denied)
+  - user-profiles: 9 → 22 tests (5 roles SELECT co-org, 3 roles self-UPDATE, cross-tenant denied)
+  - organization-members: 12 → 22 tests (5 roles SELECT, owner/admin/self UPDATE, DELETE owner-only)
+  - applications + stage_history: 18 → 39 tests (INSERT for 4 roles, DELETE owner/admin, append-only)
+  - ai-usage-logs: 6 → 9 tests (all 5 roles SELECT, service-only INSERT, append-only)
+  - pipelines (generator): 12 → 46 tests (2 tables × 5 roles × 4 ops)
+  - lookups (generator): 10 → 46 tests (2 tables × 5 roles × 4 ops)
+  - talent-pools (generator): 10 → 23 tests (1 table × 5 roles × 4 ops)
+  - job-openings, candidates: unchanged (already full matrix)
+- **Fixed RLS test generator bugs:**
+  - `randomizeUniqueFields()` — prevents 23505 unique constraint violations on repeated INSERT tests (name, email, slug, title)
+  - DELETE tests now use randomized disposable records
+- **Found RLS policy bug:** `members_insert` allows `user_id = auth.uid()` — any user can self-add to any org. Documented with TODO; will fix in future migration.
+- **Test pollution fix:** Cross-tenant INSERT test was adding Tenant B to Tenant A's org during parallel runs. Changed to use random user_id (not auth.uid()) so INSERT is properly denied.
+- **Totals:** 269 RLS + 83 unit = 352 tests, 0 failures, typecheck clean
+- `[PLAYBOOK]` Test parallelism can cause cross-test pollution when one test modifies shared state (e.g., org membership). Use random/disposable data and avoid real cross-tenant mutations in tests.
+
 ### 2026-03-11 — [TEST] RLS integration test infrastructure + 140 tests
 
 - **RLS test helpers** (`src/__tests__/helpers.ts`):

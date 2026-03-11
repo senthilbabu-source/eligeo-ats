@@ -20,6 +20,24 @@ import {
 
 export type Operation = "SELECT" | "INSERT" | "UPDATE" | "DELETE";
 
+/**
+ * Randomize fields that typically have unique constraints (name, email, slug)
+ * to prevent 23505 violations across parallel/repeated test runs.
+ */
+function randomizeUniqueFields(
+  record: Record<string, unknown>,
+  suffix: string,
+): Record<string, unknown> {
+  const result = { ...record };
+  if (typeof result.name === "string") result.name = `${result.name}-${suffix}`;
+  if (typeof result.email === "string")
+    result.email = `test+${suffix}@example.com`;
+  if (typeof result.slug === "string") result.slug = `${result.slug}-${suffix}`;
+  if (typeof result.title === "string")
+    result.title = `${result.title}-${suffix}`;
+  return result;
+}
+
 export interface RoleConfig {
   email: string;
   role: string;
@@ -156,8 +174,9 @@ export function generateRLSTests(config: RLSTestConfig): void {
         // INSERT tests
         if (role.allowed.includes("INSERT")) {
           it(`${role.role} can INSERT into ${table}`, async () => {
+            const suffix = crypto.randomUUID().slice(0, 8);
             const testRecord = {
-              ...sampleInsert,
+              ...randomizeUniqueFields(sampleInsert, suffix),
               id: crypto.randomUUID(),
             };
             const { error } = await getClient(role.role)
@@ -173,8 +192,9 @@ export function generateRLSTests(config: RLSTestConfig): void {
         }
         if (role.denied.includes("INSERT")) {
           it(`${role.role} cannot INSERT into ${table}`, async () => {
+            const suffix = crypto.randomUUID().slice(0, 8);
             const testRecord = {
-              ...sampleInsert,
+              ...randomizeUniqueFields(sampleInsert, suffix),
               id: crypto.randomUUID(),
             };
             const { error } = await getClient(role.role)
@@ -215,7 +235,11 @@ export function generateRLSTests(config: RLSTestConfig): void {
             // Insert a disposable record first, then delete it
             const { createServiceClient } = await import("../helpers");
             const svc = createServiceClient();
-            const disposable = { ...sampleInsert, id: crypto.randomUUID() };
+            const suffix = crypto.randomUUID().slice(0, 8);
+            const disposable = {
+              ...randomizeUniqueFields(sampleInsert, suffix),
+              id: crypto.randomUUID(),
+            };
             await svc.from(table).insert(disposable);
 
             const { data, error } = await getClient(role.role)
