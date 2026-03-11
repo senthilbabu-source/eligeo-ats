@@ -15,6 +15,33 @@
 
 ---
 
+### 2026-03-11 — [JOBS] Phase 2: Jobs + Career Portal (Database Layer)
+
+- **Cross-cut analysis of Phase 1** — found and fixed 3 critical + 4 medium issues:
+  - RLS: Added missing `WITH CHECK` on organizations, user_profiles, organization_members UPDATE policies
+  - Audit: Rewrote `audit_trigger_func()` to support background jobs via `COALESCE(auth.uid(), current_setting('app.performed_by', TRUE)::UUID)` (ADR-001)
+  - Audit: Unified INSERT into single statement using CASE expressions
+  - Types: Fixed OfferCompensation (was severely incomplete — missing period, equity_type, vesting)
+  - Types: Fixed BrandingConfig (added favicon_url, secondary_color, font_family, renamed to _html suffix)
+  - Types: Fixed FeatureFlags (enumerated specific flags instead of generic Record)
+  - Types: Fixed AutoAction (aligned type enum with spec: 7 types not 4)
+  - Error: Created RFC 9457 `problemResponse()` helper (`src/lib/utils/problem.ts`), updated auth API to use it
+- **7 new migrations** (006–012), 13 new tables:
+  - `00006_lookup_tables.sql` — candidate_sources, rejection_reasons (ADR-008 tenant lookup tables)
+  - `00007_pipeline_tables.sql` — pipeline_templates (one default per org), pipeline_stages (7 stage types, ordered)
+  - `00008_job_openings.sql` — 25 columns, CHECK constraints (location_type, employment_type, status, salary range), vector column deferred to v2.0
+  - `00009_candidates.sql` — fuzzy name search via pg_trgm, vector deferred, email dedup per org
+  - `00010_skills.sql` — skills (global + org-scoped, case-insensitive dedup), candidate_skills (proficiency/source/years), job_required_skills (must_have/nice_to_have)
+  - `00011_applications.sql` — applications (one per candidate per job), application_stage_history (append-only: UPDATE/DELETE = FALSE)
+  - `00012_talent_pools.sql` — talent_pools, talent_pool_members
+- **RLS on every table** — all 4 ops (SELECT/INSERT/UPDATE/DELETE), WITH CHECK on all UPDATEs, org isolation via `is_org_member()` + `has_org_role()` + `current_user_org_id()`
+- **Ground-truth types** added: JobMetadata, ResumeParsed, SourceDetails, ApplicationMetadata
+- **Seed data expanded**: 6 candidate sources, 7 rejection reasons, 1 pipeline (6 stages), 2 jobs (Senior Engineer + Product Manager), 3 candidates (Alice/Bob/Carol), 1 Globex candidate (cross-tenant), 2 applications, 3 stage transitions, 1 talent pool
+- **[PLAYBOOK]** Cross-cut analysis as continuous practice — retroactive verification of prior phase catches real bugs before they compound. Do this at every phase boundary.
+- **Verification:** 12 migrations apply cleanly | `npm run lint` ✅ | `npm run typecheck` ✅ | `npm run test` ✅ (14/14) | `npm run build` ✅
+- **Database:** 17 tables total (4 Phase 1 + 13 Phase 2)
+- **Next:** Phase 2 continued — Server Actions, pages (job board, candidate list, pipeline Kanban), career portal
+
 ### 2026-03-11 — [AUTH] Phase 1: Auth + Core Tenancy
 
 - **4 database migrations** written (topological order per ADR/P-23):

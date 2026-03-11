@@ -133,6 +133,217 @@ VALUES
   ('22222222-2001-4000-a000-000000000001', '22222222-1001-4000-a000-000000000002', 'recruiter', TRUE, '22222222-2001-4000-a000-000000000001');
 
 -- ============================================================
--- Phase 2+ seed data will be appended below as tables are built
--- (jobs, candidates, applications, pipelines, etc.)
+-- Phase 2: Jobs + Career Portal
+-- ============================================================
+
+-- ─── Candidate Sources (itecbrains system defaults) ────────
+
+INSERT INTO candidate_sources (id, organization_id, name, is_system) VALUES
+  ('11111111-6003-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', 'Referral',     TRUE),
+  ('11111111-6003-4000-a000-000000000002', '11111111-2001-4000-a000-000000000001', 'LinkedIn',     TRUE),
+  ('11111111-6003-4000-a000-000000000003', '11111111-2001-4000-a000-000000000001', 'Career Page',  TRUE),
+  ('11111111-6003-4000-a000-000000000004', '11111111-2001-4000-a000-000000000001', 'Job Board',    TRUE),
+  ('11111111-6003-4000-a000-000000000005', '11111111-2001-4000-a000-000000000001', 'Agency',       TRUE),
+  ('11111111-6003-4000-a000-000000000006', '11111111-2001-4000-a000-000000000001', 'Direct',       TRUE);
+
+-- ─── Rejection Reasons (itecbrains system defaults) ────────
+
+INSERT INTO rejection_reasons (id, organization_id, name, is_system) VALUES
+  ('11111111-6004-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', 'Not qualified',          TRUE),
+  ('11111111-6004-4000-a000-000000000002', '11111111-2001-4000-a000-000000000001', 'Position filled',        TRUE),
+  ('11111111-6004-4000-a000-000000000003', '11111111-2001-4000-a000-000000000001', 'Candidate withdrew',     TRUE),
+  ('11111111-6004-4000-a000-000000000004', '11111111-2001-4000-a000-000000000001', 'Failed assessment',      TRUE),
+  ('11111111-6004-4000-a000-000000000005', '11111111-2001-4000-a000-000000000001', 'Compensation mismatch',  TRUE),
+  ('11111111-6004-4000-a000-000000000006', '11111111-2001-4000-a000-000000000001', 'Culture fit',            TRUE),
+  ('11111111-6004-4000-a000-000000000007', '11111111-2001-4000-a000-000000000001', 'Other',                  TRUE);
+
+-- ─── Pipeline Template (itecbrains default) ────────────────
+
+INSERT INTO pipeline_templates (id, organization_id, name, description, is_default, created_by) VALUES
+  (
+    '11111111-6001-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'Standard Engineering Pipeline',
+    'Default pipeline for engineering roles',
+    TRUE,
+    '11111111-1001-4000-a000-000000000001'
+  );
+
+INSERT INTO pipeline_stages (id, organization_id, pipeline_template_id, name, stage_type, stage_order, is_terminal) VALUES
+  ('11111111-6002-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', '11111111-6001-4000-a000-000000000001', 'Applied',    'applied',    0, FALSE),
+  ('11111111-6002-4000-a000-000000000002', '11111111-2001-4000-a000-000000000001', '11111111-6001-4000-a000-000000000001', 'Screening',  'screening',  1, FALSE),
+  ('11111111-6002-4000-a000-000000000003', '11111111-2001-4000-a000-000000000001', '11111111-6001-4000-a000-000000000001', 'Technical',  'interview',  2, FALSE),
+  ('11111111-6002-4000-a000-000000000004', '11111111-2001-4000-a000-000000000001', '11111111-6001-4000-a000-000000000001', 'Onsite',     'interview',  3, FALSE),
+  ('11111111-6002-4000-a000-000000000005', '11111111-2001-4000-a000-000000000001', '11111111-6001-4000-a000-000000000001', 'Offer',      'offer',      4, FALSE),
+  ('11111111-6002-4000-a000-000000000006', '11111111-2001-4000-a000-000000000001', '11111111-6001-4000-a000-000000000001', 'Hired',      'hired',      5, TRUE);
+
+-- ─── Job Openings (itecbrains) ─────────────────────────────
+
+INSERT INTO job_openings (id, organization_id, pipeline_template_id, title, slug, description, department, location, location_type, employment_type, salary_min, salary_max, salary_currency, status, hiring_manager_id, recruiter_id, headcount, published_at) VALUES
+  (
+    '11111111-3001-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-6001-4000-a000-000000000001',
+    'Senior Software Engineer',
+    'senior-software-engineer',
+    'We are looking for a Senior Software Engineer to join our team and help build the next generation of staffing technology.',
+    'Engineering',
+    'Dallas, TX',
+    'hybrid',
+    'full_time',
+    120000, 160000, 'USD',
+    'open',
+    '11111111-1001-4000-a000-000000000004',
+    '11111111-1001-4000-a000-000000000003',
+    2,
+    NOW() - INTERVAL '7 days'
+  ),
+  (
+    '11111111-3001-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-6001-4000-a000-000000000001',
+    'Product Manager',
+    'product-manager',
+    'Join itecbrains as a Product Manager to drive our ATS product strategy and work closely with engineering.',
+    'Product',
+    'Remote',
+    'remote',
+    'full_time',
+    130000, 170000, 'USD',
+    'draft',
+    '11111111-1001-4000-a000-000000000004',
+    '11111111-1001-4000-a000-000000000003',
+    1,
+    NULL
+  );
+
+-- ─── Candidates (itecbrains) ───────────────────────────────
+
+INSERT INTO candidates (id, organization_id, full_name, email, phone, current_title, current_company, location, linkedin_url, skills, tags, source, source_id) VALUES
+  (
+    '11111111-4001-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'Alice Johnson',
+    'alice@example.com',
+    '+1-555-0101',
+    'Software Engineer',
+    'TechCorp',
+    'Austin, TX',
+    'https://linkedin.com/in/alicejohnson',
+    ARRAY['TypeScript', 'React', 'Node.js', 'PostgreSQL'],
+    ARRAY['strong-technical', 'senior'],
+    'LinkedIn',
+    '11111111-6003-4000-a000-000000000002'
+  ),
+  (
+    '11111111-4001-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    'Bob Smith',
+    'bob@example.com',
+    '+1-555-0102',
+    'Full Stack Developer',
+    'StartupXYZ',
+    'San Francisco, CA',
+    'https://linkedin.com/in/bobsmith',
+    ARRAY['Python', 'Django', 'React', 'AWS'],
+    ARRAY['startup-experience'],
+    'Referral',
+    '11111111-6003-4000-a000-000000000001'
+  ),
+  (
+    '11111111-4001-4000-a000-000000000003',
+    '11111111-2001-4000-a000-000000000001',
+    'Carol Williams',
+    'carol@example.com',
+    '+1-555-0103',
+    'Senior Engineer',
+    'BigCo',
+    'New York, NY',
+    NULL,
+    ARRAY['Java', 'Spring Boot', 'Kubernetes', 'PostgreSQL'],
+    ARRAY['enterprise-experience', 'senior'],
+    'Career Page',
+    '11111111-6003-4000-a000-000000000003'
+  );
+
+-- Globex candidate (cross-tenant isolation test)
+INSERT INTO candidates (id, organization_id, full_name, email, source) VALUES
+  (
+    '22222222-4001-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    'Dave Brown',
+    'dave@example.com',
+    'Direct'
+  );
+
+-- ─── Applications (itecbrains) ─────────────────────────────
+
+INSERT INTO applications (id, organization_id, candidate_id, job_opening_id, current_stage_id, status, source) VALUES
+  (
+    '11111111-5001-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-4001-4000-a000-000000000001',
+    '11111111-3001-4000-a000-000000000001',
+    '11111111-6002-4000-a000-000000000003',  -- Technical stage
+    'active',
+    'LinkedIn'
+  ),
+  (
+    '11111111-5001-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-4001-4000-a000-000000000002',
+    '11111111-3001-4000-a000-000000000001',
+    '11111111-6002-4000-a000-000000000002',  -- Screening stage
+    'active',
+    'Referral'
+  );
+
+-- ─── Stage History (itecbrains — Alice's journey) ──────────
+
+INSERT INTO application_stage_history (organization_id, application_id, from_stage_id, to_stage_id, transitioned_by) VALUES
+  (
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000001',
+    NULL,
+    '11111111-6002-4000-a000-000000000001',  -- → Applied
+    '11111111-1001-4000-a000-000000000003'   -- by Roshelle (recruiter)
+  ),
+  (
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000001',
+    '11111111-6002-4000-a000-000000000001',  -- Applied →
+    '11111111-6002-4000-a000-000000000002',  -- → Screening
+    '11111111-1001-4000-a000-000000000003'   -- by Roshelle
+  ),
+  (
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000001',
+    '11111111-6002-4000-a000-000000000002',  -- Screening →
+    '11111111-6002-4000-a000-000000000003',  -- → Technical
+    '11111111-1001-4000-a000-000000000003'   -- by Roshelle
+  );
+
+-- ─── Talent Pool (itecbrains) ──────────────────────────────
+
+INSERT INTO talent_pools (id, organization_id, name, description, created_by) VALUES
+  (
+    '11111111-6005-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'Strong Engineers',
+    'High-potential engineering candidates for future roles',
+    '11111111-1001-4000-a000-000000000003'
+  );
+
+INSERT INTO talent_pool_members (organization_id, talent_pool_id, candidate_id, added_by, notes) VALUES
+  (
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-6005-4000-a000-000000000001',
+    '11111111-4001-4000-a000-000000000003',
+    '11111111-1001-4000-a000-000000000003',
+    'Strong enterprise background, keep warm for next senior role'
+  );
+
+-- ============================================================
+-- Phase 3+ seed data will be appended below
+-- (interviews, scorecards, offers, etc.)
 -- ============================================================
