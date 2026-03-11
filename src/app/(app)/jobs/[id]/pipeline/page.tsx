@@ -41,14 +41,14 @@ export default async function PipelinePage({
 
   if (!job) notFound();
 
-  // Fetch pipeline stages ordered by sort_order
+  // Fetch pipeline stages ordered by stage_order
   const { data: stages } = await supabase
     .from("pipeline_stages")
-    .select("id, name, stage_type, sort_order")
+    .select("id, name, stage_type, stage_order")
     .eq("pipeline_template_id", job.pipeline_template_id)
     .eq("organization_id", session.orgId)
     .is("deleted_at", null)
-    .order("sort_order");
+    .order("stage_order");
 
   // Fetch applications with candidate info for this job
   const { data: applications } = await supabase

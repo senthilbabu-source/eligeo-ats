@@ -9,6 +9,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/jobs", label: "Jobs" },
   { href: "/candidates", label: "Candidates" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export function AppNav({ session }: { session: Session }) {

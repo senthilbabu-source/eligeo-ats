@@ -74,6 +74,7 @@ export function CommandBar() {
           candidates: "/candidates",
           dashboard: "/dashboard",
           settings: "/settings",
+          pipelines: "/settings/pipelines",
         };
         const href = pageMap[response.intent.params.page];
         if (href) {

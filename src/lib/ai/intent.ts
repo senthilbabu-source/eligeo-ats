@@ -57,7 +57,7 @@ Available actions:
 - draft_email: Draft an email. Params: type (rejection/outreach/update/follow_up), candidate (name), job (title), tone (warm/professional/casual)
 - generate_job_description: Generate a job description. Params: title, key_points (optional)
 - find_matches: Find AI-matched candidates for a job. Params: job (title or description)
-- navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings)
+- navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines)
 - unknown: Cannot determine intent`;
 
 /**
@@ -155,6 +155,9 @@ function matchQuickPatterns(input: string): ParsedIntent | null {
   }
   if (/^(go to |open |show )?settings$/i.test(lower)) {
     return { action: "navigate", params: { page: "settings" }, confidence: 1, display: "Navigate to Settings" };
+  }
+  if (/^(go to |open |show |manage )?(pipelines?|pipeline templates?)$/i.test(lower)) {
+    return { action: "navigate", params: { page: "pipelines" }, confidence: 1, display: "Navigate to Pipeline Settings" };
   }
 
   // Quick search

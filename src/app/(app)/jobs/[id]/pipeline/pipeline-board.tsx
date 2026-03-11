@@ -8,7 +8,7 @@ interface Stage {
   id: string;
   name: string;
   stage_type: string;
-  sort_order: number;
+  stage_order: number;
 }
 
 interface Application {

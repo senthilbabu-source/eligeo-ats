@@ -25,6 +25,9 @@ function matchQuickPatterns(input: string) {
   if (/^(go to |open |show )?settings$/i.test(lower)) {
     return { action: "navigate", params: { page: "settings" }, confidence: 1, display: "Navigate to Settings" };
   }
+  if (/^(go to |open |show |manage )?(pipelines?|pipeline templates?)$/i.test(lower)) {
+    return { action: "navigate", params: { page: "pipelines" }, confidence: 1, display: "Navigate to Pipeline Settings" };
+  }
 
   // Quick search
   if (lower.startsWith("find ") || lower.startsWith("search ")) {
@@ -103,6 +106,20 @@ describe("Intent Quick Pattern Matching", () => {
       const result = matchQuickPatterns("settings");
       expect(result?.action).toBe("navigate");
       expect(result?.params.page).toBe("settings");
+    });
+
+    it.each([
+      ["pipelines", "pipelines"],
+      ["pipeline", "pipelines"],
+      ["go to pipelines", "pipelines"],
+      ["manage pipelines", "pipelines"],
+      ["pipeline templates", "pipelines"],
+      ["open pipeline templates", "pipelines"],
+    ])("'%s' navigates to %s", (input, page) => {
+      const result = matchQuickPatterns(input);
+      expect(result?.action).toBe("navigate");
+      expect(result?.params.page).toBe(page);
+      expect(result?.confidence).toBe(1);
     });
   });
 
