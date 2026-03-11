@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/constants/roles";
 import { ApplyToJobForm } from "./apply-to-job-form";
+import { InlineAppActions } from "./inline-app-actions";
 
 export async function generateMetadata({
   params,
@@ -24,10 +25,15 @@ export async function generateMetadata({
 
 export default async function CandidateDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const sp = searchParams ? await searchParams : {};
+  // AR5/T10 — sequential nav: opened from a job's pipeline view
+  const fromJobId = typeof sp.jobId === "string" ? sp.jobId : null;
   const session = await requireAuth();
   const supabase = await createClient();
 
@@ -56,7 +62,7 @@ export default async function CandidateDetailPage({
       id, status, applied_at,
       job_opening_id,
       job_openings:job_opening_id (title, slug),
-      pipeline_stages:current_stage_id (name, stage_type)
+      pipeline_stages:current_stage_id (name, stage_type, stage_order, pipeline_template_id)
     `,
     )
     .eq("candidate_id", id)
@@ -82,6 +88,62 @@ export default async function CandidateDetailPage({
         stageEntryByApplication[row.application_id] = new Date(row.created_at);
       }
     }
+  }
+
+  // AR4 — compute next stage for each active application
+  // Collect unique pipeline_template_ids from current stages
+  const templateIds = [...new Set(
+    (applications ?? [])
+      .filter((a) => a.status === "active")
+      .map((a) => {
+        const s = (Array.isArray(a.pipeline_stages) ? a.pipeline_stages[0] : a.pipeline_stages) as
+          | { stage_order: number; pipeline_template_id: string } | null;
+        return s?.pipeline_template_id;
+      })
+      .filter((t): t is string => Boolean(t))
+  )];
+
+  let allTemplateStages: Array<{ id: string; pipeline_template_id: string; stage_order: number }> = [];
+  if (templateIds.length > 0) {
+    const { data: ts } = await supabase
+      .from("pipeline_stages")
+      .select("id, pipeline_template_id, stage_order")
+      .in("pipeline_template_id", templateIds)
+      .is("deleted_at", null)
+      .order("stage_order", { ascending: true });
+    allTemplateStages = ts ?? [];
+  }
+
+  // For each application, find the next stage ID
+  const nextStageByApplication: Record<string, string | null> = {};
+  for (const app of applications ?? []) {
+    if (app.status !== "active") { nextStageByApplication[app.id] = null; continue; }
+    const stageRaw = (Array.isArray(app.pipeline_stages) ? app.pipeline_stages[0] : app.pipeline_stages) as
+      | { stage_order: number; pipeline_template_id: string } | null;
+    if (!stageRaw) { nextStageByApplication[app.id] = null; continue; }
+    const tplStages = allTemplateStages.filter(
+      (s) => s.pipeline_template_id === stageRaw.pipeline_template_id
+    );
+    const next = tplStages.find((s) => s.stage_order > stageRaw.stage_order);
+    nextStageByApplication[app.id] = next?.id ?? null;
+  }
+
+  // AR5/T10 — sequential prev/next candidates for a job (when opened from pipeline)
+  let prevCandidateId: string | null = null;
+  let nextCandidateId: string | null = null;
+  if (fromJobId) {
+    const { data: jobApps } = await supabase
+      .from("applications")
+      .select("candidate_id")
+      .eq("organization_id", session.orgId)
+      .eq("job_opening_id", fromJobId)
+      .eq("status", "active")
+      .is("deleted_at", null)
+      .order("applied_at", { ascending: true });
+    const candidateQueue = (jobApps ?? []).map((a: { candidate_id: string }) => a.candidate_id);
+    const myIndex = candidateQueue.indexOf(id);
+    if (myIndex > 0) prevCandidateId = candidateQueue[myIndex - 1] ?? null;
+    if (myIndex !== -1 && myIndex < candidateQueue.length - 1) nextCandidateId = candidateQueue[myIndex + 1] ?? null;
   }
 
   // Get open jobs for the "Apply to Job" form (exclude jobs already applied to)
@@ -141,12 +203,39 @@ export default async function CandidateDetailPage({
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
-      <Link
-        href="/candidates"
-        className="text-sm text-muted-foreground hover:text-foreground"
-      >
-        &larr; All Candidates
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/candidates"
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
+          &larr; All Candidates
+        </Link>
+        {/* AR5/T10 — prev/next sequential navigation (visible when opened from pipeline) */}
+        {fromJobId && (prevCandidateId || nextCandidateId) && (
+          <div className="flex items-center gap-1 text-sm">
+            {prevCandidateId ? (
+              <Link
+                href={`/candidates/${prevCandidateId}?jobId=${fromJobId}`}
+                className="rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                ← Prev
+              </Link>
+            ) : (
+              <span className="rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground/40">← Prev</span>
+            )}
+            {nextCandidateId ? (
+              <Link
+                href={`/candidates/${nextCandidateId}?jobId=${fromJobId}`}
+                className="rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                Next →
+              </Link>
+            ) : (
+              <span className="rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground/40">Next →</span>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="mt-4">
         <div className="flex flex-wrap items-center gap-3">
@@ -307,15 +396,25 @@ export default async function CandidateDetailPage({
                     {new Date(app.applied_at).toLocaleDateString()}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 text-right">
-                  {daysInStage !== null && (
-                    <span className="text-xs text-muted-foreground">
-                      {daysInStage}d in stage
+                <div className="text-right">
+                  <div className="flex items-center justify-end gap-3">
+                    {daysInStage !== null && (
+                      <span className="text-xs text-muted-foreground">
+                        {daysInStage}d in stage
+                      </span>
+                    )}
+                    <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                      {stage?.name ?? app.status}
                     </span>
+                  </div>
+                  {/* AR4 — inline advance/reject */}
+                  {can(session.orgRole, "applications:move") && (
+                    <InlineAppActions
+                      applicationId={app.id}
+                      nextStageId={nextStageByApplication[app.id] ?? null}
+                      isActive={app.status === "active"}
+                    />
                   )}
-                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                    {stage?.name ?? app.status}
-                  </span>
                 </div>
               </div>
             );

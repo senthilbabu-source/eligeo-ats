@@ -57,12 +57,14 @@ function DraggableCard({
   currentStageIndex,
   onMoveArrow,
   isMoving,
+  jobId,
 }: {
   app: Application;
   stages: Stage[];
   currentStageIndex: number;
   onMoveArrow: (applicationId: string, toStageId: string) => void;
   isMoving: boolean;
+  jobId: string;
 }) {
   const {
     attributes,
@@ -94,7 +96,7 @@ function DraggableCard({
       {...listeners}
     >
       <Link
-        href={`/candidates/${app.candidate?.id}`}
+        href={`/candidates/${app.candidate?.id}?jobId=${jobId}`}
         className="block text-sm font-medium hover:text-primary"
         onClick={(e) => {
           // Prevent navigation during drag
@@ -180,6 +182,7 @@ function StageColumn({
   isOver,
   onMoveArrow,
   movingAppId,
+  jobId,
 }: {
   stage: Stage;
   apps: Application[];
@@ -188,6 +191,7 @@ function StageColumn({
   isOver: boolean;
   onMoveArrow: (applicationId: string, toStageId: string) => void;
   movingAppId: string | null;
+  jobId: string;
 }) {
   const { setNodeRef } = useDroppable({ id: stage.id });
 
@@ -217,6 +221,7 @@ function StageColumn({
             currentStageIndex={stageIndex}
             onMoveArrow={onMoveArrow}
             isMoving={movingAppId === app.id}
+            jobId={jobId}
           />
         ))}
         {apps.length === 0 && !isOver && (
@@ -237,6 +242,7 @@ function StageColumn({
 // ── Pipeline Board (main export) ──────────────────────────
 
 export function PipelineBoard({
+  jobId,
   stages,
   applicationsByStage: initialData,
 }: {
@@ -386,6 +392,7 @@ export function PipelineBoard({
               isOver={overStageId === stage.id}
               onMoveArrow={handleMoveArrow}
               movingAppId={movingAppId}
+              jobId={jobId}
             />
           ))}
         </div>
