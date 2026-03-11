@@ -16,6 +16,40 @@
 
 ---
 
+### 2026-03-10 — [D16] Performance & Caching — complete first draft
+
+**Files created:**
+- `docs/PERFORMANCE.md` — 10 sections: performance targets (9 operation types), Redis caching strategy (cache-aside with invalidation, PII never cached), database connection pooling (transaction mode), query optimization rules, ISR for career pages with on-demand revalidation, Inngest concurrency limits (6 functions), Realtime event batching, k6 load testing (6 scenarios), frontend performance budget (LCP < 2.5s, JS < 200KB), bundle analysis.
+
+**Status:** Review.
+
+---
+
+### 2026-03-10 — [D17] Analytics & Reporting — complete first draft
+
+**Files created:**
+- `docs/modules/ANALYTICS.md` — 11 sections: 17 key metrics (pipeline + volume + source), materialized views (daily pipeline stats + monthly hiring summary) with daily Inngest refresh, time-in-stage window functions, pipeline funnel aggregation, DEI reporting consuming D13 cohort suppression rules, 7 API endpoints, 2 Inngest functions, 9 dashboard widgets, plan gating.
+
+**Status:** Review.
+
+---
+
+### 2026-03-10 — [D18] Security Runbooks — complete first draft
+
+**Files created:**
+- `docs/runbooks/SECURITY-RUNBOOKS.md` — 6 runbooks: R-01 (service outage), R-02 (database restoration with PITR), R-03 (security incident with GDPR notification), R-04 (secret rotation for 7 services), R-05 (deployment rollback), R-06 (third-party failure degradation matrix). Escalation path (L1-L4). Post-incident review template.
+
+**Files updated:**
+- `docs/INDEX.md` — D16, D17, D18 status: `⬜ Not Started` → `✅ Complete (Review)`. D18 path corrected from `docs/runbooks/` to `docs/runbooks/SECURITY-RUNBOOKS.md`.
+
+**Phase 2 complete.**
+
+**Status:** Review.
+
+**Next:** Phase 3 (D19 Onboarding, D20 White-Label, D21 i18n) — post-MVP docs.
+
+---
+
 ### 2026-03-10 — [D14] Observability & Monitoring — complete first draft
 
 **Files created:**
