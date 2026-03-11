@@ -17,6 +17,7 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 | File storage | `files` metadata table + Supabase Storage. No inline URL columns. | ADR-009 |
 | GDPR erasure | Per-candidate encryption keys. `erase_candidate()` crypto-shreds + anonymizes. | ADR-010 |
 | Build pivot | AI-first horizontal pass. Command bar + AI core before vertical features. | ADR-011 |
+| Domain architecture | `eligeo.io` (marketing) + `app.eligeo.io` (ATS app). Career portal bridges via API. | ADR-012 |
 
 **Stack (decided, from S3):** Supabase Auth · Inngest (jobs) · pgvector + Typesense (search) · UUID v4 everywhere · REST/OpenAPI · Merge.dev (HRIS) · Nylas (calendar) · Dropbox Sign (e-sign) · **OpenAI API** (embeddings, structured output, NL intent)
 
