@@ -15,6 +15,23 @@
 
 ---
 
+### 2026-03-11 — [AUTH] Phase 1: Auth + Core Tenancy
+
+- **4 database migrations** written (topological order per ADR/P-23):
+  - `00001_extensions_and_functions.sql` — uuid-ossp, pgcrypto, pg_trgm + 5 functions: `set_updated_at()`, `current_user_org_id()` (ADR-005), `is_org_member()`, `has_org_role()`, `custom_access_token_hook()` (JWT claims injection)
+  - `00002_core_tenancy_tables.sql` — organizations (18 cols, CHECK constraints for plan/status/slug), user_profiles (FK to auth.users), organization_members (5 roles, ADR-005 last_active_org_id, invite flow)
+  - `00003_audit_logs.sql` — Append-only audit trail (ADR-007 exception: no deleted_at, no RLS)
+  - `00004_rls_policies_and_triggers.sql` — Full RLS (SELECT/INSERT/UPDATE/DELETE × 3 tables), FORCE ROW LEVEL SECURITY, set_updated_at triggers, audit triggers, auto-profile creation on auth.users INSERT
+- **RBAC constants** (`src/lib/constants/roles.ts`): 5 roles × 30 permissions matrix, `can()` + `assertCan()` helpers matching D01 permission matrix exactly
+- **Auth helpers** (`src/lib/auth/`): `requireAuth()` + `getSession()` (Server Components/Actions, redirects), `requireAuthAPI()` + `requireRoleAPI()` (Route Handlers, error responses), Session type with JWT claims (orgId, orgRole, plan, featureFlags)
+- **Server Actions** (`src/lib/auth/actions.ts`): signUp (org creation + owner membership), login, logout, switchOrg (ADR-005 JWT refresh), inviteMember (service role + invite token), acceptInvite
+- **Auth pages:** Login (`/login`), Sign Up (`/signup`) with Zod v4 validation, Dashboard shell (`/dashboard`) with session display + logout
+- **Ground-truth types** updated: BrandingConfig, FeatureFlags, UserPreferences, CustomPermissions
+- **11 new RBAC tests** (14 total): full permission matrix coverage, role hierarchy validation, assertCan behavior
+- **Verification:** `npm run lint` ✅ | `npm run typecheck` ✅ | `npm run test` ✅ (14/14) | `npm run build` ✅
+- **[PLAYBOOK]** Two-layer RBAC enforcement (RLS + application can()) — the DB layer is unforgeable, the app layer is for UX. Both must agree.
+- **Next:** Verify migrations against local Supabase, then Phase 2 — Jobs + Career Portal
+
 ### 2026-03-11 — [INFRA] Phase 0: Project Initialization
 
 - **Next.js 16.1.6** scaffolded with React 19.2.3, TypeScript strict mode, Tailwind v4

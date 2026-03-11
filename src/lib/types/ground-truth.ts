@@ -38,3 +38,31 @@ export interface WebhookHeaders {
 
 /** Custom field value stored in custom_field_values.value JSONB */
 export type CustomFieldValue = string | number | boolean | string[] | null;
+
+// ── Phase 1: Core Tenancy JSONB Types ──────────────────────
+
+/** Organization branding stored in organizations.branding_config JSONB */
+export interface BrandingConfig {
+  logo_url?: string;
+  primary_color?: string;
+  career_page_header?: string;
+  career_page_footer?: string;
+}
+
+/** Organization feature flags stored in organizations.feature_flags JSONB */
+export interface FeatureFlags {
+  [flag: string]: boolean;
+}
+
+/** User preferences stored in user_profiles.preferences JSONB */
+export interface UserPreferences {
+  theme?: "light" | "dark" | "system";
+  language?: string;
+  email_notifications?: boolean;
+  dashboard_layout?: string;
+}
+
+/** Per-member permission overrides in organization_members.custom_permissions JSONB */
+export interface CustomPermissions {
+  [permission: string]: boolean;
+}
