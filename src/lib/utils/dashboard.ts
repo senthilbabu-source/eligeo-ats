@@ -42,3 +42,60 @@ export function aggregateSources(sourceRows: SourceRow[]): [string, number][] {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
 }
+
+/**
+ * Calculate source bar percentage relative to the top source count.
+ * Leading bar always fills to 100%; others scale proportionally.
+ */
+export function calcSourcePct(count: number, maxCount: number): number {
+  return Math.round((count / Math.max(1, maxCount)) * 100);
+}
+
+type StageRow = {
+  current_stage_id: string | null;
+  pipeline_stages:
+    | {
+        name: string;
+        stage_order: number;
+        stage_type: string;
+        pipeline_template_id: string;
+      }
+    | {
+        name: string;
+        stage_order: number;
+        stage_type: string;
+        pipeline_template_id: string;
+      }[]
+    | null;
+};
+
+/**
+ * Aggregate application stage rows into a sorted funnel array.
+ *
+ * If `defaultTemplateId` is provided, only stages belonging to that template
+ * are included — prevents duplicate bars in multi-template orgs (R3).
+ * If null, all stages are included (single-template org fallback).
+ *
+ * Returns stages sorted by `stage_order` ascending.
+ */
+export function aggregateFunnel(
+  stageRows: StageRow[],
+  defaultTemplateId: string | null
+): { name: string; order: number; count: number }[] {
+  const stageCounts: Record<string, { name: string; order: number; count: number }> = {};
+
+  for (const row of stageRows) {
+    const stage = Array.isArray(row.pipeline_stages)
+      ? row.pipeline_stages[0]
+      : row.pipeline_stages;
+    if (!stage || !row.current_stage_id) continue;
+    if (defaultTemplateId && stage.pipeline_template_id !== defaultTemplateId) continue;
+    const key = row.current_stage_id;
+    if (!stageCounts[key]) {
+      stageCounts[key] = { name: stage.name, order: stage.stage_order, count: 0 };
+    }
+    stageCounts[key].count++;
+  }
+
+  return Object.values(stageCounts).sort((a, b) => a.order - b.order);
+}

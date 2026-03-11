@@ -4,6 +4,55 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] R3/R4 Dashboard P1 Fixes
+
+**Phase:** Build — Phase 2.7 (UX Polish)
+**Scope:** User stories R3/R4 P1 — source attribution bar denominator, pipeline funnel template filter
+
+### Changes
+- **R4 P1-a: Source bar denominator** — was dividing by total org-wide active applications; leading bar never reached 100%. Now uses `topSources[0][1]` (max count) as denominator so leading bar fills to 100% and all others scale proportionally.
+  - Added `calcSourcePct(count, maxCount)` pure function to `src/lib/utils/dashboard.ts`
+- **R3 P1-b: Pipeline funnel template filter** — multi-template orgs saw duplicate same-named stage bars (e.g. three "Phone Screen" rows). Now queries `pipeline_templates` for `is_default=true` and filters funnel rows to stages belonging to that template only. Single-template orgs (defaultTemplateId=null) unaffected.
+  - Added `aggregateFunnel(stageRows, defaultTemplateId)` pure function to `src/lib/utils/dashboard.ts`
+  - Replaced inline aggregation loop in `dashboard/page.tsx` with the new function
+  - Added 8th query to `Promise.all` for default template ID (no extra round-trip cost)
+  - Added `pipeline_template_id` to funnel stage select
+
+### Tests
+- Added 7 new unit tests to `src/__tests__/dashboard.test.ts`: 3 for `calcSourcePct`, 4 for `aggregateFunnel`
+- **Count: 546 → 553 Vitest. All passing. Typecheck clean.**
+
+---
+
+## 2026-03-11 — [Phase 2.7] R1/R4 Dashboard P0 Bug Fixes
+
+**Phase:** Build — Phase 2.7 (UX Polish), strategic audit fix 2 of 2
+**Scope:** User stories R1/R4 — Active Jobs always 0, source attribution using wrong column
+
+### Changes
+- **Fixed: `status="published"` → `status="open"`** — `published` is not a valid `job_openings.status` CHECK value; every recruiter saw 0 Active Jobs since R1 shipped
+- **Fixed: source attribution** — query now joins `candidates!inner(source, candidate_sources(name))` via `source_id` FK; "linkedin"/"LinkedIn"/"Linked In" now aggregate as one canonical entry
+- **New: `src/lib/utils/dashboard.ts`** — `aggregateSources()` pure function: canonical name via `candidate_sources.name` → freeform `source` TEXT fallback → "Unknown"
+- Inline `sourceCounts` aggregation in `dashboard/page.tsx` replaced with `aggregateSources()` call
+
+### Tests
+- +3 Vitest unit (dashboard.test.ts): canonical name priority, TEXT fallback, null handling
+- **Total: 543 → 546 Vitest + 42 E2E = 588**
+
+### Files
+- `src/app/(app)/dashboard/page.tsx`
+- `src/lib/utils/dashboard.ts` (new)
+- `src/__tests__/dashboard.test.ts` (new)
+
+### Open (P1 — next session)
+- **R4 P1-a:** Bar denominator uses total active apps — leading bar never hits 100%. Fix: use top-source max as denominator
+- **R3 P1-b:** Funnel has no template filter — multi-template orgs see duplicate stage-name bars. Fix: filter to default/most-used template
+
+### What's next
+- Dashboard P1 fixes → C2/M3 mobile polish
+
+---
+
 ## 2026-03-11 — [Phase 2.7] Strategic Audit: J3 + Dashboard P0/P1 Bug Fixes
 
 **Phase:** Build — Phase 2.7 (UX Polish), strategic audit pass

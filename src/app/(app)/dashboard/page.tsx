@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
-import { aggregateSources } from "@/lib/utils/dashboard";
+import { aggregateSources, calcSourcePct, aggregateFunnel } from "@/lib/utils/dashboard";
 
 export const metadata: Metadata = {
   title: "Dashboard — Eligeo",
@@ -59,6 +59,7 @@ export default async function DashboardPage() {
     { data: sourceRows },
     { data: stageRows },
     { data: recentApps },
+    { data: defaultTemplateRow },
   ] = await Promise.all([
     // Active jobs — status "open" is the only valid published state (schema CHECK constraint)
     supabase
@@ -99,12 +100,12 @@ export default async function DashboardPage() {
       .eq("status", "active")
       .is("deleted_at", null),
 
-    // Pipeline funnel — applications per stage
+    // Pipeline funnel — applications per stage (with template_id for R3 filter)
     supabase
       .from("applications")
       .select(`
         current_stage_id,
-        pipeline_stages!inner(name, stage_order, stage_type)
+        pipeline_stages!inner(name, stage_order, stage_type, pipeline_template_id)
       `)
       .eq("organization_id", orgId)
       .eq("status", "active")
@@ -122,26 +123,27 @@ export default async function DashboardPage() {
       .is("deleted_at", null)
       .order("applied_at", { ascending: false })
       .limit(5),
+
+    // Default pipeline template for this org (R3 funnel filter)
+    supabase
+      .from("pipeline_templates")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("is_default", true)
+      .is("deleted_at", null)
+      .maybeSingle(),
   ]);
 
   // ── Aggregate source data ──────────────────────────────
   const topSources = aggregateSources(sourceRows ?? []);
 
-  // ── Aggregate pipeline funnel ──────────────────────────
-  const stageCounts: Record<string, { name: string; order: number; count: number }> = {};
-  for (const row of stageRows ?? []) {
-    const stage = Array.isArray(row.pipeline_stages)
-      ? row.pipeline_stages[0]
-      : row.pipeline_stages;
-    const s = stage as { name: string; stage_order: number; stage_type: string } | null;
-    if (!s || !row.current_stage_id) continue;
-    const key = row.current_stage_id as string;
-    if (!stageCounts[key]) {
-      stageCounts[key] = { name: s.name, order: s.stage_order, count: 0 };
-    }
-    stageCounts[key].count++;
-  }
-  const funnelStages = Object.values(stageCounts).sort((a, b) => a.order - b.order);
+  // ── Aggregate pipeline funnel (filtered to default template) ──
+  const defaultTemplateId = defaultTemplateRow?.id ?? null;
+  const funnelStages = aggregateFunnel(
+    // Supabase infers a wider union type for the joined columns; cast to the shape aggregateFunnel expects
+    (stageRows ?? []) as Parameters<typeof aggregateFunnel>[0],
+    defaultTemplateId
+  );
   const maxCount = Math.max(1, ...funnelStages.map((s) => s.count));
 
   return (
@@ -211,7 +213,7 @@ export default async function DashboardPage() {
             ) : (
               <div className="space-y-2">
                 {topSources.map(([source, count]) => {
-                  const pct = Math.round((count / (activeApplications ?? 1)) * 100);
+                  const pct = calcSourcePct(count, topSources[0]?.[1] ?? 1);
                   return (
                     <div key={source} className="flex items-center gap-3 text-sm">
                       <span className="w-28 shrink-0 truncate font-medium capitalize">{source}</span>

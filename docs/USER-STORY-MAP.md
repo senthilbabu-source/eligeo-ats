@@ -318,10 +318,10 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| R1 | Real-time dashboard: time-to-hire, drop-off, diversity metrics | ✅ BUILT | All | 4 metric cards, pipeline funnel, source attribution, recent apps — parallel queries (Phase 2.7). DEI in v3.0. **P0 open:** Active Jobs query uses `status="published"` (invalid — always 0). Fix pending |
+| R1 | Real-time dashboard: time-to-hire, drop-off, diversity metrics | ✅ BUILT | All | 4 metric cards, pipeline funnel, source attribution, recent apps — parallel queries (Phase 2.7). DEI in v3.0. P0 fixed 2026-03-11: Active Jobs uses `status="open"` |
 | R2 | AI proactively surfaces insights ("acceptance rate dropped 20%") | 🟠 v2.0 | Pro+ | Requires historical data baseline |
-| R3 | Pipeline velocity reports (where candidates stall) | ✅ BUILT | Growth+ | Pipeline funnel shipped in dashboard (Phase 2.7). **P1 open:** No template filter — multi-template orgs see duplicate stage-name bars. Fix pending |
-| R4 | Source attribution: which channel delivered each hire | ✅ BUILT | All | Top-5 sources shipped in dashboard (Phase 2.7). **P0 open:** reads `candidates.source` (freeform TEXT) not `source_id → candidate_sources`. **P1 open:** bar denominator uses total apps, not top-N max. Fixes pending |
+| R3 | Pipeline velocity reports (where candidates stall) | ✅ BUILT | Growth+ | Pipeline funnel shipped in dashboard (Phase 2.7). P1 fixed 2026-03-11: `aggregateFunnel()` filters to default template — no more duplicate stage bars in multi-template orgs |
+| R4 | Source attribution: which channel delivered each hire | ✅ BUILT | All | Top-5 sources shipped (Phase 2.7). P0 fixed 2026-03-11: joins `candidate_sources` via `source_id` FK. P1 fixed 2026-03-11: `calcSourcePct()` uses top-source max as denominator — leading bar fills to 100% |
 | R5 | Scheduled reports to stakeholders | 🟠 v2.0 | Pro+ | Inngest cron + PDF/email generation |
 | R6 | DEI funnel reports by gender/ethnicity/age | 🔴 v3.0+ | Pro+ | candidate_dei_data table exists. UI + compliance in v3.0 |
 | R7 | Cost-per-hire and recruiter productivity | 🟠 v2.0 | Pro+ | Requires billing + time tracking data |
@@ -432,8 +432,9 @@
 ## Phase 2.7 Priority Stack (remaining work, in order)
 
 1. ~~**J3** — Clone job + AI rewrite~~ ✅ DONE (P0 bugs fixed 2026-03-11)
-2. **R1/R3/R4 dashboard P0 fixes** — `status="open"`, source attribution via `source_id`, denominator fix, template filter ← **NEXT**
-3. **JD1/JD2/JD3/JD4** — Job description quality panel (score + inline bias highlighting)
+2. ~~**R1/R4 dashboard P0 fixes**~~ ✅ DONE (status="open", source_id join — 2026-03-11)
+3. ~~**R3/R4 dashboard P1 fixes**~~ ✅ DONE (denominator fix + template filter — 2026-03-11)
+4. **JD1/JD2/JD3/JD4** — Job description quality panel (score + inline bias highlighting) ← **NEXT**
 4. **AR4/AR5** — Inline candidate actions + sequential review queue
 5. **CP2/CP4/CP7/CP8** — Candidate profile detail improvements
 6. **CL2** — Multi-dimensional candidate list filters
