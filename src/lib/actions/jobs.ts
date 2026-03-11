@@ -146,7 +146,8 @@ export async function updateJob(formData: FormData) {
   const { error } = await supabase
     .from("job_openings")
     .update(dbUpdates)
-    .eq("id", id);
+    .eq("id", id)
+    .eq("organization_id", session.orgId);
 
   if (error) {
     return { error: "Failed to update job" };
@@ -168,6 +169,7 @@ export async function publishJob(jobId: string) {
     .from("job_openings")
     .update({ status: "open", published_at: new Date().toISOString() })
     .eq("id", jobId)
+    .eq("organization_id", session.orgId)
     .in("status", ["draft", "paused"]);
 
   if (error) {
@@ -189,6 +191,7 @@ export async function closeJob(jobId: string) {
     .from("job_openings")
     .update({ status: "closed" })
     .eq("id", jobId)
+    .eq("organization_id", session.orgId)
     .in("status", ["open", "paused"]);
 
   if (error) {
@@ -209,7 +212,8 @@ export async function deleteJob(jobId: string) {
   const { error } = await supabase
     .from("job_openings")
     .update({ deleted_at: new Date().toISOString() })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId);
 
   if (error) {
     return { error: "Failed to delete job" };

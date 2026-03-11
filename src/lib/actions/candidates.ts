@@ -122,7 +122,8 @@ export async function updateCandidate(formData: FormData) {
   const { error } = await supabase
     .from("candidates")
     .update(dbUpdates)
-    .eq("id", id);
+    .eq("id", id)
+    .eq("organization_id", session.orgId);
 
   if (error) {
     return { error: "Failed to update candidate" };
@@ -160,7 +161,8 @@ export async function moveStage(
   const { error: updateError } = await supabase
     .from("applications")
     .update({ current_stage_id: toStageId })
-    .eq("id", applicationId);
+    .eq("id", applicationId)
+    .eq("organization_id", app.organization_id);
 
   if (updateError) {
     return { error: "Failed to move stage" };
@@ -208,7 +210,8 @@ export async function rejectApplication(
       rejection_notes: notes,
     })
     .eq("id", applicationId)
-    .eq("status", "active");
+    .eq("status", "active")
+    .eq("organization_id", session.orgId);
 
   if (error) {
     return { error: "Failed to reject application" };
