@@ -4,6 +4,53 @@
 
 ---
 
+## 2026-03-11 — [Dashboard] R1/R3/R4 Wave 1 — actionable metrics, stage distribution, recent apps, mine mode cookie
+
+**Phase:** Build — R1/R3/R4 Dashboard Enhancements (Wave 1 of 3)
+**Commits:** `f7ceb50`, `6f65db6`
+**Test count:** 624 Vitest (up from ~619) + 50 E2E = 674 total. All passing. Typecheck clean. Lint clean.
+
+### Changes
+
+#### `src/app/(app)/dashboard/page.tsx` — complete rewrite
+- **R8 (Hires This Month):** Replaced "Candidates in DB" metric card with Hires This Month + avg time-to-hire. Direct query: `applications WHERE status='hired' AND hired_at >= startOfMonth`. Avg computed in-app via `reduce()` — avoids Postgres interval type complexity.
+- **R12 (Recent apps):** Extended query to include `status`, `candidate_id`, `job_openings.title`, `pipeline_stages.name`. Each row now renders `<Link href="/candidates/<id>">` with stage badge + `<StatusChip>` (hired=green, rejected/withdrawn=muted, active=primary).
+- **R13 (Mine mode cookie):** `cookies()` from `next/headers` reads `mine_mode` cookie as default. URL param `?mine=1`/`?mine=0` overrides. Logic: `mineMode = params["mine"] === "1" || (params["mine"] !== "0" && mineCookie)`.
+- **R13 (Data freshness):** Server-rendered "as of HH:MM" timestamp below page title.
+- **R11 (Stage distribution):** Section renamed "Current Stage Distribution" with ⓘ tooltip clarifying snapshot vs. Phase 3 passthrough funnel. Stage bars now `<Link href="/candidates?stage=<id>">`.
+- `<MineToggle>` client component replaces static `<Link>` toggle.
+- `noJobs` guard: when mine mode has no jobs, all dependent queries short-circuit to avoid Supabase `.in([])` behavior.
+
+#### `src/app/(app)/dashboard/mine-toggle.tsx` — NEW
+- Client component (`"use client"`). Sets `mine_mode` cookie (7-day, sameSite strict) on click, then `router.push()` with/without `?mine=1`.
+
+#### `src/app/(app)/candidates/page.tsx` — stage filter added
+- New `stageId` URL param. Pre-fetches `candidate_id` from `applications WHERE current_stage_id = stageId AND status = active`. Same pre-fetch + `.in()` pattern as existing `jobId` filter. Empty guard short-circuits if no matches.
+- `stageId` threaded through to `CandidatesLayout` and `CandidateFilterBar`.
+
+#### `src/app/(app)/candidates/filter-bar.tsx` — stageId prop
+- `stageId: string` added to props. `update()` preserves `stage` param when changing other filters. "Stage filter active" chip with `×` clear button. `hasFilters` includes stageId.
+
+#### `src/lib/utils/dashboard.ts` — 2 additions
+- `calcTimeToHire(avgDays: number | null): string` — pure function. Returns `"N day(s)"` or `"—"` for null/non-finite.
+- `aggregateFunnel()` return type extended: `id: string` added per stage entry (for `?stage=<id>` deep-link from dashboard bars).
+
+#### `src/__tests__/dashboard.test.ts` — 6 new unit tests
+- New `describe("calcTimeToHire")`: whole days, singular day, rounding (14.6→15, 14.4→14), null→"—", NaN/Infinity→"—".
+- Updated `aggregateFunnel` test to assert `id` field.
+- New `aggregateFunnel` test: "should include stage id in each result for dashboard bar links".
+
+#### `src/__tests__/e2e/dashboard.spec.ts` — 2 new E2E tests
+- E2E-18: `"recent application rows link to candidate profile"` — clicks first `ul li a`, asserts URL matches `/candidates/.+`.
+- E2E-16: `"mine mode toggle persists via cookie across reload"` — clicks My Jobs, reloads, asserts My Jobs button retains `bg-background` class.
+- Renamed existing test: "pipeline funnel" → "current stage distribution section (renamed from pipeline funnel)".
+
+### What remains (Wave 2 + Wave 3)
+- **Wave 2:** Source quality (hire rate per source, min cohort 5) + At-risk jobs widget (green empty state when all healthy). No migration needed.
+- **Wave 3:** Daily AI Briefing — Migration 021 (`org_daily_briefings`), `analytics/generate-briefing` Inngest function, `DailyBriefingCard` server component with Suspense, admin regenerate action.
+
+---
+
 ## 2026-03-11 — [Docs] R1/R3/R4 dashboard enhancement — doc sync before build
 
 **Phase:** Pre-build doc sync (R1/R3/R4 dashboard enhancements)
