@@ -16,6 +16,25 @@
 
 ---
 
+### 2026-03-10 — [META] Documentation gap analysis — 6 new docs + deferred registry
+
+**Gap analysis:** Audited all pre-code documentation needs for a best-in-class enterprise SaaS. Identified 6 missing documents and 6 intentionally deferred items.
+
+**New documents (Phase 4 — blocks infrastructure setup):**
+- D00: Competitive Analysis & Market Positioning (research-heavy)
+- D22: Security Threat Model (STRIDE, PII data flows)
+- D23: Data Migration & Import Strategy (competitor migration paths)
+- D24: Consolidated Testing Strategy (coverage, fixtures, mocks)
+- D25: User Personas & Journey Maps (5 personas, end-to-end flows)
+- D26: Error Taxonomy & Recovery Patterns (consistent error codes)
+
+**Deferred documents (trigger-based, not pre-code):**
+Email Template Visual Design, API SDK/Developer Portal, Accessibility Testing Plan, Environment Setup Guide, Third-Party API Contract Validation, Pricing Validation. Each has a documented trigger in INDEX.md — none are forgotten, all are scheduled.
+
+**Execution order:** D00 + D25 (Phase A) → D22 + D23 (Phase B) → D24 + D26 (Phase C).
+
+---
+
 ### 2026-03-10 — [AUDIT] Minor audit items resolved (m-1, m-2, m-3)
 
 Closed the 3 minor items originally deferred from the pre-code audit:

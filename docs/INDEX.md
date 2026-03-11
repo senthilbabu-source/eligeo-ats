@@ -72,6 +72,36 @@
 
 ---
 
+## Phase 4 — Pre-Code Analysis (Blocks infrastructure setup)
+
+| # | Document | Path | Priority | Status | Depends On | Description |
+|---|----------|------|----------|--------|------------|-------------|
+| D00 | **Competitive Analysis & Market Positioning** | `docs/COMPETITIVE-ANALYSIS.md` | P0 | ⬜ Not Started | — | Major ATS products (modern + legacy), pain points from real user reviews, feature gap analysis, pricing validation, positioning strategy. Informs UX priorities and marketing. |
+| D22 | **Security Threat Model** | `docs/SECURITY-THREAT-MODEL.md` | P1 | ⬜ Not Started | D01, D02, D13 | STRIDE threat analysis, attack-vector-to-control mapping, PII data flow diagram, penetration test plan. Validates our security architecture for enterprise sales. |
+| D23 | **Data Migration & Import Strategy** | `docs/DATA-MIGRATION.md` | P1 | ⬜ Not Started | D01, D19 | Competitor-to-itecbrains migration paths (Greenhouse, Lever, Ashby, BambooHR), staging tables, field mapping, validation rules, error handling, rollback strategy. Day-one customer need. |
+| D24 | **Consolidated Testing Strategy** | `docs/TESTING-STRATEGY.md` | P1 | ⬜ Not Started | D04 (ADR-004), D01 | Coverage targets, MSW mock registry, golden tenant fixture spec, test database reset strategy, E2E scenario registry, CI parallelization. Consolidates scattered test sections from D06–D12. |
+| D25 | **User Personas & Journey Maps** | `docs/USER-PERSONAS.md` | P2 | ⬜ Not Started | D00, D06–D12 | 5 persona profiles (Admin, Recruiter, Hiring Manager, Interviewer, Candidate), end-to-end journey maps, friction points, notification priority by persona. Informs navigation and dashboard design. |
+| D26 | **Error Taxonomy & Recovery Patterns** | `docs/ERROR-TAXONOMY.md` | P2 | ⬜ Not Started | D02, D14 | Application error code scheme (ATS-XXXX), consistent error response format, user-facing error messages, graceful degradation patterns, retry strategies by failure type. |
+
+---
+
+## Deferred Documents (not pre-code — trigger-based)
+
+Documents intentionally excluded from pre-code phase. Each has a specific trigger condition. Do NOT start these until the trigger fires.
+
+| Document | Trigger | Why Deferred | Depends On |
+|----------|---------|-------------|------------|
+| **Email Template Visual Design** | When building D08 notification UI (first email-sending feature) | Email HTML/branding design is UI implementation work, not architecture. D08 already defines event types and channels. | D05, D08 |
+| **API SDK & Developer Portal** | When implementing Pro tier API access | Pro+ feature. No external API consumers exist until product launches. | D02 |
+| **Accessibility Testing Plan** | Pre-launch QA phase (after all UI is built) | D05 WCAG 2.1 AA requirements are sufficient for building. Dedicated a11y audit needs real UI to test against. | D05 |
+| **Environment Setup Guide** | During infrastructure setup (next task after docs) | This IS the setup — it's created as we do it, not before. | D15 |
+| **Third-Party API Contract Validation** | When integrating each service (15 [VERIFY] markers track these) | Validated at integration time against live API docs. Training data may be stale. | D02 |
+| **Pricing Validation & A/B Testing** | Pre-launch marketing phase | D03 defines the model. Market validation requires a live product or landing page. D00 competitive analysis will provide initial benchmarking. | D03, D00 |
+
+> **Rule:** When a trigger fires, create the document, add it to the active phase above, and log it in DEVLOG. These are not forgotten — they are scheduled.
+
+---
+
 ## Tracking Documents (Meta)
 
 | Document | Path | Description |
@@ -132,6 +162,13 @@ docs/
 │   ├── security-incident.md
 │   └── secret-rotation.md
 │
+├── COMPETITIVE-ANALYSIS.md              ← D00: Market positioning
+├── SECURITY-THREAT-MODEL.md             ← D22: STRIDE analysis
+├── DATA-MIGRATION.md                    ← D23: Import strategy
+├── TESTING-STRATEGY.md                  ← D24: Consolidated test plan
+├── USER-PERSONAS.md                     ← D25: Personas & journeys
+├── ERROR-TAXONOMY.md                    ← D26: Error code scheme
+│
 ├── templates/                        ← Document boilerplates
 │   ├── MODULE-TEMPLATE.md
 │   └── ADR-TEMPLATE.md
@@ -160,6 +197,10 @@ S2 (Phase 2 Blueprint)─┤
      ▼      ▼      ▼        ▼      ▼
    D02    D03    D06-D12   D13    D09
   (API)  (Billing) (Modules) (Compliance) (Portal)
+            │      │    │       │
+            ▼      ▼    ▼       ▼
+    D00 ─→ D25   D22  D23    D24    D26
+  (Comp.)  (Personas) (Security) (Migration) (Testing) (Errors)
      │      │
      ▼      ▼
    D19    D16
