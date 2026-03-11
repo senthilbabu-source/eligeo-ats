@@ -7,6 +7,9 @@ import {
   generateEmailDraft,
   streamJobDescription,
   buildIntentContext,
+  checkJobDescriptionBias,
+  suggestJobTitle,
+  suggestSkillsDelta,
 } from "@/lib/ai/generate";
 
 vi.mock("ai", () => ({
@@ -313,5 +316,123 @@ describe("streamJobDescription", () => {
         prompt: expect.stringContaining("Senior Engineer"),
       }),
     );
+  });
+});
+
+describe("checkJobDescriptionBias", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return empty arrays when credits insufficient", async () => {
+    vi.mocked(consumeAiCredits).mockResolvedValue(false);
+
+    const result = await checkJobDescriptionBias({ text: "We need a rockstar", organizationId: ORG_ID });
+
+    expect(result.flaggedTerms).toEqual([]);
+    expect(result.suggestions).toEqual({});
+    expect(generateObject).not.toHaveBeenCalled();
+  });
+
+  it("should return flagged terms and suggestions from AI response", async () => {
+    vi.mocked(consumeAiCredits).mockResolvedValue(true);
+    vi.mocked(generateObject).mockResolvedValue({
+      object: {
+        flaggedTerms: ["rockstar", "ninja"],
+        suggestions: { rockstar: "strong performer", ninja: "expert" },
+      },
+      usage: { inputTokens: 100, outputTokens: 50 },
+    } as never);
+
+    const result = await checkJobDescriptionBias({
+      text: "We need a rockstar ninja developer",
+      organizationId: ORG_ID,
+      userId: USER_ID,
+    });
+
+    expect(result.flaggedTerms).toEqual(["rockstar", "ninja"]);
+    expect(result.suggestions).toEqual({ rockstar: "strong performer", ninja: "expert" });
+    expect(result.error).toBeUndefined();
+  });
+});
+
+describe("suggestJobTitle", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return null title when credits insufficient", async () => {
+    vi.mocked(consumeAiCredits).mockResolvedValue(false);
+
+    const result = await suggestJobTitle({
+      title: "Software Engineer",
+      intent: { reason: "new_level", newLevel: "Senior" },
+      organizationId: ORG_ID,
+    });
+
+    expect(result.suggestedTitle).toBeNull();
+    expect(result.reason).toBeNull();
+    expect(generateObject).not.toHaveBeenCalled();
+  });
+
+  it("should return suggested title with reason", async () => {
+    vi.mocked(consumeAiCredits).mockResolvedValue(true);
+    vi.mocked(generateObject).mockResolvedValue({
+      object: { suggestedTitle: "Senior Software Engineer", reason: "Level change from intent" },
+      usage: { inputTokens: 50, outputTokens: 30 },
+    } as never);
+
+    const result = await suggestJobTitle({
+      title: "Software Engineer",
+      intent: { reason: "new_level", newLevel: "Senior" },
+      organizationId: ORG_ID,
+      userId: USER_ID,
+    });
+
+    expect(result.suggestedTitle).toBe("Senior Software Engineer");
+    expect(result.reason).toBe("Level change from intent");
+    expect(result.error).toBeUndefined();
+  });
+});
+
+describe("suggestSkillsDelta", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return empty arrays when credits insufficient", async () => {
+    vi.mocked(consumeAiCredits).mockResolvedValue(false);
+
+    const result = await suggestSkillsDelta({
+      intent: { reason: "new_level" },
+      existingSkillNames: ["React"],
+      organizationId: ORG_ID,
+    });
+
+    expect(result.add).toEqual([]);
+    expect(result.remove).toEqual([]);
+    expect(generateObject).not.toHaveBeenCalled();
+  });
+
+  it("should return add and remove skill suggestions", async () => {
+    vi.mocked(consumeAiCredits).mockResolvedValue(true);
+    vi.mocked(generateObject).mockResolvedValue({
+      object: {
+        add: [{ name: "System Design", importance: "required" }],
+        remove: ["Junior mentoring"],
+      },
+      usage: { inputTokens: 80, outputTokens: 60 },
+    } as never);
+
+    const result = await suggestSkillsDelta({
+      intent: { reason: "new_level", newLevel: "Staff" },
+      existingSkillNames: ["React", "Junior mentoring"],
+      organizationId: ORG_ID,
+      userId: USER_ID,
+    });
+
+    expect(result.add).toEqual([{ name: "System Design", importance: "required" }]);
+    expect(result.remove).toEqual(["Junior mentoring"]);
+    expect(result.error).toBeUndefined();
   });
 });

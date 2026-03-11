@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { chatModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
 import { CONFIG } from "@/lib/constants/config";
+import type { CloneIntent } from "@/lib/types/ground-truth";
 
 /**
  * Generate a full job description from a title and key points.
@@ -271,4 +272,219 @@ export async function streamJobDescription(params: {
   });
 
   return result;
+}
+
+// ── Bias Schemas ────────────────────────────────────────────
+
+const biasCheckSchema = z.object({
+  flaggedTerms: z.array(z.string()),
+  suggestions: z.record(z.string(), z.string()),
+});
+
+/**
+ * Analyze a job description for biased or exclusionary language.
+ * Returns flagged terms and neutral replacement suggestions.
+ */
+export async function checkJobDescriptionBias(params: {
+  text: string;
+  organizationId: string;
+  userId?: string;
+}): Promise<{
+  flaggedTerms: string[];
+  suggestions: Record<string, string>;
+  error?: string;
+}> {
+  const { text, organizationId, userId } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "bias_check");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "bias_check",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { flaggedTerms: [], suggestions: {} };
+  }
+
+  try {
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: biasCheckSchema,
+      system:
+        "You are a DEI writing expert. Analyze job descriptions for biased, exclusionary, or gendered language. Only flag genuine bias — not neutral professional terms. Be precise.",
+      prompt: `Analyze this job description for biased or exclusionary language. Return flagged terms (exact words/phrases from the text) and their neutral alternatives.\n\n${text.slice(0, 2000)}`,
+      maxOutputTokens: CONFIG.AI.EMAIL_DRAFT_MAX_TOKENS,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "bias_check",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+    });
+
+    return {
+      flaggedTerms: object.flaggedTerms ?? [],
+      suggestions: object.suggestions ?? {},
+    };
+  } catch (err) {
+    Sentry.captureException(err);
+    return {
+      flaggedTerms: [],
+      suggestions: {},
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
+}
+
+// ── Title Suggestion Schema ─────────────────────────────────
+
+const titleSuggestionSchema = z.object({
+  suggestedTitle: z.string(),
+  reason: z.string(),
+});
+
+/**
+ * Suggest an updated job title based on clone intent (e.g. new level, new location).
+ * Returns null when no meaningful title change is warranted.
+ */
+export async function suggestJobTitle(params: {
+  title: string;
+  intent: CloneIntent;
+  organizationId: string;
+  userId?: string;
+}): Promise<{ suggestedTitle: string | null; reason: string | null; error?: string }> {
+  const { title, intent, organizationId, userId } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "title_suggestion");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "title_suggestion",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { suggestedTitle: null, reason: null };
+  }
+
+  const intentDescription = buildIntentContext(intent);
+
+  try {
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: titleSuggestionSchema,
+      system:
+        "You are a talent acquisition expert. Suggest an updated job title that reflects the clone intent. If the original title already fits, return it unchanged.",
+      prompt: `Original title: "${title}"\nClone context: ${intentDescription}\n\nSuggest an updated title and briefly explain why (1 sentence).`,
+      maxOutputTokens: 100,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "title_suggestion",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+    });
+
+    return { suggestedTitle: object.suggestedTitle, reason: object.reason };
+  } catch (err) {
+    Sentry.captureException(err);
+    return {
+      suggestedTitle: null,
+      reason: null,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
+}
+
+// ── Skills Delta Schema ─────────────────────────────────────
+
+const skillsDeltaSchema = z.object({
+  add: z.array(
+    z.object({
+      name: z.string(),
+      importance: z.enum(["required", "preferred", "nice_to_have"]),
+    }),
+  ),
+  remove: z.array(z.string()),
+});
+
+/**
+ * Suggest skills to add or remove based on clone intent and existing required skills.
+ */
+export async function suggestSkillsDelta(params: {
+  intent: CloneIntent;
+  existingSkillNames: string[];
+  organizationId: string;
+  userId?: string;
+}): Promise<{
+  add: { name: string; importance: "required" | "preferred" | "nice_to_have" }[];
+  remove: string[];
+  error?: string;
+}> {
+  const { intent, existingSkillNames, organizationId, userId } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "skills_delta");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "skills_delta",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { add: [], remove: [] };
+  }
+
+  const intentDescription = buildIntentContext(intent);
+
+  try {
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: skillsDeltaSchema,
+      system:
+        "You are a talent acquisition expert. Based on a job clone intent, suggest skills to add or remove from the requirements. Be conservative — only suggest changes that are clearly relevant to the intent.",
+      prompt: [
+        `Clone context: ${intentDescription}`,
+        `Existing required skills: ${existingSkillNames.length > 0 ? existingSkillNames.join(", ") : "none"}`,
+        "",
+        "Suggest skills to add (with importance: required/preferred/nice_to_have) and exact skill names to remove from the existing list.",
+      ].join("\n"),
+      maxOutputTokens: CONFIG.AI.EMAIL_DRAFT_MAX_TOKENS,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "skills_delta",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+    });
+
+    return { add: object.add ?? [], remove: object.remove ?? [] };
+  } catch (err) {
+    Sentry.captureException(err);
+    return {
+      add: [],
+      remove: [],
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
 }

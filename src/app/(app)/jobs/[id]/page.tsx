@@ -7,6 +7,9 @@ import { can } from "@/lib/constants/roles";
 import { JobActions } from "./job-actions";
 import { AiMatchPanel } from "./ai-match-panel";
 import { RewritePanel } from "./rewrite-panel";
+import { TitleSuggestionBadge } from "./title-suggestion";
+import { SkillsDeltaPanel } from "./skills-delta-panel";
+import type { JobMetadata } from "@/lib/types/ground-truth";
 
 export async function generateMetadata({
   params,
@@ -50,6 +53,9 @@ export default async function JobDetailPage({
 
   if (!job) notFound();
 
+  const meta = (job.metadata ?? {}) as JobMetadata;
+  const cloneIntent = meta.clone_intent ?? null;
+
   // Get application count for this job
   const { count: applicationCount } = await supabase
     .from("applications")
@@ -66,6 +72,15 @@ export default async function JobDetailPage({
       >
         &larr; All Jobs
       </Link>
+
+      {cloneIntent && (
+        <TitleSuggestionBadge
+          jobId={job.id}
+          currentTitle={job.title}
+          cloneIntent={cloneIntent}
+          canEdit={can(session.orgRole, "jobs:edit")}
+        />
+      )}
 
       <div className="mt-4 flex items-start justify-between">
         <div>
@@ -128,6 +143,10 @@ export default async function JobDetailPage({
             {job.description}
           </div>
         </div>
+      )}
+
+      {cloneIntent && (
+        <SkillsDeltaPanel jobId={job.id} cloneIntent={cloneIntent} />
       )}
 
       <RewritePanel

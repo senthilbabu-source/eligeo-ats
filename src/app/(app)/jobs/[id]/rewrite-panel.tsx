@@ -1,8 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useCompletion } from "@ai-sdk/react";
-import { acceptJobRewrite, revertJobDescription } from "@/lib/actions/jobs";
+import { acceptJobRewrite, revertJobDescription, checkJobBias } from "@/lib/actions/jobs";
+
+interface BiasResult {
+  flaggedTerms: string[];
+  suggestions: Record<string, string>;
+}
 
 interface Props {
   jobId: string;
@@ -19,11 +24,27 @@ export function RewritePanel({
 }: Props) {
   const [isAccepting, startAccept] = useTransition();
   const [isReverting, startRevert] = useTransition();
+  const [biasResult, setBiasResult] = useState<BiasResult | null>(null);
+  const [isCheckingBias, setIsCheckingBias] = useState(false);
 
   const { completion, isLoading, complete, stop, setCompletion } = useCompletion({
     api: `/api/jobs/${jobId}/rewrite`,
     onError() {
       // completion stays empty — user sees the trigger button again
+    },
+    onFinish(_prompt, finalCompletion) {
+      setIsCheckingBias(true);
+      setBiasResult(null);
+      checkJobBias(jobId, finalCompletion)
+        .then((result) => {
+          if (!result.error) {
+            setBiasResult({
+              flaggedTerms: result.flaggedTerms,
+              suggestions: result.suggestions,
+            });
+          }
+        })
+        .finally(() => setIsCheckingBias(false));
     },
   });
 
@@ -34,12 +55,14 @@ export function RewritePanel({
 
   function handleDiscard() {
     setCompletion("");
+    setBiasResult(null);
   }
 
   function handleAccept() {
     startAccept(async () => {
       await acceptJobRewrite(jobId, completion);
       setCompletion("");
+      setBiasResult(null);
     });
   }
 
@@ -107,6 +130,43 @@ export function RewritePanel({
             </div>
           </div>
 
+          {/* D1 — Bias check results */}
+          {!isStreaming && (
+            <div className="mt-3">
+              {isCheckingBias && (
+                <p className="text-xs text-muted-foreground">Checking for biased language…</p>
+              )}
+              {!isCheckingBias && biasResult && biasResult.flaggedTerms.length > 0 && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                    Bias check flagged {biasResult.flaggedTerms.length} term
+                    {biasResult.flaggedTerms.length !== 1 ? "s" : ""}:
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {biasResult.flaggedTerms.map((term) => (
+                      <span
+                        key={term}
+                        className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-900 dark:text-amber-300"
+                      >
+                        {term}
+                        {biasResult.suggestions[term] && (
+                          <span className="text-amber-500">
+                            {" "}→ {biasResult.suggestions[term]}
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {!isCheckingBias && biasResult && biasResult.flaggedTerms.length === 0 && (
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  ✓ No biased language detected
+                </p>
+              )}
+            </div>
+          )}
+
           {!isStreaming && (
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -119,10 +179,10 @@ export function RewritePanel({
               <button
                 type="button"
                 onClick={handleAccept}
-                disabled={isAccepting}
+                disabled={isAccepting || isCheckingBias}
                 className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
-                {isAccepting ? "Saving…" : "Accept"}
+                {isAccepting ? "Saving…" : isCheckingBias ? "Checking…" : "Accept"}
               </button>
             </div>
           )}

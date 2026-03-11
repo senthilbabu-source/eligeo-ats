@@ -32,7 +32,7 @@
 |---|-------|-------|------|-------|
 | J1 | AI generates full job description from title + bullets | 🔶 2.6 | Growth+ | OpenAI structured output. Command bar: "create job Senior Engineer" |
 | J2 | AI suggests required skills based on role title | 🔶 2.6 | Growth+ | Embedding similarity against skills taxonomy |
-| J3 | Clone job + AI auto-updates for new location/level | ✅ BUILT | All | Clone is CRUD, AI rewrite is Growth+. P0 bugs fixed: skills cloned, embedding queued, slug clean, description_previous stored before rewrite |
+| J3 | Clone job + AI auto-updates for new location/level | ✅ BUILT | All | Clone is CRUD, AI rewrite is Growth+. Wave 1: skills/team fields cloned, clean slug. Wave 2: CloneIntentModal (4 reasons), intent stored in metadata.clone_intent. Wave 3: streaming diff panel (RewritePanel), intent-aware rewrite prompt, acceptJobRewrite/revertJobDescription. Waves 4–5 (bias check, AI title/skills delta, checklist) pending. |
 | J4 | Approval workflows for job requisitions | 🟠 v2.0 | Pro+ | Small teams don't need this at launch |
 | J5 | AI warns about biased/exclusionary language | 🔶 2.6 | Growth+ | OpenAI moderation pass before publish |
 
@@ -432,16 +432,21 @@
 ## Phase 2.7 Priority Stack (remaining work, in order)
 
 1. ~~**J3** — Clone job + AI rewrite~~ ✅ DONE (P0 bugs fixed 2026-03-11)
+   - ~~Wave 1: skills/team fields cloned, clean slug, embedding asserted~~ ✅
+   - ~~Wave 2: CloneIntentModal, intent stored in metadata~~ ✅
+   - ~~Wave 3: streaming RewritePanel, intent-aware prompt, accept/revert~~ ✅
+   - **Wave 4: bias check (D1), AI title suggestion (D2), AI skills delta (D3)** ← next J3 sub-wave
+   - Wave 5: post-clone checklist (D4), command bar intent (E2)
 2. ~~**R1/R4 dashboard P0 fixes**~~ ✅ DONE (status="open", source_id join — 2026-03-11)
 3. ~~**R3/R4 dashboard P1 fixes**~~ ✅ DONE (denominator fix + template filter — 2026-03-11)
-4. **JD1/JD2/JD3/JD4** — Job description quality panel (score + inline bias highlighting) ← **NEXT**
-4. **AR4/AR5** — Inline candidate actions + sequential review queue
-5. **CP2/CP4/CP7/CP8** — Candidate profile detail improvements
-6. **CL2** — Multi-dimensional candidate list filters
-7. **T10** — Sequential candidate navigation in pipeline view
-8. **JI1/JI3** — Per-job dashboard sidebar and stage count
-9. **SR6** — Personalized recruiter dashboard filter by recruiter_id
-10. **C2/M3** — Mobile polish (spacing, touch targets)
+4. **JD1/JD2/JD3/JD4** — Job description quality panel (score + inline bias highlighting) ← **NEXT after J3 Wave 4**
+5. **AR4/AR5** — Inline candidate actions + sequential review queue
+6. **CP2/CP4/CP7/CP8** — Candidate profile detail improvements
+7. **CL2** — Multi-dimensional candidate list filters
+8. **T10** — Sequential candidate navigation in pipeline view
+9. **JI1/JI3** — Per-job dashboard sidebar and stage count
+10. **SR6** — Personalized recruiter dashboard filter by recruiter_id
+11. **C2/M3** — Mobile polish (spacing, touch targets)
 
 ---
 

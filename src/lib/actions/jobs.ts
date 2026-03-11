@@ -10,7 +10,7 @@ import {
   generateAndStoreEmbedding,
   buildJobEmbeddingText,
 } from "@/lib/ai/embeddings";
-import type { CloneIntent } from "@/lib/types/ground-truth";
+import type { CloneIntent, JobMetadata } from "@/lib/types/ground-truth";
 
 // ── Validation Schemas ─────────────────────────────────────
 
@@ -443,6 +443,120 @@ export async function revertJobDescription(jobId: string) {
 
   revalidatePath(`/jobs/${jobId}`);
   return { success: true };
+}
+
+// ── Bias Check ────────────────────────────────────────────
+
+export async function checkJobBias(jobId: string, text: string) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "jobs:edit");
+
+  const supabase = await createClient();
+
+  // Verify org ownership — never trust jobId alone from the client
+  const { data: job } = await supabase
+    .from("job_openings")
+    .select("id")
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!job) return { flaggedTerms: [], suggestions: {}, error: "Job not found." };
+
+  const { checkJobDescriptionBias } = await import("@/lib/ai/generate");
+  return checkJobDescriptionBias({ text, organizationId: session.orgId, userId: session.userId });
+}
+
+// ── Title Suggestion ───────────────────────────────────────
+
+export async function getJobTitleSuggestion(jobId: string) {
+  const session = await requireAuth();
+
+  const supabase = await createClient();
+  const { data: job } = await supabase
+    .from("job_openings")
+    .select("title, metadata")
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!job) return { suggestedTitle: null, reason: null, error: "Job not found." };
+
+  const meta = (job.metadata ?? {}) as JobMetadata;
+  const cloneIntent = meta.clone_intent ?? null;
+  if (!cloneIntent) return { suggestedTitle: null, reason: null };
+
+  const { suggestJobTitle } = await import("@/lib/ai/generate");
+  return suggestJobTitle({
+    title: job.title,
+    intent: cloneIntent,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
+}
+
+export async function applyTitleSuggestion(jobId: string, newTitle: string) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "jobs:edit");
+
+  const trimmed = newTitle.trim();
+  if (!trimmed || trimmed.length > 255) return { error: "Invalid title." };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("job_openings")
+    .update({ title: trimmed })
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId);
+
+  if (error) return { error: "Failed to update title." };
+
+  revalidatePath(`/jobs/${jobId}`);
+  return { success: true };
+}
+
+// ── Skills Delta ───────────────────────────────────────────
+
+export async function getJobSkillsDelta(jobId: string) {
+  const session = await requireAuth();
+
+  const supabase = await createClient();
+
+  const [{ data: job }, { data: skills }] = await Promise.all([
+    supabase
+      .from("job_openings")
+      .select("metadata")
+      .eq("id", jobId)
+      .eq("organization_id", session.orgId)
+      .is("deleted_at", null)
+      .single(),
+    supabase
+      .from("job_required_skills")
+      .select("importance, skills(name)")
+      .eq("job_id", jobId)
+      .is("deleted_at", null),
+  ]);
+
+  if (!job) return { add: [], remove: [], error: "Job not found." };
+
+  const meta = (job.metadata ?? {}) as JobMetadata;
+  const cloneIntent = meta.clone_intent ?? null;
+  if (!cloneIntent) return { add: [], remove: [] };
+
+  const existingSkillNames = (skills ?? [])
+    .map((s) => (s.skills as unknown as { name: string } | null)?.name)
+    .filter((n): n is string => Boolean(n));
+
+  const { suggestSkillsDelta } = await import("@/lib/ai/generate");
+  return suggestSkillsDelta({
+    intent: cloneIntent,
+    existingSkillNames,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
 }
 
 // ── Delete Job (soft delete) ───────────────────────────────
