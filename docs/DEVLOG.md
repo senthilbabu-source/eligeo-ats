@@ -16,6 +16,26 @@
 
 ---
 
+### 2026-03-11 — [D22] Security Threat Model — complete first draft
+
+STRIDE analysis across 6 threat categories with 30+ identified threats mapped to existing controls. Attack surface inventory (6 external, 5 internal surfaces). PII data flow diagram with classification (Restricted/Confidential/Internal/Public) and third-party service PII mapping (9 services). 35+ attack vector → control mappings across authentication, authorization, injection, data exposure, and supply chain categories.
+
+7 gaps identified (GAP-01→07): magic link single-use enforcement, CSP headers, CORS policy, webhook SSRF prevention, per-key rate limiting, automated key rotation, WAF. All low-medium severity, addressed during implementation or post-MVP.
+
+Penetration test plan: 40 test cases across 6 categories (AUTH, AUTHZ, INJ, BIZ, DATA, RATE). Test schedule: pre-launch internal + external, quarterly regression, annual full scope. Security headers specification for proxy.ts. PR security review checklist (12 items).
+
+---
+
+### 2026-03-11 — [D23] Data Migration & Import Strategy — complete first draft
+
+Extends D19 with deep migration architecture: 7-stage pipeline (Extract → Stage → Transform → Validate → Load → Verify → Report). Staging table schema (6 tables: migration_jobs, staging_candidates/applications/jobs/interviews/offers).
+
+Competitor-specific field mapping for 5 source systems via Merge.dev: Greenhouse (stage prefix stripping, scorecard mapping, EEOC handling), Lever (opportunities mapping, feedback→notes, archive reasons), Ashby (best scorecard mapping, signal ratings→numeric), BambooHR (employee filtering, simple structure), Workable (disqualification flattening, AI source tagging).
+
+Validation pipeline with Zod schemas, dedup rules (4 entity types), referential integrity checks. Error handling with thresholds (warn at 10%, abort at 30%). Rollback strategy: metadata-tagged records, soft-delete cascade, file cleanup, search re-sync. Data quality assessment with pre-migration audit and post-migration verification. CSV enhancements: interview/note import, template downloads, column auto-detection. Migration test fixtures (5 data sets). 7 Inngest functions.
+
+---
+
 ### 2026-03-11 — [D25] User Personas & Journey Maps — complete first draft
 
 5 personas defined: Admin, Recruiter, Hiring Manager, Interviewer, Candidate. Each with goals, frequency, tech comfort, frustration thresholds, key screens, and competitor pains they escaped (mapped to D00).
