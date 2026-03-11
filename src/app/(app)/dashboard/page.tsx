@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
-import { aggregateSources, calcSourcePct, aggregateFunnel } from "@/lib/utils/dashboard";
+import { aggregateSources, calcSourcePct, aggregateFunnel, calcTimeToHire } from "@/lib/utils/dashboard";
+import { MineToggle } from "./mine-toggle";
 
 export const metadata: Metadata = {
   title: "Dashboard — Eligeo",
@@ -33,11 +35,30 @@ function MetricCard({
 
 // ── Section Header ─────────────────────────────────────────
 
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title, tooltip }: { title: string; tooltip?: string }) {
   return (
-    <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-      {title}
-    </h2>
+    <div className="mb-3 flex items-center gap-1.5">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
+      {tooltip && (
+        <span title={tooltip} className="cursor-help text-xs text-muted-foreground/60">ⓘ</span>
+      )}
+    </div>
+  );
+}
+
+// ── Status chip ────────────────────────────────────────────
+
+function StatusChip({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    hired: "bg-success/10 text-success",
+    rejected: "bg-muted text-muted-foreground",
+    withdrawn: "bg-muted text-muted-foreground",
+    active: "bg-primary/10 text-primary",
+  };
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${styles[status] ?? "bg-muted text-muted-foreground"}`}>
+      {status}
+    </span>
   );
 }
 
@@ -50,13 +71,20 @@ export default async function DashboardPage({
 }) {
   const session = await requireAuth();
   const supabase = await createClient();
+  const cookieStore = await cookies();
   const orgId = session.orgId;
   const params = searchParams ? await searchParams : {};
-  // SR6: "mine" mode — filter to jobs where recruiter_id = current user
-  const mineMode = params["mine"] === "1";
+
+  // SR6 / R13: "mine" mode — URL param takes precedence, falls back to cookie
+  const mineCookie = cookieStore.get("mine_mode")?.value === "1";
+  const mineMode = params["mine"] === "1" || (params["mine"] !== "0" && mineCookie);
   const recruiterFilter = mineMode ? session.userId : null;
+
   // eslint-disable-next-line react-hooks/purity -- Server Component, runs once per request
-  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const nowMs = new Date().getTime();
+  const oneWeekAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+  const renderTime = new Date(nowMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   // SR6: when in mine mode, pre-fetch the recruiter's job IDs for filtering
   let recruiterJobIds: string[] | null = null;
@@ -70,14 +98,13 @@ export default async function DashboardPage({
     recruiterJobIds = (myJobs ?? []).map((j: { id: string }) => j.id);
   }
 
-  // SR6: when in mine mode, restrict to these job IDs (empty guard prevents full table scan)
   const myJobIds = recruiterJobIds ?? null;
   const noJobs = myJobIds !== null && myJobIds.length === 0;
 
   // Parallel queries — all org-scoped + soft-delete filtered
   const [
     { count: activeJobs },
-    { count: totalCandidates },
+    hiresResult,
     { count: activeApplications },
     { count: applicationsThisWeek },
     { data: sourceRows },
@@ -85,8 +112,7 @@ export default async function DashboardPage({
     { data: recentApps },
     { data: defaultTemplateRow },
   ] = await Promise.all([
-    // Active jobs — status "open" is the only valid published state (schema CHECK constraint)
-    // SR6: in mine mode, filter by recruiter_id directly on job_openings
+    // Active jobs
     (() => {
       const q = supabase
         .from("job_openings")
@@ -97,14 +123,22 @@ export default async function DashboardPage({
       return recruiterFilter ? q.eq("recruiter_id", recruiterFilter) : q;
     })(),
 
-    // Total candidates — always org-wide (not scoped to recruiter)
-    supabase
-      .from("candidates")
-      .select("*", { count: "exact", head: true })
-      .eq("organization_id", orgId)
-      .is("deleted_at", null),
+    // R8: Hires this month + avg time-to-hire
+    noJobs
+      ? Promise.resolve({ data: null, error: null })
+      : (() => {
+          const q = supabase
+            .from("applications")
+            .select("applied_at, hired_at")
+            .eq("organization_id", orgId)
+            .eq("status", "hired")
+            .gte("hired_at", startOfMonth)
+            .not("hired_at", "is", null)
+            .is("deleted_at", null);
+          return myJobIds ? q.in("job_opening_id", myJobIds) : q;
+        })(),
 
-    // Active applications — scoped to recruiter's jobs in mine mode
+    // Active applications
     noJobs
       ? Promise.resolve({ count: 0, data: null, error: null })
       : (() => {
@@ -117,9 +151,7 @@ export default async function DashboardPage({
           return myJobIds ? q.in("job_opening_id", myJobIds) : q;
         })(),
 
-    // Applications received this week — all statuses (volume metric, not state metric).
-    // Label on the card is "Received" / "applications this week" to reflect this accurately.
-    // Scoped to recruiter's jobs in mine mode.
+    // Applications received this week (volume metric, all statuses)
     noJobs
       ? Promise.resolve({ count: 0, data: null, error: null })
       : (() => {
@@ -132,7 +164,7 @@ export default async function DashboardPage({
           return myJobIds ? q.in("job_opening_id", myJobIds) : q;
         })(),
 
-    // Source attribution — canonical name via source_id FK, fallback to freeform source TEXT
+    // Source attribution
     noJobs
       ? Promise.resolve({ data: [], error: null })
       : (() => {
@@ -145,7 +177,7 @@ export default async function DashboardPage({
           return myJobIds ? q.in("job_opening_id", myJobIds) : q;
         })(),
 
-    // Pipeline funnel — applications per stage (with template_id for R3 filter)
+    // R11: Current stage distribution (snapshot of active applications by stage)
     noJobs
       ? Promise.resolve({ data: [], error: null })
       : (() => {
@@ -161,16 +193,17 @@ export default async function DashboardPage({
           return myJobIds ? q.in("job_opening_id", myJobIds) : q;
         })(),
 
-    // Recent 5 applications — scoped to recruiter's jobs in mine mode
+    // R12: Recent 5 applications — with status + stage name for actionable rows
     noJobs
       ? Promise.resolve({ data: [], error: null })
       : (() => {
           const q = supabase
             .from("applications")
             .select(`
-              id, applied_at,
+              id, applied_at, status, candidate_id,
               candidates!inner(full_name),
-              job_openings!inner(title)
+              job_openings!inner(title),
+              pipeline_stages:current_stage_id(name)
             `)
             .eq("organization_id", orgId)
             .is("deleted_at", null)
@@ -179,7 +212,7 @@ export default async function DashboardPage({
           return myJobIds ? q.in("job_opening_id", myJobIds) : q;
         })(),
 
-    // Default pipeline template for this org (R3 funnel filter)
+    // Default pipeline template for funnel filter (R3)
     supabase
       .from("pipeline_templates")
       .select("id")
@@ -189,13 +222,24 @@ export default async function DashboardPage({
       .maybeSingle(),
   ]);
 
+  // ── R8: Compute hires count + avg time-to-hire ──────────
+  const hiresRows = (hiresResult.data ?? []) as Array<{ applied_at: string; hired_at: string }>;
+  const hiresThisMonth = hiresRows.length;
+  let avgDays: number | null = null;
+  if (hiresRows.length > 0) {
+    const total = hiresRows.reduce((sum, r) => {
+      const diff = (new Date(r.hired_at).getTime() - new Date(r.applied_at).getTime()) / 86400000;
+      return sum + diff;
+    }, 0);
+    avgDays = total / hiresRows.length;
+  }
+
   // ── Aggregate source data ──────────────────────────────
   const topSources = aggregateSources(sourceRows ?? []);
 
-  // ── Aggregate pipeline funnel (filtered to default template) ──
+  // ── Aggregate stage distribution (filtered to default template) ──
   const defaultTemplateId = defaultTemplateRow?.id ?? null;
   const funnelStages = aggregateFunnel(
-    // Supabase infers a wider union type for the joined columns; cast to the shape aggregateFunnel expects
     (stageRows ?? []) as Parameters<typeof aggregateFunnel>[0],
     defaultTemplateId
   );
@@ -204,22 +248,13 @@ export default async function DashboardPage({
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        {/* SR6 — Recruiter personalization toggle */}
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted p-1 text-sm">
-          <Link
-            href="/dashboard"
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${!mineMode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            All Jobs
-          </Link>
-          <Link
-            href="/dashboard?mine=1"
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${mineMode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            My Jobs
-          </Link>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          {/* R13: data freshness timestamp */}
+          <p className="mt-0.5 text-xs text-muted-foreground">as of {renderTime}</p>
         </div>
+        {/* R13: Mine mode toggle — reads/sets cookie via client component */}
+        <MineToggle mineMode={mineMode} />
       </div>
 
       {/* ── Top Metrics ── */}
@@ -230,16 +265,18 @@ export default async function DashboardPage({
           sub="published"
           href="/jobs"
         />
+        {/* R8: Hires This Month replaces "Candidates in DB" (wrong metric for hiring dashboard) */}
         <MetricCard
-          label="Candidates"
-          value={totalCandidates ?? 0}
-          sub="in database"
+          label="Hires"
+          value={hiresThisMonth}
+          sub={`this month · avg ${calcTimeToHire(avgDays)} to hire`}
           href="/candidates"
         />
         <MetricCard
           label="Active Applications"
           value={activeApplications ?? 0}
           sub="in pipeline"
+          href="/candidates"
         />
         <MetricCard
           label="Received"
@@ -249,16 +286,23 @@ export default async function DashboardPage({
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
-        {/* ── Pipeline Funnel ── */}
+        {/* ── R11: Current Stage Distribution (snapshot, not passthrough funnel) ── */}
         <div>
-          <SectionHeader title="Pipeline Funnel" />
+          <SectionHeader
+            title="Current Stage Distribution"
+            tooltip="Shows where active candidates are right now. Flow-through funnel (with passthrough rates) available in Phase 3."
+          />
           <div className="rounded-lg border border-border bg-card p-5">
             {funnelStages.length === 0 ? (
               <p className="text-sm text-muted-foreground">No active applications.</p>
             ) : (
               <div className="space-y-3">
                 {funnelStages.map((stage) => (
-                  <div key={stage.name}>
+                  <Link
+                    key={stage.name}
+                    href={`/candidates?stage=${stage.id}`}
+                    className="block hover:opacity-80"
+                  >
                     <div className="mb-1 flex items-center justify-between text-xs">
                       <span className="font-medium">{stage.name}</span>
                       <span className="tabular-nums text-muted-foreground">{stage.count}</span>
@@ -269,7 +313,7 @@ export default async function DashboardPage({
                         style={{ width: `${Math.round((stage.count / maxCount) * 100)}%` }}
                       />
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -307,7 +351,7 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      {/* ── Recent Applications ── */}
+      {/* ── R12: Recent Applications — with links, stage, status ── */}
       <div className="mt-8">
         <SectionHeader title="Recent Applications" />
         <div className="rounded-lg border border-border bg-card">
@@ -318,15 +362,30 @@ export default async function DashboardPage({
               {(recentApps ?? []).map((app) => {
                 const candidate = Array.isArray(app.candidates) ? app.candidates[0] : app.candidates;
                 const job = Array.isArray(app.job_openings) ? app.job_openings[0] : app.job_openings;
+                const stage = Array.isArray(app.pipeline_stages) ? app.pipeline_stages[0] : app.pipeline_stages;
                 const c = candidate as { full_name: string } | null;
                 const j = job as { title: string } | null;
+                const s = stage as { name: string } | null;
                 return (
-                  <li key={app.id} className="flex items-center justify-between px-5 py-3 text-sm">
-                    <span className="font-medium">{c?.full_name ?? "Unknown"}</span>
-                    <span className="text-muted-foreground">{j?.title ?? "—"}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(app.applied_at).toLocaleDateString()}
-                    </span>
+                  <li key={app.id}>
+                    <Link
+                      href={`/candidates/${app.candidate_id}`}
+                      className="flex items-center justify-between px-5 py-3 text-sm hover:bg-muted/30"
+                    >
+                      <span className="font-medium">{c?.full_name ?? "Unknown"}</span>
+                      <span className="hidden text-muted-foreground sm:block">{j?.title ?? "—"}</span>
+                      <div className="flex items-center gap-2">
+                        {s?.name && (
+                          <span className="hidden rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground md:inline">
+                            {s.name}
+                          </span>
+                        )}
+                        <StatusChip status={app.status} />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(app.applied_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </Link>
                   </li>
                 );
               })}

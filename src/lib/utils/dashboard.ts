@@ -3,6 +3,18 @@
  * Extracted for unit testability (dashboard/page.tsx is a Server Component).
  */
 
+/**
+ * Format avg time-to-hire (float days) into a human-readable string.
+ *
+ * The DB query uses EXTRACT(EPOCH FROM (hired_at - applied_at)) / 86400,
+ * which returns a float (not a Postgres interval). Returns "—" when no data.
+ */
+export function calcTimeToHire(avgDays: number | null): string {
+  if (avgDays === null || !isFinite(avgDays)) return "—";
+  const rounded = Math.round(avgDays);
+  return `${rounded} day${rounded !== 1 ? "s" : ""}`;
+}
+
 type CandidateSourceRecord = { name: string };
 
 type CandidateSourceRow = {
@@ -81,8 +93,8 @@ type StageRow = {
 export function aggregateFunnel(
   stageRows: StageRow[],
   defaultTemplateId: string | null
-): { name: string; order: number; count: number }[] {
-  const stageCounts: Record<string, { name: string; order: number; count: number }> = {};
+): { id: string; name: string; order: number; count: number }[] {
+  const stageCounts: Record<string, { id: string; name: string; order: number; count: number }> = {};
 
   for (const row of stageRows) {
     const stage = Array.isArray(row.pipeline_stages)
@@ -92,7 +104,7 @@ export function aggregateFunnel(
     if (defaultTemplateId && stage.pipeline_template_id !== defaultTemplateId) continue;
     const key = row.current_stage_id;
     if (!stageCounts[key]) {
-      stageCounts[key] = { name: stage.name, order: stage.stage_order, count: 0 };
+      stageCounts[key] = { id: row.current_stage_id, name: stage.name, order: stage.stage_order, count: 0 };
     }
     stageCounts[key].count++;
   }

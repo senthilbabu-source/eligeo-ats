@@ -25,6 +25,8 @@ export default async function CandidatesPage({
   const query = typeof rawParams.q === "string" ? rawParams.q.trim() : "";
   const sourceId = typeof rawParams.source === "string" ? rawParams.source : "";
   const jobId = typeof rawParams.job === "string" ? rawParams.job : "";
+  // R11 (Wave 1) — stage filter: from dashboard "Current Stage Distribution" bar links
+  const stageId = typeof rawParams.stage === "string" ? rawParams.stage : "";
 
   // CL2 — fetch filter options in parallel
   const [{ data: sources }, { data: openJobs }] = await Promise.all([
@@ -55,6 +57,19 @@ export default async function CandidatesPage({
     jobCandidateIds = (apps ?? []).map((a: { candidate_id: string }) => a.candidate_id);
   }
 
+  // R11 (Wave 1) — stage filter: pre-fetch candidate IDs currently in this stage
+  let stageCandidateIds: string[] | null = null;
+  if (stageId) {
+    const { data: stageApps } = await supabase
+      .from("applications")
+      .select("candidate_id")
+      .eq("organization_id", session.orgId)
+      .eq("current_stage_id", stageId)
+      .eq("status", "active")
+      .is("deleted_at", null);
+    stageCandidateIds = (stageApps ?? []).map((a: { candidate_id: string }) => a.candidate_id);
+  }
+
   // Base query builder — apply all active filters
   let q = supabase
     .from("candidates")
@@ -74,7 +89,6 @@ export default async function CandidatesPage({
   }
   if (jobCandidateIds !== null) {
     if (jobCandidateIds.length === 0) {
-      // No candidates for this job — return empty
       const emptyMeta = buildPaginationMeta(0, params);
       return (
         <CandidatesLayout
@@ -84,12 +98,33 @@ export default async function CandidatesPage({
           query={query}
           sourceId={sourceId}
           jobId={jobId}
+          stageId={stageId}
           candidates={[]}
           meta={emptyMeta}
         />
       );
     }
     q = q.in("id", jobCandidateIds);
+  }
+
+  if (stageCandidateIds !== null) {
+    if (stageCandidateIds.length === 0) {
+      const emptyMeta = buildPaginationMeta(0, params);
+      return (
+        <CandidatesLayout
+          session={session}
+          sources={sources ?? []}
+          openJobs={openJobs ?? []}
+          query={query}
+          sourceId={sourceId}
+          jobId={jobId}
+          stageId={stageId}
+          candidates={[]}
+          meta={emptyMeta}
+        />
+      );
+    }
+    q = q.in("id", stageCandidateIds);
   }
 
   const { data: candidates, count } = await q
@@ -106,6 +141,7 @@ export default async function CandidatesPage({
       query={query}
       sourceId={sourceId}
       jobId={jobId}
+      stageId={stageId}
       candidates={candidates ?? []}
       meta={meta}
     />
@@ -135,6 +171,7 @@ function CandidatesLayout({
   query,
   sourceId,
   jobId,
+  stageId,
   candidates,
   meta,
 }: {
@@ -144,6 +181,7 @@ function CandidatesLayout({
   query: string;
   sourceId: string;
   jobId: string;
+  stageId: string;
   candidates: CandidateRow[];
   meta: ReturnType<typeof buildPaginationMeta>;
 }) {
@@ -173,6 +211,7 @@ function CandidatesLayout({
         query={query}
         sourceId={sourceId}
         jobId={jobId}
+        stageId={stageId}
       />
 
       <div className="mt-4">

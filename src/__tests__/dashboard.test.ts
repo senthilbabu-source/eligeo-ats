@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { aggregateSources, calcSourcePct, aggregateFunnel } from "@/lib/utils/dashboard";
+import { aggregateSources, calcSourcePct, aggregateFunnel, calcTimeToHire } from "@/lib/utils/dashboard";
 
 describe("aggregateSources", () => {
   it("should use candidate_sources.name (canonical) when source_id is set", () => {
@@ -55,6 +55,30 @@ describe("calcSourcePct", () => {
   });
 });
 
+describe("calcTimeToHire", () => {
+  it("should format whole days correctly", () => {
+    expect(calcTimeToHire(14)).toBe("14 days");
+  });
+
+  it("should use singular 'day' for exactly 1 day", () => {
+    expect(calcTimeToHire(1)).toBe("1 day");
+  });
+
+  it("should round fractional days", () => {
+    expect(calcTimeToHire(14.6)).toBe("15 days");
+    expect(calcTimeToHire(14.4)).toBe("14 days");
+  });
+
+  it("should return '—' when null (no hires yet)", () => {
+    expect(calcTimeToHire(null)).toBe("—");
+  });
+
+  it("should return '—' for non-finite values", () => {
+    expect(calcTimeToHire(NaN)).toBe("—");
+    expect(calcTimeToHire(Infinity)).toBe("—");
+  });
+});
+
 describe("aggregateFunnel", () => {
   const TEMPLATE_A = "tpl-a-uuid";
   const TEMPLATE_B = "tpl-b-uuid";
@@ -91,6 +115,13 @@ describe("aggregateFunnel", () => {
     const result = aggregateFunnel(rows, TEMPLATE_A);
     expect(result).toHaveLength(1);
     expect(result.at(0)?.name).toBe("Applied");
+    expect(result.at(0)?.id).toBe("s1");
+  });
+
+  it("should include stage id in each result for dashboard bar links", () => {
+    const rows = [makeRow("s1", "Applied", 1, TEMPLATE_A)];
+    const result = aggregateFunnel(rows, TEMPLATE_A);
+    expect(result.at(0)?.id).toBe("s1");
   });
 
   it("should aggregate multiple applications in the same stage", () => {

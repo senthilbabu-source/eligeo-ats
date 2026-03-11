@@ -9,9 +9,10 @@ interface Props {
   query: string;
   sourceId: string;
   jobId: string;
+  stageId: string;
 }
 
-export function CandidateFilterBar({ sources, openJobs, query, sourceId, jobId }: Props) {
+export function CandidateFilterBar({ sources, openJobs, query, sourceId, jobId, stageId }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -22,13 +23,14 @@ export function CandidateFilterBar({ sources, openJobs, query, sourceId, jobId }
       if (key !== "q" && query) sp.set("q", query);
       if (key !== "source" && sourceId) sp.set("source", sourceId);
       if (key !== "job" && jobId) sp.set("job", jobId);
+      if (key !== "stage" && stageId) sp.set("stage", stageId);
       if (value) sp.set(key, value);
       router.push(`${pathname}?${sp.toString()}`);
     },
-    [router, pathname, query, sourceId, jobId],
+    [router, pathname, query, sourceId, jobId, stageId],
   );
 
-  const hasFilters = query || sourceId || jobId;
+  const hasFilters = query || sourceId || jobId || stageId;
 
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -79,6 +81,21 @@ export function CandidateFilterBar({ sources, openJobs, query, sourceId, jobId }
             </option>
           ))}
         </select>
+      )}
+
+      {/* Stage filter active chip (set by dashboard bar link) */}
+      {stageId && (
+        <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+          Stage filter active
+          <button
+            type="button"
+            aria-label="Clear stage filter"
+            onClick={() => update("stage", "")}
+            className="ml-0.5 hover:opacity-70"
+          >
+            ×
+          </button>
+        </span>
       )}
 
       {/* Clear filters */}

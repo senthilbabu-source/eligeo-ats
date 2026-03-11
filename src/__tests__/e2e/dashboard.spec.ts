@@ -27,9 +27,9 @@ test.describe("Dashboard", () => {
     await expect(page.getByText(/this week/i)).toBeVisible();
   });
 
-  test("dashboard shows pipeline funnel section", async ({ page }) => {
+  test("dashboard shows current stage distribution section (renamed from pipeline funnel)", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByText(/pipeline funnel/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/current stage distribution/i)).toBeVisible({ timeout: 5000 });
   });
 
   test("dashboard shows source attribution section", async ({ page }) => {
@@ -49,5 +49,27 @@ test.describe("Dashboard", () => {
     // Active jobs card links to /jobs
     await page.getByText(/active jobs/i).click();
     await expect(page).toHaveURL(/\/jobs/);
+  });
+
+  // E2E-18: Recent apps navigation
+  test("recent application rows link to candidate profile", async ({ page }) => {
+    await page.goto("/dashboard");
+    await expect(page.getByText(/recent applications/i)).toBeVisible({ timeout: 5000 });
+    // Click first application row — should navigate to /candidates/<id>
+    const firstRow = page.locator("ul li a").first();
+    await expect(firstRow).toBeVisible();
+    await firstRow.click();
+    await expect(page).toHaveURL(/\/candidates\/.+/, { timeout: 8000 });
+  });
+
+  // E2E-16: Mine mode cookie persistence (R13)
+  test("mine mode toggle persists via cookie across reload", async ({ page }) => {
+    await page.goto("/dashboard");
+    // Click "My Jobs" toggle
+    await page.getByRole("button", { name: /my jobs/i }).click();
+    await expect(page).toHaveURL(/mine=1/, { timeout: 5000 });
+    // Reload — cookie should restore mine mode without URL param
+    await page.goto("/dashboard");
+    await expect(page.getByRole("button", { name: /my jobs/i })).toHaveClass(/bg-background/, { timeout: 5000 });
   });
 });
