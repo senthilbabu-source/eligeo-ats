@@ -1,24 +1,23 @@
-import OpenAI from "openai";
+import { createOpenAI } from "@ai-sdk/openai";
 
 /**
- * Singleton OpenAI client. Used server-side only.
+ * AI SDK OpenAI provider. Used server-side only.
  * Configured via OPENAI_API_KEY env var.
  */
-let _client: OpenAI | null = null;
+const openaiProvider = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-export function getOpenAIClient(): OpenAI {
-  if (!_client) {
-    _client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-  return _client;
-}
+/** Structured output, intent parsing, generation */
+export const chatModel = openaiProvider("gpt-4o-mini");
 
-/** Models used across the app */
+/** Embedding generation (1536 dimensions) */
+export const embeddingModel = openaiProvider.embedding(
+  "text-embedding-3-small",
+);
+
+/** Model ID strings for logging */
 export const AI_MODELS = {
-  /** Structured output, intent parsing, generation */
   chat: "gpt-4o-mini" as const,
-  /** Embedding generation (1536 dimensions) */
   embedding: "text-embedding-3-small" as const,
 };

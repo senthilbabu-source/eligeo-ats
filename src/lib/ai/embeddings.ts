@@ -1,4 +1,5 @@
-import { getOpenAIClient, AI_MODELS } from "./client";
+import { embed } from "ai";
+import { embeddingModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -53,7 +54,7 @@ export function buildJobEmbeddingText(job: {
 }
 
 /**
- * Generate an embedding vector via OpenAI and store it in the database.
+ * Generate an embedding vector via AI SDK and store it in the database.
  * Handles credit checking, API call, storage, and usage logging.
  */
 export async function generateAndStoreEmbedding(params: {
@@ -82,17 +83,12 @@ export async function generateAndStoreEmbedding(params: {
   }
 
   try {
-    // 2. Generate embedding
-    const openai = getOpenAIClient();
-    const response = await openai.embeddings.create({
-      model: AI_MODELS.embedding,
-      input: text.slice(0, 8191), // Model max input
+    // 2. Generate embedding via AI SDK
+    const { embedding, usage } = await embed({
+      model: embeddingModel,
+      value: text.slice(0, 8191), // Model max input
     });
 
-    const embedding = response.data[0]?.embedding;
-    if (!embedding) {
-      throw new Error("No embedding returned from OpenAI");
-    }
     const latencyMs = Date.now() - startTime;
 
     // 3. Store embedding in database
@@ -118,7 +114,7 @@ export async function generateAndStoreEmbedding(params: {
       entityType,
       entityId,
       model: AI_MODELS.embedding,
-      tokensInput: response.usage?.total_tokens,
+      tokensInput: usage?.tokens,
       latencyMs,
       status: "success",
     });

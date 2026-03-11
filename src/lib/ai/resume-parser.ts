@@ -1,33 +1,42 @@
-import { getOpenAIClient, AI_MODELS } from "./client";
+import { generateObject } from "ai";
+import { z } from "zod";
+import { chatModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
 
 /**
- * Parsed resume data extracted by OpenAI structured output.
+ * Zod schema for parsed resume data.
+ * Replaces the manual JSON schema — type-safe and validated at runtime.
  */
-export interface ParsedResume {
-  full_name: string | null;
-  email: string | null;
-  phone: string | null;
-  current_title: string | null;
-  current_company: string | null;
-  location: string | null;
-  linkedin_url: string | null;
-  skills: string[];
-  summary: string | null;
-  years_of_experience: number | null;
-  education: Array<{
-    institution: string;
-    degree: string;
-    field: string | null;
-    year: number | null;
-  }>;
-  experience: Array<{
-    company: string;
-    title: string;
-    duration: string | null;
-    description: string | null;
-  }>;
-}
+export const parsedResumeSchema = z.object({
+  full_name: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  current_title: z.string().nullable(),
+  current_company: z.string().nullable(),
+  location: z.string().nullable(),
+  linkedin_url: z.string().nullable(),
+  skills: z.array(z.string()),
+  summary: z.string().nullable(),
+  years_of_experience: z.number().nullable(),
+  education: z.array(
+    z.object({
+      institution: z.string(),
+      degree: z.string(),
+      field: z.string().nullable(),
+      year: z.number().nullable(),
+    }),
+  ),
+  experience: z.array(
+    z.object({
+      company: z.string(),
+      title: z.string(),
+      duration: z.string().nullable(),
+      description: z.string().nullable(),
+    }),
+  ),
+});
+
+export type ParsedResume = z.infer<typeof parsedResumeSchema>;
 
 const RESUME_PARSE_PROMPT = `You are an expert ATS resume parser. Extract structured data from the resume text below.
 
@@ -35,12 +44,11 @@ Rules:
 - Extract ONLY what is explicitly stated. Do not infer or fabricate.
 - For skills, extract technical skills, tools, frameworks, and languages. Normalize casing (e.g., "javascript" → "JavaScript").
 - For years_of_experience, calculate from the earliest work experience to the most recent. If unclear, return null.
-- If a field is not present in the resume, return null (or empty array for lists).
-- Return valid JSON matching the schema exactly.`;
+- If a field is not present in the resume, return null (or empty array for lists).`;
 
 /**
- * Parse resume text using OpenAI structured output.
- * Returns extracted candidate data fields.
+ * Parse resume text using AI SDK structured output.
+ * Returns extracted candidate data fields with Zod validation.
  */
 export async function parseResume(params: {
   resumeText: string;
@@ -67,80 +75,14 @@ export async function parseResume(params: {
   }
 
   try {
-    const openai = getOpenAIClient();
-
-    const response = await openai.chat.completions.create({
-      model: AI_MODELS.chat,
-      messages: [
-        { role: "system", content: RESUME_PARSE_PROMPT },
-        { role: "user", content: resumeText.slice(0, 15000) },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "parsed_resume",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              full_name: { type: ["string", "null"] },
-              email: { type: ["string", "null"] },
-              phone: { type: ["string", "null"] },
-              current_title: { type: ["string", "null"] },
-              current_company: { type: ["string", "null"] },
-              location: { type: ["string", "null"] },
-              linkedin_url: { type: ["string", "null"] },
-              skills: { type: "array", items: { type: "string" } },
-              summary: { type: ["string", "null"] },
-              years_of_experience: { type: ["number", "null"] },
-              education: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    institution: { type: "string" },
-                    degree: { type: "string" },
-                    field: { type: ["string", "null"] },
-                    year: { type: ["number", "null"] },
-                  },
-                  required: ["institution", "degree", "field", "year"],
-                  additionalProperties: false,
-                },
-              },
-              experience: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    company: { type: "string" },
-                    title: { type: "string" },
-                    duration: { type: ["string", "null"] },
-                    description: { type: ["string", "null"] },
-                  },
-                  required: ["company", "title", "duration", "description"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: [
-              "full_name", "email", "phone", "current_title", "current_company",
-              "location", "linkedin_url", "skills", "summary",
-              "years_of_experience", "education", "experience",
-            ],
-            additionalProperties: false,
-          },
-        },
-      },
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: parsedResumeSchema,
+      system: RESUME_PARSE_PROMPT,
+      prompt: resumeText.slice(0, 15000),
     });
 
     const latencyMs = Date.now() - startTime;
-    const content = response.choices[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("Empty response from OpenAI");
-    }
-
-    const parsed: ParsedResume = JSON.parse(content);
 
     await logAiUsage({
       organizationId,
@@ -149,13 +91,13 @@ export async function parseResume(params: {
       entityType: "candidate",
       entityId,
       model: AI_MODELS.chat,
-      tokensInput: response.usage?.prompt_tokens,
-      tokensOutput: response.usage?.completion_tokens,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
       latencyMs,
       status: "success",
     });
 
-    return { data: parsed };
+    return { data: object };
   } catch (err) {
     const latencyMs = Date.now() - startTime;
     const message = err instanceof Error ? err.message : "Unknown error";

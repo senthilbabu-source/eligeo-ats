@@ -1,4 +1,6 @@
-import { getOpenAIClient, AI_MODELS } from "./client";
+import { generateObject } from "ai";
+import { z } from "zod";
+import { chatModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
 
 /**
@@ -21,6 +23,26 @@ export interface ParsedIntent {
   display: string; // Human-readable description of what will happen
 }
 
+const intentActions = [
+  "search_candidates",
+  "search_jobs",
+  "create_job",
+  "create_candidate",
+  "move_stage",
+  "draft_email",
+  "generate_job_description",
+  "find_matches",
+  "navigate",
+  "unknown",
+] as const;
+
+const intentSchema = z.object({
+  action: z.enum(intentActions),
+  params: z.record(z.string(), z.string()),
+  confidence: z.number(),
+  display: z.string(),
+});
+
 const INTENT_PROMPT = `You are a command parser for an ATS (Applicant Tracking System) called Eligeo.
 Parse the user's natural language input into a structured intent.
 
@@ -34,9 +56,7 @@ Available actions:
 - generate_job_description: Generate a job description. Params: title, key_points (optional)
 - find_matches: Find AI-matched candidates for a job. Params: job (title or description)
 - navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings)
-- unknown: Cannot determine intent
-
-Return JSON with: action, params (object), confidence (0-1), display (human-readable sentence).`;
+- unknown: Cannot determine intent`;
 
 /**
  * Parse natural language input into a structured intent.
@@ -66,39 +86,33 @@ export async function parseIntent(params: {
   }
 
   try {
-    const openai = getOpenAIClient();
-
-    const response = await openai.chat.completions.create({
-      model: AI_MODELS.chat,
-      messages: [
-        { role: "system", content: INTENT_PROMPT },
-        { role: "user", content: input },
-      ],
-      response_format: { type: "json_object" },
-      max_tokens: 200,
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: intentSchema,
+      system: INTENT_PROMPT,
+      prompt: input,
+      maxOutputTokens: 200,
     });
 
     const latencyMs = Date.now() - startTime;
-    const content = response.choices[0]?.message?.content;
-    const parsed = content ? JSON.parse(content) : {};
 
     await logAiUsage({
       organizationId,
       userId,
       action: "nl_intent",
       model: AI_MODELS.chat,
-      tokensInput: response.usage?.prompt_tokens,
-      tokensOutput: response.usage?.completion_tokens,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
       latencyMs,
       status: "success",
-      metadata: { input, parsed_action: parsed.action },
+      metadata: { input, parsed_action: object.action },
     });
 
     return {
-      action: parsed.action ?? "unknown",
-      params: parsed.params ?? {},
-      confidence: parsed.confidence ?? 0,
-      display: parsed.display ?? "Unknown command",
+      action: object.action ?? "unknown",
+      params: object.params ?? {},
+      confidence: object.confidence ?? 0,
+      display: object.display ?? "Unknown command",
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

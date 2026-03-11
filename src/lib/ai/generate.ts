@@ -1,4 +1,6 @@
-import { getOpenAIClient, AI_MODELS } from "./client";
+import { generateText, generateObject } from "ai";
+import { z } from "zod";
+import { chatModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
 
 /**
@@ -28,8 +30,6 @@ export async function generateJobDescription(params: {
   }
 
   try {
-    const openai = getOpenAIClient();
-
     const prompt = [
       `Write a professional job description for the role: ${title}`,
       department && `Department: ${department}`,
@@ -42,21 +42,15 @@ export async function generateJobDescription(params: {
       .filter(Boolean)
       .join("\n");
 
-    const response = await openai.chat.completions.create({
-      model: AI_MODELS.chat,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a talent acquisition expert who writes compelling, inclusive job descriptions. Return plain text with section headers.",
-        },
-        { role: "user", content: prompt },
-      ],
-      max_tokens: 1500,
+    const { text, usage } = await generateText({
+      model: chatModel,
+      system:
+        "You are a talent acquisition expert who writes compelling, inclusive job descriptions. Return plain text with section headers.",
+      prompt,
+      maxOutputTokens: 1500,
     });
 
     const latencyMs = Date.now() - startTime;
-    const text = response.choices[0]?.message?.content ?? null;
 
     await logAiUsage({
       organizationId,
@@ -64,8 +58,8 @@ export async function generateJobDescription(params: {
       action: "job_description_generate",
       entityType: "job_opening",
       model: AI_MODELS.chat,
-      tokensInput: response.usage?.prompt_tokens,
-      tokensOutput: response.usage?.completion_tokens,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
       latencyMs,
       status: "success",
     });
@@ -84,6 +78,11 @@ export async function generateJobDescription(params: {
     return { text: null, error: message };
   }
 }
+
+const emailDraftSchema = z.object({
+  subject: z.string(),
+  body: z.string(),
+});
 
 /**
  * Generate an AI-drafted email (rejection, outreach, update).
@@ -132,50 +131,38 @@ export async function generateEmailDraft(params: {
   };
 
   try {
-    const openai = getOpenAIClient();
-
-    const response = await openai.chat.completions.create({
-      model: AI_MODELS.chat,
-      messages: [
-        {
-          role: "system",
-          content: `You are a recruiter drafting emails. Tone: ${tone}. ${typeInstructions[type] ?? ""}
-Return JSON with "subject" and "body" fields. Body should be plain text with line breaks, not HTML.`,
-        },
-        {
-          role: "user",
-          content: [
-            `Candidate: ${candidateName}`,
-            `Role: ${jobTitle}`,
-            context && `Context: ${context}`,
-          ]
-            .filter(Boolean)
-            .join("\n"),
-        },
-      ],
-      response_format: { type: "json_object" },
-      max_tokens: 500,
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: emailDraftSchema,
+      system: `You are a recruiter drafting emails. Tone: ${tone}. ${typeInstructions[type] ?? ""}
+Body should be plain text with line breaks, not HTML.`,
+      prompt: [
+        `Candidate: ${candidateName}`,
+        `Role: ${jobTitle}`,
+        context && `Context: ${context}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      maxOutputTokens: 500,
     });
 
     const latencyMs = Date.now() - startTime;
-    const content = response.choices[0]?.message?.content;
-    const parsed = content ? JSON.parse(content) : {};
 
     await logAiUsage({
       organizationId,
       userId,
       action: "email_draft",
       model: AI_MODELS.chat,
-      tokensInput: response.usage?.prompt_tokens,
-      tokensOutput: response.usage?.completion_tokens,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
       latencyMs,
       status: "success",
       metadata: { type, tone },
     });
 
     return {
-      subject: parsed.subject ?? null,
-      body: parsed.body ?? null,
+      subject: object.subject ?? null,
+      body: object.body ?? null,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
