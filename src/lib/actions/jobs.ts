@@ -383,6 +383,68 @@ export async function rewriteJobDescription(jobId: string) {
   return { success: true };
 }
 
+// ── Accept Streaming Rewrite ───────────────────────────────
+
+export async function acceptJobRewrite(jobId: string, newDescription: string) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "jobs:edit");
+
+  const supabase = await createClient();
+
+  const { data: job } = await supabase
+    .from("job_openings")
+    .select("description")
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!job) return { error: "Job not found." };
+
+  const { error } = await supabase
+    .from("job_openings")
+    .update({ description: newDescription, description_previous: job.description })
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId);
+
+  if (error) return { error: "Failed to save rewrite." };
+
+  revalidatePath(`/jobs/${jobId}`);
+  return { success: true };
+}
+
+// ── Revert Job Description ─────────────────────────────────
+
+export async function revertJobDescription(jobId: string) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "jobs:edit");
+
+  const supabase = await createClient();
+
+  const { data: job } = await supabase
+    .from("job_openings")
+    .select("description_previous")
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!job || !job.description_previous) {
+    return { error: "No previous description to revert to." };
+  }
+
+  const { error } = await supabase
+    .from("job_openings")
+    .update({ description: job.description_previous, description_previous: null })
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId);
+
+  if (error) return { error: "Failed to revert description." };
+
+  revalidatePath(`/jobs/${jobId}`);
+  return { success: true };
+}
+
 // ── Delete Job (soft delete) ───────────────────────────────
 
 export async function deleteJob(jobId: string) {

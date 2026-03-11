@@ -183,6 +183,33 @@ Body should be plain text with line breaks, not HTML.`,
 }
 
 /**
+ * Build a context string from a clone intent for injection into AI prompts.
+ * Pure function — exported for unit testing.
+ */
+export function buildIntentContext(intent: {
+  reason: "new_location" | "new_level" | "repost" | "different_team";
+  newLocation?: string;
+  newLevel?: string;
+}): string {
+  switch (intent.reason) {
+    case "new_location":
+      return [
+        `This is a clone for a new location${intent.newLocation ? `: ${intent.newLocation}` : ""}.`,
+        "Update location-specific references in the description where relevant.",
+      ].join(" ");
+    case "new_level":
+      return [
+        `This is a clone for a different seniority level${intent.newLevel ? `: ${intent.newLevel}` : ""}.`,
+        "Adjust experience requirements and responsibilities to match the new level.",
+      ].join(" ");
+    case "repost":
+      return "This is a repost of a previously closed role. Refresh the language, update any time-sensitive references, and modernize where needed.";
+    case "different_team":
+      return "This is a clone for a different team or department. Adapt team-specific context and reporting structure as appropriate.";
+  }
+}
+
+/**
  * Stream a job description in real-time via AI SDK.
  * Returns a streamText result for use with toDataStreamResponse().
  * Credit check and usage logging handled here.

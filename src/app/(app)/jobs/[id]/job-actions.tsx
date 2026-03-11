@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { publishJob, closeJob, cloneJob, rewriteJobDescription } from "@/lib/actions/jobs";
+import { publishJob, closeJob, cloneJob } from "@/lib/actions/jobs";
 import { CloneIntentModal } from "@/components/clone-intent-modal";
 import type { CloneIntent } from "@/lib/types/ground-truth";
 
@@ -19,7 +19,6 @@ export function JobActions({
 }) {
   const router = useRouter();
   const [isCloning, startClone] = useTransition();
-  const [isRewriting, startRewrite] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
 
   function handleCloneConfirm(intent: CloneIntent | null) {
@@ -29,13 +28,6 @@ export function JobActions({
         setModalOpen(false);
         router.push(`/jobs/${result.id}`);
       }
-    });
-  }
-
-  function handleRewrite() {
-    startRewrite(async () => {
-      await rewriteJobDescription(jobId);
-      router.refresh();
     });
   }
 
@@ -65,16 +57,6 @@ export function JobActions({
             className="inline-flex h-9 items-center rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
           >
             {isCloning ? "Cloning…" : "Clone"}
-          </button>
-        )}
-        {canEdit && (
-          <button
-            onClick={handleRewrite}
-            disabled={isRewriting}
-            className="inline-flex h-9 items-center rounded-md border border-primary/30 bg-primary/5 px-4 text-sm font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
-            title="✦ AI Rewrite (3 credits)"
-          >
-            {isRewriting ? "Rewriting…" : "✦ AI Rewrite"}
           </button>
         )}
       </div>

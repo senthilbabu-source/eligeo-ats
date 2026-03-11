@@ -67,22 +67,24 @@ test.describe("Job Management", () => {
     await expect(page).toHaveURL(/\/jobs\/new/);
   });
 
-  test("Clone button is visible on job detail and creates copy", async ({ page }) => {
+  test("Clone button opens intent modal and creates job on skip", async ({ page }) => {
     await page.goto("/jobs");
     const firstJob = page.getByRole("link").filter({ hasText: /senior/i }).first();
     await firstJob.click();
     await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/);
 
-    // Clone button should be present
+    // Clone button opens the intent modal
     await expect(page.getByRole("button", { name: /clone/i })).toBeVisible({ timeout: 5000 });
+    await page.getByRole("button", { name: /^Clone$/i }).click();
+    await expect(page.getByText(/why are you cloning/i)).toBeVisible({ timeout: 3000 });
 
-    // Click clone — should redirect to new draft job
-    await page.getByRole("button", { name: /clone/i }).click();
+    // Skip intent — should redirect to new draft job
+    await page.getByRole("button", { name: /skip/i }).click();
     await expect(page).toHaveURL(/\/jobs\/[a-f0-9-]+/, { timeout: 10000 });
-    await expect(page.getByText(/copy/i).first()).toBeVisible();
+    await expect(page.getByText(/draft/i).first()).toBeVisible();
   });
 
-  test("AI Rewrite button is visible on job detail", async ({ page }) => {
+  test("AI Rewrite panel is visible on job detail", async ({ page }) => {
     await page.goto("/jobs");
     const firstJob = page.getByRole("link").filter({ hasText: /senior/i }).first();
     await firstJob.click();

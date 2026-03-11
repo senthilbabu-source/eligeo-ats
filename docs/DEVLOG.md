@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-03-11 — [Phase 2.7] J3 Wave 3 — Streaming rewrite diff panel
+
+**Phase:** Build — Phase 2.7 (UX Polish)
+**Scope:** J3 Wave 3 (C1 + C2 + B2) — non-destructive streaming rewrite with side-by-side diff
+
+### Changes
+- **`buildIntentContext(intent)`** added to `src/lib/ai/generate.ts` — pure function, exported for testing; maps `CloneIntent.reason` to context-aware prompt instructions (B2 merged here)
+- **New API route** `src/app/api/jobs/[id]/rewrite/route.ts` — POST, `requireAuthAPI` + org-scoped job fetch + `buildIntentContext` injected into keyPoints + `streamJobDescription().toTextStreamResponse()` (C1)
+- **Two new Server Actions** in `src/lib/actions/jobs.ts`:
+  - `acceptJobRewrite(jobId, newDescription)` — saves streamed text, backs up old description into `description_previous`
+  - `revertJobDescription(jobId)` — swaps `description ← description_previous`, clears `description_previous`
+- **New `<RewritePanel>`** (`src/app/(app)/jobs/[id]/rewrite-panel.tsx`) — `useCompletion` streaming, two-column diff (Original | AI Rewrite), Accept/Discard/Stop controls, "Revert to previous" when `description_previous` is set (C2)
+- **`page.tsx`** — added `description_previous, metadata` to SELECT; mounts `<RewritePanel>`
+- **`job-actions.tsx`** — removed `rewriteJobDescription` import, `isRewriting` state, and AI Rewrite button (now owned by `RewritePanel`)
+- **E2E** — updated clone test to handle `CloneIntentModal` (click Skip); updated rewrite test title to "AI Rewrite panel is visible"
+
+### Tests
+- +5 unit tests for `buildIntentContext` in `ai-generate.test.ts`
+- **Count: 557 → 562 Vitest. All passing. Typecheck clean.**
+
+[PLAYBOOK] Non-destructive AI rewrite pattern: stream into a side-by-side diff panel, save only on explicit Accept. Prevents AI from silently corrupting production data.
+
+---
+
 ## 2026-03-11 — [Phase 2.7] J3 Wave 2 — Clone intent modal
 
 **Phase:** Build — Phase 2.7 (UX Polish)

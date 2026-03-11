@@ -6,6 +6,7 @@ import {
   generateJobDescription,
   generateEmailDraft,
   streamJobDescription,
+  buildIntentContext,
 } from "@/lib/ai/generate";
 
 vi.mock("ai", () => ({
@@ -225,6 +226,36 @@ describe("generateEmailDraft", () => {
     expect(result.body).toBeNull();
     expect(result.error).toBe("Model unavailable");
     expect(Sentry.captureException).toHaveBeenCalledWith(error);
+  });
+});
+
+describe("buildIntentContext", () => {
+  it("should include location when reason is new_location with newLocation", () => {
+    const result = buildIntentContext({ reason: "new_location", newLocation: "London" });
+    expect(result).toContain("London");
+    expect(result).toContain("location");
+  });
+
+  it("should handle new_location without newLocation value", () => {
+    const result = buildIntentContext({ reason: "new_location" });
+    expect(result).toContain("location");
+    expect(result).not.toContain("undefined");
+  });
+
+  it("should include level when reason is new_level with newLevel", () => {
+    const result = buildIntentContext({ reason: "new_level", newLevel: "Staff" });
+    expect(result).toContain("Staff");
+    expect(result).toContain("seniority level");
+  });
+
+  it("should mention repost context for repost reason", () => {
+    const result = buildIntentContext({ reason: "repost" });
+    expect(result).toContain("repost");
+  });
+
+  it("should mention team/department context for different_team reason", () => {
+    const result = buildIntentContext({ reason: "different_team" });
+    expect(result).toContain("team");
   });
 });
 
