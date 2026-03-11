@@ -36,8 +36,9 @@ export default async function CandidateDetailPage({
     .select(
       `
       id, full_name, email, phone, current_title, current_company,
-      location, linkedin_url, github_url, portfolio_url,
-      skills, tags, source, created_at
+      location, linkedin_url, github_url, portfolio_url, resume_url,
+      skills, tags, source, source_id, pronouns, created_at,
+      candidate_sources:source_id (name)
     `,
     )
     .eq("id", id)
@@ -62,6 +63,26 @@ export default async function CandidateDetailPage({
     .eq("organization_id", session.orgId)
     .is("deleted_at", null)
     .order("applied_at", { ascending: false });
+
+  // CP2: Get the most recent stage-history entry per application to compute days-in-stage
+  const applicationIds = (applications ?? []).map((a) => a.id);
+  const stageEntryByApplication: Record<string, Date> = {};
+  if (applicationIds.length > 0) {
+    const { data: historyRows } = await supabase
+      .from("application_stage_history")
+      .select("application_id, created_at")
+      .in("application_id", applicationIds)
+      .eq("organization_id", session.orgId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+
+    // Latest entry per application = when they entered the current stage
+    for (const row of historyRows ?? []) {
+      if (!stageEntryByApplication[row.application_id]) {
+        stageEntryByApplication[row.application_id] = new Date(row.created_at);
+      }
+    }
+  }
 
   // Get open jobs for the "Apply to Job" form (exclude jobs already applied to)
   const appliedJobIds = applications?.map((a) => a.job_opening_id) ?? [];
@@ -105,6 +126,19 @@ export default async function CandidateDetailPage({
     }
   }
 
+  // Stable timestamp for days-in-stage calculation (avoids impure Date.now in JSX)
+  const nowMs = new Date().getTime();
+
+  // CP4: canonical source name from FK, fallback to freeform source text
+  const sourceRaw = candidate.candidate_sources as unknown;
+  const sourceObj = (Array.isArray(sourceRaw) ? sourceRaw[0] : sourceRaw) as { name: string } | null;
+  const sourceName = sourceObj?.name ?? candidate.source ?? null;
+
+  // CP8: profile header badges
+  const hasResume = Boolean(candidate.resume_url);
+  const hasPortfolio = Boolean(candidate.portfolio_url);
+  const isReferral = sourceName?.toLowerCase().includes("referral") ?? false;
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
       <Link
@@ -115,10 +149,36 @@ export default async function CandidateDetailPage({
       </Link>
 
       <div className="mt-4">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {candidate.full_name}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{candidate.email}</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {candidate.full_name}
+          </h1>
+          {/* CP8 — profile header badges */}
+          {hasResume && (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              Resume
+            </span>
+          )}
+          {hasPortfolio && (
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+              Portfolio
+            </span>
+          )}
+          {isReferral && (
+            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+              Referral
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {candidate.email}
+          {/* CP7 — pronouns inline */}
+          {(candidate as { pronouns?: string | null }).pronouns && (
+            <span className="ml-2 text-xs text-muted-foreground/70">
+              ({(candidate as { pronouns?: string | null }).pronouns})
+            </span>
+          )}
+        </p>
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
@@ -150,10 +210,10 @@ export default async function CandidateDetailPage({
                 <dd>{candidate.phone}</dd>
               </div>
             )}
-            {candidate.source && (
+            {sourceName && (
               <div>
                 <dt className="text-muted-foreground">Source</dt>
-                <dd>{candidate.source}</dd>
+                <dd className="capitalize">{sourceName}</dd>
               </div>
             )}
             {candidate.linkedin_url && (
@@ -230,6 +290,11 @@ export default async function CandidateDetailPage({
             const job = (Array.isArray(jobRaw) ? jobRaw[0] : jobRaw) as { title: string; slug: string } | null;
             const stageRaw = app.pipeline_stages as unknown;
             const stage = (Array.isArray(stageRaw) ? stageRaw[0] : stageRaw) as { name: string; stage_type: string } | null;
+            // CP2 — days in current stage
+            const stageEnteredAt = stageEntryByApplication[app.id];
+            const daysInStage = stageEnteredAt
+              ? Math.floor((nowMs - stageEnteredAt.getTime()) / (1000 * 60 * 60 * 24))
+              : null;
             return (
               <div
                 key={app.id}
@@ -242,7 +307,12 @@ export default async function CandidateDetailPage({
                     {new Date(app.applied_at).toLocaleDateString()}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="flex items-center gap-3 text-right">
+                  {daysInStage !== null && (
+                    <span className="text-xs text-muted-foreground">
+                      {daysInStage}d in stage
+                    </span>
+                  )}
                   <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                     {stage?.name ?? app.status}
                   </span>
