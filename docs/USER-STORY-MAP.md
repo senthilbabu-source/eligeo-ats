@@ -325,12 +325,12 @@
 | R5 | Scheduled reports to stakeholders | 🟠 v2.0 | Pro+ | Inngest cron + PDF/email generation |
 | R6 | DEI funnel reports by gender/ethnicity/age | 🔴 v3.0+ | Pro+ | candidate_dei_data table exists. UI + compliance in v3.0 |
 | R7 | Cost-per-hire and recruiter productivity | 🟠 v2.0 | Pro+ | Requires billing + time tracking data |
-| R8 | Hires This Month + avg Time to Hire metric card | ✅ Wave 1 | All | Replaces "Candidates in DB" card. Direct query: `applications WHERE status='hired'`, count + `AVG(EXTRACT(EPOCH FROM (hired_at-applied_at))/86400)`. `hired_at` nullable — guarded with `IS NOT NULL`. `calcTimeToHire()` in `lib/utils/dashboard.ts`. |
-| R9 | Source quality: hire rate per source with minimum cohort | ✅ Wave 2 | Growth+ | Volume bar + hire rate badge side-by-side. Rate suppressed when source has < 5 total applications (D13 cohort rule). `aggregateSourceQuality(activeRows, hiredRows, minCohort=5)`. |
-| R10 | At-risk jobs widget with healthy empty state | ✅ Wave 2 | All | At-risk = open ≥21 days AND <3 active apps AND no new app in 7 days. CTAs: "Refresh JD" + "Clone" (J3 deep-link). **Always renders** — green empty state when all jobs healthy. `findAtRiskJobs()` in `lib/utils/dashboard.ts`. |
-| R11 | Daily AI Briefing card (cached per org per day) | ✅ Wave 3 | Growth+ | OpenAI structured output: `{win, blocker, action}`. Cache-first via `org_daily_briefings(org_id, date)`. Regenerate button (admin only). Suspense boundary. Logs `action='daily_briefing'` to `ai_usage_logs`. Migration 021 required. |
-| R12 | Recent apps: links + stage + status | ✅ Wave 1 | All | Each row `<Link href="/candidates/<id>">`. Stage name badge + status chip (hired=green, rejected=muted, active=default). |
-| R13 | Mine mode cookie persistence + data freshness timestamp | ✅ Wave 1 | All | `mine_mode` cookie (7-day, sameSite strict) as default; URL param overrides. `<MineToggle>` client component sets cookie on click. "as of HH:MM" server-rendered below page title. |
+| R8 | Hires This Month + avg Time to Hire metric card | ✅ BUILT | All | Replaces "Candidates in DB" card. Direct query: `applications WHERE status='hired'`, count + avg computed in-app via reduce. `hired_at` nullable — guarded with `IS NOT NULL`. `calcTimeToHire()` in `lib/utils/dashboard.ts`. Shipped Wave 1 (`f7ceb50`). |
+| R9 | Source quality: hire rate per source with minimum cohort | ✅ BUILT | Growth+ | Volume bar + hire rate badge side-by-side. Rate suppressed when total < 5 (D13 cohort rule). `aggregateSourceQuality(activeRows, hiredRows, minCohort=5)` in `lib/utils/dashboard.ts`. Shipped Wave 2 (`7c92c54`). |
+| R10 | At-risk jobs widget with healthy empty state | ✅ BUILT | All | At-risk = open ≥21 days AND <3 active apps AND no app in 7 days. CTAs: "Refresh JD" + "Clone" (`?action=clone`). **Always renders** — green empty state when all jobs healthy. `findAtRiskJobs()` in `lib/utils/dashboard.ts`. Shipped Wave 2 (`7c92c54`). |
+| R11 | Daily AI Briefing card (cached per org per day) | 🔵 Wave 3 | Growth+ | OpenAI structured output: `{win, blocker, action}`. Cache-first via `org_daily_briefings(org_id, date)`. Regenerate button (admin only). Suspense boundary. Logs `action='daily_briefing'` to `ai_usage_logs`. Migration 021 required. |
+| R12 | Recent apps: links + stage + status | ✅ BUILT | All | Each row `<Link href="/candidates/<id>">`. Stage name badge + status chip (hired=green, rejected=muted, active=default). Shipped Wave 1 (`f7ceb50`). |
+| R13 | Mine mode cookie persistence + data freshness timestamp | ✅ BUILT | All | `mine_mode` cookie (7-day, sameSite strict) as default; URL param overrides. `<MineToggle>` client component sets cookie on click. "as of HH:MM" server-rendered below page title. Shipped Wave 1 (`f7ceb50`). |
 
 ---
 
