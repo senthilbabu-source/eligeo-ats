@@ -4,18 +4,25 @@
   <rect width="120" height="120" fill="#ffffff"/>
 
   <!-- Rounded square -->
-  <rect x="5" y="5" width="110" height="110" rx="24" fill="#0F172A"/>
+  <rect x="0" y="0" width="120" height="120" rx="24" fill="#0F172A"/>
 
-  <!-- Bar 1 -->
-  <rect x="22" y="34" width="76" height="6" rx="3" fill="white" opacity="0.22"/>
-  <!-- Bar 2 -->
-  <rect x="22" y="57" width="54" height="6" rx="3" fill="white" opacity="0.5"/>
-  <!-- Bar 3 -->
-  <rect x="22" y="80" width="32" height="6" rx="3" fill="white"/>
+  <!-- Left candidate (unselected) -->
+  <circle cx="26" cy="52" r="9.5" fill="white" opacity="0.28"/>
+  <path d="M 12 78 Q 26 68 40 78" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" opacity="0.28"/>
 
-  <!-- Selection dot -->
-  <circle cx="70" cy="83" r="14" fill="#6366F1" opacity="0.2"/>
-  <circle cx="70" cy="83" r="9.5" fill="#6366F1"/>
-  <circle cx="70" cy="83" r="4" fill="white"/>
+  <!-- Right candidate (unselected) -->
+  <circle cx="94" cy="52" r="9.5" fill="white" opacity="0.28"/>
+  <path d="M 80 78 Q 94 68 108 78" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" opacity="0.28"/>
+
+  <!-- Center selected candidate -->
+  <circle cx="60" cy="50" r="26" fill="#6366F1" opacity="0.12"/>
+  <circle cx="60" cy="50" r="23" fill="none" stroke="#6366F1" stroke-width="2.8"/>
+  <circle cx="60" cy="50" r="14" fill="white"/>
+  <path d="M 40 78 Q 60 66 80 78" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Checkmark badge -->
+  <circle cx="77" cy="67" r="9" fill="#0F172A"/>
+  <circle cx="77" cy="67" r="7.5" fill="#6366F1"/>
+  <path d="M 73.5 67 L 76 69.5 L 81.5 63.5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 
 </svg>

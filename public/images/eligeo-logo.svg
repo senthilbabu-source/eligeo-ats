@@ -1,36 +1,67 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 120" width="540" height="120">
 
   <!-- White background -->
-  <rect width="520" height="120" fill="#ffffff"/>
+  <rect width="540" height="120" fill="#ffffff"/>
 
-  <!-- ── Icon Mark: rounded square ── -->
-  <rect x="10" y="10" width="100" height="100" rx="20" fill="#0F172A"/>
+  <!-- ── Icon: dark rounded square ── -->
+  <rect x="8" y="8" width="104" height="104" rx="22" fill="#0F172A"/>
 
-  <!-- Selection funnel: 3 bars, fading in opacity top→bottom = many→few→one -->
+  <!-- ────────────────────────────────
+       LEFT candidate (unselected)
+  ──────────────────────────────── -->
+  <!-- Head -->
+  <circle cx="28" cy="46" r="8" fill="white" opacity="0.28"/>
+  <!-- Shoulders -->
+  <path d="M 14 70 Q 28 61 42 70"
+        fill="none" stroke="white" stroke-width="2.5"
+        stroke-linecap="round" opacity="0.28"/>
 
-  <!-- Bar 1: longest, most faint → "all candidates" -->
-  <rect x="24" y="32" width="62" height="5" rx="2.5" fill="white" opacity="0.22"/>
+  <!-- ────────────────────────────────
+       RIGHT candidate (unselected)
+  ──────────────────────────────── -->
+  <!-- Head -->
+  <circle cx="92" cy="46" r="8" fill="white" opacity="0.28"/>
+  <!-- Shoulders -->
+  <path d="M 78 70 Q 92 61 106 70"
+        fill="none" stroke="white" stroke-width="2.5"
+        stroke-linecap="round" opacity="0.28"/>
 
-  <!-- Bar 2: medium, mid opacity → "shortlisted" -->
-  <rect x="24" y="51" width="44" height="5" rx="2.5" fill="white" opacity="0.5"/>
+  <!-- ────────────────────────────────
+       CENTER candidate (THE CHOSEN ONE)
+  ──────────────────────────────── -->
 
-  <!-- Bar 3: short, full white → "finalist" leads into selection dot -->
-  <rect x="24" y="70" width="28" height="5" rx="2.5" fill="white"/>
+  <!-- Outer soft glow -->
+  <circle cx="60" cy="46" r="22" fill="#6366F1" opacity="0.12"/>
 
-  <!-- Selection dot: the chosen one, sits at end of bar 3 -->
-  <!-- Outer glow ring -->
-  <circle cx="62" cy="72.5" r="12" fill="#6366F1" opacity="0.18"/>
-  <!-- Main dot -->
-  <circle cx="62" cy="72.5" r="8" fill="#6366F1"/>
-  <!-- Inner white core -->
-  <circle cx="62" cy="72.5" r="3.5" fill="white"/>
+  <!-- Selection ring — the hero element -->
+  <circle cx="60" cy="46" r="19"
+          fill="none" stroke="#6366F1" stroke-width="2.5"/>
 
-  <!-- ── Wordmark ── -->
+  <!-- Head — full white, prominent -->
+  <circle cx="60" cy="46" r="12" fill="white"/>
+
+  <!-- Shoulders — slightly bolder than unselected -->
+  <path d="M 43 72 Q 60 62 77 72"
+        fill="none" stroke="white" stroke-width="3"
+        stroke-linecap="round"/>
+
+  <!-- ── Checkmark badge (bottom-right of ring) ── -->
+  <!-- Badge background circle -->
+  <circle cx="74" cy="60" r="7" fill="#0F172A"/>
+  <circle cx="74" cy="60" r="6" fill="#6366F1"/>
+  <!-- Checkmark path -->
+  <path d="M 71 60 L 73.2 62.2 L 77.5 57.5"
+        fill="none" stroke="white"
+        stroke-width="1.8" stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- ────────────────────────────────
+       WORDMARK
+  ──────────────────────────────── -->
   <text
-    x="132"
-    y="79"
+    x="132" y="76"
     font-family="'Inter', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
-    font-size="54"
+    font-size="52"
     font-weight="600"
     letter-spacing="-1.5"
     fill="#0F172A"
