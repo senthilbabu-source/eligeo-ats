@@ -15,6 +15,25 @@
 
 ---
 
+### 2026-03-11 — [JOBS] Phase 2: Jobs + Career Portal (App Layer)
+
+- **Server Actions** — 10 actions across 2 modules:
+  - `src/lib/actions/jobs.ts`: createJob, updateJob, publishJob, closeJob, deleteJob (soft delete)
+  - `src/lib/actions/candidates.ts`: createCandidate, updateCandidate, moveStage, rejectApplication, createApplication
+  - All use Zod v4 validation, `requireAuth()` + `assertCan()`, camelCase→snake_case mapping
+- **Pages** — 4 new server components + 1 client component:
+  - `/jobs` — listing with status badges, count, "New Job" CTA (permission-gated)
+  - `/jobs/[id]` — detail with stats (applications, headcount, status), publish/close actions
+  - `/candidates` — data-dense table: name, title, location, source, skills preview
+  - `/candidates/[id]` — profile card, skills/tags, applications list with stage badges
+  - `job-actions.tsx` — client component for publish/close with `useActionState`
+- **App layout** — `(app)/layout.tsx` + `app-nav.tsx`:
+  - Top nav bar: Eligeo brand, Dashboard/Jobs/Candidates links, role badge, sign out
+  - Auth protection at layout level via `requireAuth()`
+  - Active link highlighting
+- **Dashboard updated** — removed redundant auth/logout (now in layout)
+- **Build verified**: typecheck ✅ lint ✅ 14 tests ✅ build ✅
+
 ### 2026-03-11 — [JOBS] Phase 2: Jobs + Career Portal (Database Layer)
 
 - **Cross-cut analysis of Phase 1** — found and fixed 3 critical + 4 medium issues:
