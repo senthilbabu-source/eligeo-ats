@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCompletion } from "@ai-sdk/react";
 import { createJob } from "@/lib/actions/jobs";
 
@@ -49,9 +49,17 @@ export function JobForm({
   const [state, formAction, isPending] = useActionState(createJob, null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+  const [hasTitle, setHasTitle] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
-  const { completion, isLoading: isGenerating, complete } = useCompletion({
+  const { completion, isLoading: isGenerating, complete, stop } = useCompletion({
     api: "/api/ai/generate-description",
+    onError(err) {
+      setAiError(err.message || "Failed to generate description");
+    },
+    onFinish() {
+      setAiError(null);
+    },
   });
 
   // Sync streamed completion into the textarea
@@ -71,6 +79,7 @@ export function JobForm({
     const title = titleRef.current?.value?.trim();
     if (!title) return;
 
+    setAiError(null);
     const form = titleRef.current?.form;
     const department = form
       ? (new FormData(form).get("department") as string) || undefined
@@ -91,36 +100,58 @@ export function JobForm({
 
       <div>
         <Label htmlFor="title">Job Title *</Label>
-        <Input ref={titleRef} id="title" name="title" required placeholder="e.g. Senior Software Engineer" />
+        <Input
+          ref={titleRef}
+          id="title"
+          name="title"
+          required
+          placeholder="e.g. Senior Software Engineer"
+          onChange={(e) => setHasTitle(!!e.target.value.trim())}
+        />
       </div>
 
       <div>
         <div className="flex items-center justify-between">
           <Label htmlFor="description">Description</Label>
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
-          >
+          <div className="flex items-center gap-2">
             {isGenerating ? (
-              <>
-                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Generating...
-              </>
+              <button
+                type="button"
+                onClick={stop}
+                className="inline-flex items-center gap-1.5 rounded-md bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive hover:bg-destructive/20"
+              >
+                Stop
+              </button>
             ) : (
-              "AI Generate"
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={!hasTitle}
+                className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {completion ? "Regenerate" : "AI Generate"}
+              </button>
             )}
-          </button>
+          </div>
         </div>
-        <textarea
-          ref={descriptionRef}
-          id="description"
-          name="description"
-          rows={isGenerating || completion ? 16 : 6}
-          placeholder="Job responsibilities, requirements, and benefits..."
-          className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        />
+        {aiError && (
+          <p className="mt-1 text-xs text-destructive">{aiError}</p>
+        )}
+        <div className="relative mt-1">
+          <textarea
+            ref={descriptionRef}
+            id="description"
+            name="description"
+            rows={completion ? 16 : 6}
+            placeholder="Job responsibilities, requirements, and benefits..."
+            className="block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-[rows] duration-200"
+          />
+          {isGenerating && (
+            <div className="absolute bottom-3 right-3">
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

@@ -1,5 +1,5 @@
 import { requireAuthAPI } from "@/lib/auth/api";
-import { assertCan } from "@/lib/constants/roles";
+import { can } from "@/lib/constants/roles";
 import { streamJobDescription } from "@/lib/ai/generate";
 import { problemResponse } from "@/lib/utils/problem";
 
@@ -7,19 +7,26 @@ export async function POST(request: Request) {
   const { session, error } = await requireAuthAPI();
   if (error) return error;
 
-  assertCan(session.orgRole, "jobs:create");
+  if (!can(session.orgRole, "jobs:create")) {
+    return problemResponse(403, "ATS-AU04", "Insufficient permissions");
+  }
 
-  const body = await request.json();
-  const title = body.title as string | undefined;
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return problemResponse(400, "ATS-AI01", "Invalid request body");
+  }
 
-  if (!title?.trim()) {
+  const title = typeof body.title === "string" ? body.title.trim() : "";
+  if (!title) {
     return problemResponse(400, "ATS-AI01", "Job title is required");
   }
 
   const result = await streamJobDescription({
     title,
-    department: body.department,
-    keyPoints: body.keyPoints,
+    department: typeof body.department === "string" ? body.department : undefined,
+    keyPoints: typeof body.keyPoints === "string" ? body.keyPoints : undefined,
     organizationId: session.orgId,
     userId: session.userId,
   });
