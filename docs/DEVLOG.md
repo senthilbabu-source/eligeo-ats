@@ -16,6 +16,14 @@
 
 ---
 
+### 2026-03-11 — [PLAYBOOK] Documentation audit lessons → SaaS Accelerator Playbook
+
+- **2 new principles:** P-22 (pre-code documentation audit methodology) and P-23 (migration ordering via topological sort)
+- **7 new JOURNEY-LOG entries:** pre-code audit, migration ordering, env variable manifest, background job registry, version gating, golden tenant fixture, RBAC endpoint matrix
+- **1 battle-test entry:** documentation-system.md v1 validated against audit phase
+- **Prompt impacts identified:** new `pre-code-audit.md` prompt, new `env-manifest.md` and `job-registry.md` templates, updates to database-schema-design, api-contract-design, and documentation-system prompts
+- Total Playbook principles: 21 → 23. Total journey entries: 17 → 24.
+
 ### 2026-03-11 — [D02,D06,D10,D12,D26,D27,schema/07] Pre-code audit — MEDIUM+LOW gap remediation
 
 - **D10 SEARCH.md:** Added version gating note — v1.0 uses PostgreSQL ILIKE, Typesense deferred to v2.0.
