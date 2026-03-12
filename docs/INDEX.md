@@ -1,7 +1,7 @@
 # Eligeo — Documentation Index
 
 > Master registry of all documentation. Every document has a status, owner, and dependency chain.
-> **Last updated:** 2026-03-11
+> **Last updated:** 2026-03-12
 
 ## How to use this index
 

@@ -439,6 +439,8 @@
 > **2026-03-11 delta (new stories from full story map review):** +60 stories across 8 new sections (JD, BE, AR, CP, CL, IP, CI, SR) and 4 expanded sections (T, N/ET, H, AD). New v1.0 pre-launch: JD1-4 (🔷), AR4-5 (🔷), CP2/4/7/8 (🔷), CL2 (🔷), T7-10 (🟢+🔷), ET1-4 (🟢), JI1/3 (🔷), SR6 (🔷), AR3 (✅). New post-launch: BE1-5, AR1/2/6, CP3/5/6, CL1/3-6, IP1-6, CI1-7, H5-8, SR1-5, AD6-7, JI2/4. New ❌ OUT: BE4, IP2/3, H5. Total: 113→173.
 >
 > **2026-03-11 delta (Phase 2.7 final pass):** All Phase 2.7 user stories completed. Marked ✅ BUILT: JI1, JI3, SR6, CP2, CP4, CP7, CP8, CL2, AR4, AR5, T10, JD1, JD2, JD3, JD4, C2, M3. Phase 2.7 is complete. Next: Phase 3 (interviews + scorecards with AI summarization).
+>
+> **2026-03-12 delta (Wave E — pre-Phase 3 completeness):** 10 gaps fixed. Migrations 023–025. Candidate embedding auto-generation (Inngest pipeline), resume_text persistence, bias check banner rendering, slug collision fix, candidate edit panel, candidate_notes table + 16 RLS tests, moveStage revalidation, atomic reorder_pipeline_stages RPC, email context enrichment wiring, batch embedding backfill SA. No new user stories — all fixes to existing built stories. Phase 3 unblocked.
 
 ---
 
