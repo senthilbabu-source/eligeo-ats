@@ -35,8 +35,9 @@ These are enforced by ADRs. Violating any of them requires a new ADR.
 
 ## Table Inventory
 
-40 tables across 8 clusters. Sub-documents contain full DDL, RLS, indexes, and triggers.
+40 tables across 8 clusters (+ 2 planned in Migration 022 — see Cluster 4 and Cluster 8). Sub-documents contain full DDL, RLS, indexes, and triggers.
 <!-- +1: org_daily_briefings added in Migration 021 (Wave 3 dashboard briefing cache) -->
+<!-- +2 planned: ai_score_feedback (Cluster 4) + embedding_updated_at column on job_openings (Migration 022, AI-Proof Wave A) -->
 
 ### Cluster 1: Core Tenancy ([schema/01-core-tenancy.md](schema/01-core-tenancy.md))
 
@@ -73,6 +74,9 @@ These are enforced by ADRs. Violating any of them requires a new ADR.
 | `skills` | Canonical skill taxonomy | 200 / 500 | 100K / 250K |
 | `candidate_skills` | Candidate↔Skill junction | 2,500 / 10,000 | 1.25M / 5M |
 | `job_required_skills` | Job↔Skill requirements | 250 / 1,000 | 125K / 500K |
+| `ai_score_feedback` | Recruiter thumbs-up/down on AI match scores (planned Migration 022) | 1,000 / 5,000 | 500K / 2.5M |
+
+**Planned column addition — `job_openings.embedding_updated_at TIMESTAMPTZ`** (Migration 022): Tracks when `job_embedding` was last regenerated. NULL = never re-embedded since initial generation. When `job_required_skills` changes or JD is updated, Inngest sets this stale → triggers background re-embed. Enables "Scores may be outdated" nudge on match panel (story AF2).
 
 ### Cluster 5: Interviews & Scorecards ([schema/05-interviews-scorecards.md](schema/05-interviews-scorecards.md))
 

@@ -34,7 +34,7 @@
 | J2 | AI suggests required skills based on role title | 🔶 2.6 | Growth+ | Embedding similarity against skills taxonomy |
 | J3 | Clone job + AI auto-updates for new location/level | ✅ BUILT | All | Clone is CRUD, AI rewrite is Growth+. Wave 1: skills/team fields cloned, clean slug, hiring_manager_id/recruiter_id copied. Wave 2: CloneIntentModal (4 reasons), intent stored in metadata.clone_intent. Wave 3: streaming RewritePanel, intent-aware rewrite prompt, acceptJobRewrite/revertJobDescription, description_previous stored before overwrite. Wave 4: JdQualityPanel (JD1–4), SkillsDeltaPanel, TitleSuggestionBadge, CloneChecklist (6 items, auto-dismiss via metadata). Wave 5: command bar clone intent (intent.ts quick patterns + executeCommand job lookup + navigate). All 5 waves ✅ COMPLETE. E2E: intent selection + accept/revert flows added 2026-03-11. |
 | J4 | Approval workflows for job requisitions | 🟠 v2.0 | Pro+ | Small teams don't need this at launch |
-| J5 | AI warns about biased/exclusionary language | 🔶 2.6 | Growth+ | OpenAI moderation pass before publish |
+| J5 | AI warns about biased/exclusionary language | 🔶 2.6 | Growth+ | OpenAI moderation pass before publish. ⚠️ Current: client-side only (rewrite panel + quality panel). Bias check does NOT fire on manual-written JDs at publish time. **AI-Proof Wave B**: server-side gate in publishJob() SA — soft warning stored in metadata, surfaced as banner. |
 
 ---
 
@@ -108,6 +108,8 @@
 | A4 | Custom screening criteria per role | 🔶 2.6 | Growth+ | Job-specific required skills + weights |
 | A5 | AI detects duplicate/spam applications | 🔶 2.6 | All | Email dedup already exists. AI spam detection: simple heuristics |
 | A6 | Plain-language explanation of AI score | 🔶 2.6 | Growth+ | "Matched: React, Node. Missing: Kubernetes. 3 yrs vs 5 required." |
+| AF1 | AI score feedback — recruiter thumbs-up/down on match panel | 🔵 AI-Proof Wave A | Growth+ | `ai_score_feedback` table (Migration 022). Without this loop, AI matching has no signal from recruiter decisions and erodes trust over time. Advancing a low-score candidate and rejecting a high-score one are both learning signals. |
+| AF2 | Job embedding staleness detection | 🔵 AI-Proof Wave A | All | `embedding_updated_at TIMESTAMPTZ` on `job_openings` (Migration 022). When `job_required_skills` changes or JD is updated → stale flag → "Scores may be outdated" nudge on match panel + Inngest background re-embed. Without this, all match scores silently degrade on every JD/skills edit. |
 
 ---
 
@@ -136,6 +138,8 @@
 | CP6 | Dedicated debrief workflow on profile — panel aligns before hire/no-hire | 🟢 P3 | All | Panel view + decision + notes. Separate from scorecard |
 | CP7 | Candidate pronouns displayed on profile | ✅ BUILT | All | Add pronouns field to candidates table. One migration + UI |
 | CP8 | Profile header: has portfolio, has resume, was a referral indicators | ✅ BUILT | All | Derived from files table + candidate_sources. Badge row in header |
+| CP9 | Rejection reason picker on inline reject action | 🔵 AI-Proof Wave A | All | Schema (`rejection_reason_id`, `rejection_notes`) + SA (`rejectApplication()`) already support this. UI is a confirm-only button with no picker. Fix: select dropdown from `rejection_reasons` table. Unlocks: personalized AI rejection emails, audit trail, source quality by rejection reason. |
+| CP10 | Next Best Action strip on candidate profile | 🔵 AI-Proof Wave C | Growth+ | Server component above profile body. Rules-based: stalled in stage (>org avg), no interviewer assigned, no recent activity in N days. AI-enhanced for Pro+. Turns the profile from data display into an action surface. |
 
 ---
 
@@ -200,7 +204,7 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| N1 | AI drafts personalized, warm rejection emails | 🔶 2.6 | Growth+ | Command bar: "draft rejection for Jane, warm tone" |
+| N1 | AI drafts personalized, warm rejection emails | 🔶 2.6 | Growth+ | Command bar: "draft rejection for Jane, warm tone". ⚠️ Current: `generateEmailDraft()` only receives candidateName, jobTitle, free-text context, tone. No matchScore, stageName, daysInPipeline, or rejectionReason — a warm rejection for a 91% match final-round candidate produces the same output as one for a 34% match screened out in round one. **AI-Proof Wave B**: enrich prompt with full application context after CP9 ships. |
 | N2 | Automated email sequences on stage changes | 🟢 P3 | All | 10 critical event notifications (D08) |
 | N3 | Communication via preferred channel (email/SMS/WhatsApp) | 🟠 v2.0 | Growth+ | Email only in v1.0. SMS/WhatsApp require additional providers |
 | N4 | Shared inbox for candidate replies | 🟠 v2.0 | Pro+ | Requires email receiving infra — complex |
@@ -352,6 +356,7 @@
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
 | M1 | Review/score/move candidates from phone | ✅ BUILT | All | Kanban rewritten with dnd-kit, optimistic UI, DragOverlay, arrow-button fallback (Phase 2.7) |
+| M1-K | Kanban card health indicator — coloured left border by days-in-stage | 🔵 AI-Proof Wave C | All | Green (healthy) / amber (stalled vs. org avg) / red (at risk, uses `findAtRiskJobs` criteria). `days_in_stage` data already computed (CP2). Zero new queries. Makes the board intelligence, not just a list. |
 | M2 | Mobile interview feedback form | 🟢 P3 | All | Scorecard form designed mobile-first |
 | M3 | Mobile application experience for candidates | ✅ BUILT | All | Career portal already works; polish spacing/touch targets |
 | M4 | Push notifications on phone | 🟠 v2.0 | Growth+ | Requires PWA or native app — significant effort |
@@ -362,10 +367,10 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| AI1 | NL questions: "top 5 candidates for Senior Engineer?" | 🔶 2.6 | Growth+ | **Core Phase 2.6.** Command bar NL → search + rank |
+| AI1 | NL questions: "top 5 candidates for Senior Engineer?" | 🔶 2.6 | Growth+ | **Core Phase 2.6.** Command bar NL → search + rank. ⚠️ `move_stage` intent is **parsed** (intent.ts defines it) but **not executed** — `executeCommand()` has no handler for it; returns intent to frontend only. **AI-Proof Wave B**: wire to `moveStage()` SA with confirmation step (one new case in executeCommand). |
 | AI2 | AI daily summary: where every open role stands | 🟡 v1.1 | Growth+ | Inngest morning digest + OpenAI summarization |
-| AI3 | AI suggests next best action on every open role | 🔶 2.6 | Growth+ | Command bar context: stale candidates, pending feedback |
-| AI4 | AI drafts all candidate communications | 🔶 2.6 | Growth+ | Command bar: "draft update for all phone screen candidates" |
+| AI3 | AI suggests next best action on every open role | 🔶 2.6 | Growth+ | Command bar context: stale candidates, pending feedback. **AI-Proof Wave C**: CP10 (Next Best Action strip on candidate profile) is the on-page equivalent. |
+| AI4 | AI drafts all candidate communications | 🔶 2.6 | Growth+ | Command bar: "draft update for all phone screen candidates". Context enrichment shipped in Wave B (see N1). |
 | AI5 | AI meeting brief before debrief (scores + feedback summary) | 🟢 P3 | Pro+ | AI scorecard summarization before panel debrief |
 
 ---

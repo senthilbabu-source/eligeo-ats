@@ -4,6 +4,53 @@
 
 ---
 
+## 2026-03-11 — [Meta] AI-First Audit — gap analysis + pre-build doc sync
+
+**Phase:** Pre-Phase 3 audit — verify AI completeness before starting interviews module
+**Scope:** Cross-cut audit of all AI-assisted features built to date (Phases 2.5–2.7 + Dashboard)
+
+### Audit method
+8 specific claims from an AI-first completeness review were verified directly against the codebase (not accepted at face value). 2 were wrong, 6 were valid.
+
+### Claims that were WRONG (audit document errors — not propagated to plan)
+1. **"Rejection reason not stored (P0 schema change needed)"** — FALSE. Migration 011 already has `rejection_reason_id UUID` (FK to `rejection_reasons`) + `rejection_notes TEXT`. `rejectApplication()` already accepts both. Only the UI is missing a picker. This is a UI task, not a schema change.
+2. **"move_stage intent missing from command bar"** — FALSE. `move_stage` is intent type #5 in `intent.ts`. It IS parsed by OpenAI. The gap is that `executeCommand()` has no handler for it — the action is parsed but not fired. Two different things.
+
+### Claims that were VALID — converted to new stories
+| New Story | Gap | Root Cause |
+|-----------|-----|-----------|
+| AF1 | No AI score feedback loop | No `ai_score_feedback` table. AI has zero signal from recruiter advance/reject decisions. Trust erodes. |
+| AF2 | Job embedding staleness | No `embedding_updated_at`. Skills/JD edit → all match scores silently wrong. Correctness bug, not UX gap. |
+| CP9 | Rejection reason UI | Schema + SA done. `inline-app-actions.tsx` calls `rejectApplication(id)` with NO reason — backend supports it, frontend ignores it. |
+| CP10 | Next Best Action strip | Candidate profile page is pure data display. No AI recommendations. |
+| M1-K | Kanban health indicators | All cards look identical. `days_in_stage` already computed (CP2) but not visualised on board. |
+| J5 update | Bias check not in publishJob() | `checkJobBias()` fires client-side in rewrite panel + quality panel only. Manual-written JDs bypass it entirely at publish. |
+| N1 update | Email context-blind | `generateEmailDraft()` only uses candidateName/jobTitle/tone. No match score, no stage, no rejection reason in prompt. |
+| AI1 update | move_stage not executed | Intent parsed by AI, not wired to `moveStage()` SA in `executeCommand()`. |
+
+### Waves planned (pre-code — no build started)
+
+**Wave A — Silent correctness failures (P0)**
+- A1: `embedding_updated_at` on `job_openings` + Inngest staleness detection (Migration 022)
+- A2: `ai_score_feedback` table + thumbs-up/down UI on match panel (Migration 022)
+- A3: Rejection reason picker in `inline-app-actions.tsx` (UI only — schema done)
+
+**Wave B — Quick wiring wins (P1)**
+- B1: Enrich `generateEmailDraft()` prompt with matchScore, stageName, daysInPipeline, rejectionReasonId
+- B2: Server-side bias gate in `publishJob()` SA (soft warning → metadata)
+- B3: Wire `move_stage` intent to `moveStage()` SA in `executeCommand()` with confirmation step
+
+**Wave C — Intelligence surfaces (P1-P2)**
+- C1: `NextBestActionStrip` server component on candidate profile (CP10)
+- C2: Kanban card health indicator — coloured left border (M1-K)
+- C3: JD quality panel focus after generation (UX flow only)
+
+### Documents updated in this sync
+- `docs/USER-STORY-MAP.md` — Added AF1, AF2, CP9, CP10, M1-K. Updated J5, N1, AI1, AI3, AI4 with ⚠️ reality notes.
+- `docs/DATABASE-SCHEMA.md` (D01) — Pre-documented `ai_score_feedback` table (Cluster 4) + `job_openings.embedding_updated_at` column. Table count +2 (planned Migration 022).
+
+---
+
 ## 2026-03-11 — [Dashboard] R11 Wave 3 — Daily AI Briefing card
 
 **Phase:** Build — R1/R3/R4 Dashboard Enhancements (Wave 3 of 3) — R11 COMPLETE
