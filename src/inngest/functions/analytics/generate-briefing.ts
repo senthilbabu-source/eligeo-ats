@@ -3,7 +3,7 @@ import { z } from "zod";
 import { inngest } from "@/inngest/client";
 import { createServiceClient } from "@/lib/supabase/server";
 import { chatModel, AI_MODELS } from "@/lib/ai/client";
-import { logAiUsage } from "@/lib/ai/credits";
+import { consumeAiCredits, logAiUsage } from "@/lib/ai/credits";
 
 /**
  * analytics/generate-briefing
@@ -125,7 +125,26 @@ export const generateDailyBriefing = inngest.createFunction(
       };
     });
 
-    // ── Step 3: Call OpenAI ──────────────────────────────
+    // ── Step 3: Credit check ─────────────────────────────
+    const credited = await step.run("consume-credits", async () => {
+      return consumeAiCredits(orgId, "daily_briefing");
+    });
+
+    if (!credited) {
+      await step.run("log-skipped", async () => {
+        await logAiUsage({
+          organizationId: orgId,
+          userId: triggeredBy,
+          action: "daily_briefing",
+          model: AI_MODELS.fast,
+          status: "skipped",
+          errorMessage: "Insufficient AI credits",
+        });
+      });
+      return { cached: false, skipped: true, reason: "insufficient_credits" };
+    }
+
+    // ── Step 4: Call OpenAI ──────────────────────────────
     const { content, usage, latencyMs } = await step.run("call-openai", async () => {
       const prompt = [
         `You are a recruiting operations assistant generating a daily briefing for a staffing team.`,
@@ -156,7 +175,7 @@ export const generateDailyBriefing = inngest.createFunction(
       };
     });
 
-    // ── Step 4: Upsert to cache ──────────────────────────
+    // ── Step 5: Upsert to cache ──────────────────────────
     const briefingId = await step.run("upsert-cache", async () => {
       const supabase = createServiceClient();
       const id = crypto.randomUUID();
@@ -179,7 +198,7 @@ export const generateDailyBriefing = inngest.createFunction(
       return id;
     });
 
-    // ── Step 5: Log AI usage ─────────────────────────────
+    // ── Step 6: Log AI usage ─────────────────────────────
     await step.run("log-usage", async () => {
       await logAiUsage({
         organizationId: orgId,

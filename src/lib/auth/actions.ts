@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAuth } from "./session";
-import { z } from "zod/v4";
+import { z } from "zod";
 
 // ── Validation Schemas ─────────────────────────────────────
 

@@ -84,7 +84,7 @@
 | D26 | **Error Taxonomy & Recovery Patterns** | `docs/ERROR-TAXONOMY.md` | P2 | ✅ Complete (Review) | D02, D14 | ATS-XXXX error code scheme (12 categories, 60+ codes), RFC 9457 response format with `code` extension, Server Action error pattern, graceful degradation matrix (7 services), circuit breaker pattern, retry strategies (6 failure types), React error boundary design (4 placement levels), user-facing message guidelines. |
 | D27 | **Product Roadmap & Release Strategy** | `docs/PRODUCT-ROADMAP.md` | P0 | ✅ Complete (Review) | D00, D03, D25, all modules | 5 release versions (v1.0–v3.0). v1.0: 26 features, 6 build phases over 12 weeks, 10 notification events, launch criteria checklist. Feature-to-plan mapping. Revenue projections ($540 MRR launch → $125K MRR at v3.0). Risk mitigation. Decision log (12 scope decisions). Determines ALL build order. |
 | D28 | **Environment Variables** | `docs/ENVIRONMENT-VARIABLES.md` | P0 | ✅ Complete (Review) | D01, D02, D03, D14, D15 | 30 env vars across 10 services. Public/secret classification, v1.0 vs v2.0+ required, `.env.example` template, security rules. |
-| D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 55 Inngest functions across 10 modules (adds `analytics/generate-briefing` v1.0; `analytics/refresh-job-embedding` planned v1.0 Wave A). Triggers, retries, concurrency, dead-letter handling. 9 cron schedules. v1.0 scope (40→41 with Wave A). Global defaults. |
+| D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 54 Inngest functions across 10 modules. v1.0 scope: 41 functions. Triggers, retries, concurrency, dead-letter handling. 9 cron schedules. 5 shipped (briefing, embedding, dispatch, send-email, interview-reminder). Global defaults. |
 | D30 | **User Story Map** | `docs/USER-STORY-MAP.md` | P1 | ✅ Complete | D27, ADR-011 | 184 user stories across 28 sections. Phase 2.7 all ✅ BUILT. Dashboard Waves 1–3 all ✅ BUILT. AI-Proof Waves A/B/C all ✅ BUILT. Wave F: C3, C5, I3, N2, ET1–ET3 now ✅ BUILT (notification infra). ET4 infra-ready. |
 | D31 | **Brand Guide** | `docs/BRAND.md` | P3 | ✅ Complete | ADR-012 | Logo narrative (3-candidate selection metaphor), brand voice guidelines, marketing copy for `/about` page, technical logo specs, animated variant plan. |
 
@@ -149,7 +149,7 @@ docs/
 │
 ├── modules/                          ← Feature module specifications
 │   ├── BILLING.md
-│   ├── OFFER-WORKFLOW.md
+│   ├── OFFERS.md
 │   ├── INTERVIEW-SCHEDULING.md
 │   ├── NOTIFICATIONS.md
 │   ├── CANDIDATE-PORTAL.md

@@ -80,11 +80,11 @@ Complete manifest of every environment variable the application requires. All se
 
 ---
 
-## OpenAI (AI Features) — v2.0+
+## OpenAI (AI Features) — v1.0 (Phase 2.6+)
 
 | Variable | Visibility | Purpose | Required |
 |----------|-----------|---------|----------|
-| `OPENAI_API_KEY` | Secret | API key for AI matching, scorecard summaries | v2.0+ |
+| `OPENAI_API_KEY` | Secret | API key for AI matching, resume parsing, embeddings, scorecard summaries, daily briefing, JD generation, bias check | Yes |
 
 ---
 
@@ -147,12 +147,12 @@ Set automatically by the platform — do not configure manually.
 | Category | Count | v1.0 Required |
 |----------|-------|---------------|
 | Public (`NEXT_PUBLIC_`) | 5 | 3 (Supabase URL, anon key, Sentry DSN) |
-| Server secrets | 15 | 10 (Supabase, Stripe, Inngest, Resend, Sentry, Redis, candidate token, app domain) |
+| Server secrets | 15 | 11 (Supabase, Stripe, Inngest, Resend, Sentry, Redis, OpenAI, candidate token, app domain) |
 | CI/CD only | 7 | 7 |
 | Auto-set by platform | 3 | 3 |
-| **Total** | **30** | **23** |
+| **Total** | **30** | **24** |
 
-v2.0+ variables (Typesense, Nylas, OpenAI) are not required for v1.0 launch.
+v2.0+ variables (Typesense, Nylas) are not required for v1.0 launch. OpenAI is v1.0 required per ADR-011.
 
 ---
 

@@ -390,7 +390,7 @@ Channel naming: `org:{organization_id}:{table_name}` — RLS automatically scope
 
 ## Migration Ordering
 
-39 tables grouped into migration batches following FK dependency order. No circular dependencies exist.
+40 tables grouped into migration batches following FK dependency order. No circular dependencies exist.
 
 **Run before any tables:** Extensions (`uuid-ossp`, `pgcrypto`, `vector`, `pg_trgm`) and helper functions (`set_updated_at()`, `is_org_member()`, `has_org_role()`, `current_user_org_id()`, `custom_access_token_hook()`, `audit_trigger_func()`). See [00-functions.md](schema/00-functions.md).
 

@@ -2,7 +2,7 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { inngest } from "@/inngest/client";
-import { z } from "zod/v4";
+import { z } from "zod";
 
 const applySchema = z.object({
   fullName: z.string().min(1, "Name is required").max(255),

@@ -7,7 +7,7 @@ import { assertCan } from "@/lib/constants/roles";
 import { inngest } from "@/inngest/client";
 import * as Sentry from "@sentry/nextjs";
 import logger from "@/lib/utils/logger";
-import { z } from "zod/v4";
+import { z } from "zod";
 
 // ── Validation Schemas ─────────────────────────────────────
 

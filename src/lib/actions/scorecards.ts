@@ -6,7 +6,7 @@ import { requireAuth } from "@/lib/auth";
 import { assertCan } from "@/lib/constants/roles";
 import * as Sentry from "@sentry/nextjs";
 import logger from "@/lib/utils/logger";
-import { z } from "zod/v4";
+import { z } from "zod";
 import {
   computeScorecardSummary,
   type RawSubmission,

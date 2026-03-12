@@ -1,7 +1,7 @@
 # API Specification
 
 > **ID:** D02
-> **Status:** Draft
+> **Status:** Review
 > **Priority:** P0
 > **Last updated:** 2026-03-10
 > **Depends on:** D01 (schema)
@@ -47,11 +47,11 @@ All browser requests use Supabase Auth JWT. The `proxy.ts` middleware:
 4. Rejects unauthenticated requests to `/api/v1/` with `401`
 
 ```typescript
-// Route Handler auth pattern
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+// Route Handler auth pattern (Supabase SSR v0.9+)
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return problemResponse(401, 'Unauthorized', 'Valid session required.');
   // RLS scopes all queries automatically

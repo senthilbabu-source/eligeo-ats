@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-This document is the single source of truth for all Inngest background functions in the itecbrains ATS platform. It defines **51 functions across 10 modules**, covering billing webhooks, offer workflows, interview scheduling, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
+This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **54 functions across 10 modules**, covering billing webhooks, offer workflows, interview scheduling, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
 
 Every background job in the system runs through Inngest. There are no Supabase Edge Functions (ADR-002). Cron jobs are Inngest cron triggers, not Next.js Route Handlers — Inngest manages scheduling, retries, and observability.
 
@@ -221,7 +221,7 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 | Analytics | 2 | `analytics/generate-briefing` (Wave 3) + `analytics/refresh-job-embedding` (AI-Proof Wave A). `analytics/refresh-views` and `analytics/export` are v1.1. |
 | **Total** | **41** | |
 
-> The initial estimate of ~33 was based on excluding compliance and onboarding stubs. With compliance (4), onboarding (2), and analytics briefing (1) included, the v1.0 count is **40 functions**.
+> Total registry: 54 functions. v1.0 scope: 41 functions. The initial estimate of ~33 grew as compliance (4), onboarding (2), and analytics (2) were scoped into v1.0.
 
 ### Deferred
 
