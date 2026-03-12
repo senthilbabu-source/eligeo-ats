@@ -406,6 +406,20 @@ INSERT INTO job_required_skills (id, organization_id, job_id, skill_id, importan
 INSERT INTO talent_pool_members (id, organization_id, talent_pool_id, candidate_id, added_by, notes) VALUES
   ('11111111-6009-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001', '11111111-6005-4000-a000-000000000001', '11111111-4001-4000-a000-000000000003', '11111111-1001-4000-a000-000000000003', 'Strong enterprise background, keep warm for next senior role');
 
+-- ─── Daily Briefing (Wave 3 — E2E fixture) ───────────────
+-- Uses CURRENT_DATE so the row is always "today" when seed runs.
+INSERT INTO org_daily_briefings (id, organization_id, briefing_date, content, model, prompt_tokens, completion_tokens)
+VALUES (
+  '11111111-9001-4000-a000-000000000001',
+  '11111111-2001-4000-a000-000000000001',
+  CURRENT_DATE,
+  '{"win": "3 hires this month across engineering roles", "blocker": "Phone screen stage has 8 candidates waiting >5 days", "action": "Assign phone screens to Roshelle for Senior Engineer and Product Manager roles"}'::jsonb,
+  'gpt-4o-mini',
+  120,
+  85
+)
+ON CONFLICT (organization_id, briefing_date) DO NOTHING;
+
 -- ============================================================
 -- Phase 3+ seed data will be appended below
 -- (interviews, scorecards, offers, etc.)

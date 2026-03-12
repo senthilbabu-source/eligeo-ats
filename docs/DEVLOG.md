@@ -4,6 +4,54 @@
 
 ---
 
+## 2026-03-11 — [Dashboard] R11 Wave 3 — Daily AI Briefing card
+
+**Phase:** Build — R1/R3/R4 Dashboard Enhancements (Wave 3 of 3) — R11 COMPLETE
+**Test count:** 658 Vitest (up from 637) + 48 E2E = 706 total. All passing. Typecheck clean. Lint clean.
+
+### Changes
+
+#### `supabase/migrations/00021_org_daily_briefings.sql` — NEW
+- `org_daily_briefings` table: `(id, organization_id, briefing_date DATE, content JSONB, generated_at, generated_by, model, prompt_tokens, completion_tokens, deleted_at)`. UNIQUE on `(organization_id, briefing_date)`.
+- RLS: SELECT = `is_org_member()`; INSERT/UPDATE/DELETE = `has_org_role('owner','admin')`.
+- Extends `ai_usage_logs.action` CHECK constraint: DROP + ADD CONSTRAINT to add `'daily_briefing'` value.
+
+#### `src/inngest/functions/analytics/generate-briefing.ts` — NEW
+- `generateDailyBriefing` Inngest function (`ats/analytics.briefing-requested`). Concurrency limit 1 per org.
+- 5 steps: cache check → snapshot (openJobs, activeApps, hiresThisMonth, atRiskTitles) → `generateObject()` with `gpt-4o-mini` + Zod schema `{win, blocker, action}` → upsert to `org_daily_briefings` (ON CONFLICT DO UPDATE) → `logAiUsage`.
+- Cache-first: skips OpenAI if today's row exists. `force: true` bypasses cache (admin regen).
+- `isBriefingContent(val): val is DailyBriefingContent` — Zod-based type guard exported for use in server component + tests.
+
+#### `src/lib/actions/dashboard.ts` — NEW
+- `regenerateBriefing()` Server Action. Owner/admin role enforced. Sends `ats/analytics.briefing-requested` event with `force: true`. Returns `Promise<void>` (compatible with `<form action={...}>`). Sentry on error.
+
+#### `src/app/(app)/dashboard/daily-briefing-card.tsx` — NEW
+- Async server component. Queries today's `org_daily_briefings` row. Shows Win (green bg), Blocker (warning bg), Action (primary bg) blocks. "Regenerate" button for admin/owner via `<form action={regenerateBriefing}>`. Empty state when no briefing yet.
+
+#### `src/app/(app)/dashboard/page.tsx` — Suspense + DailyBriefingCard wired in
+- `DailyBriefingCard` wrapped in `<Suspense fallback={pulse skeleton}>`, placed above metric cards.
+- `isAdmin` derived from `session.orgRole`.
+
+#### `src/app/api/inngest/route.ts` — `generateDailyBriefing` registered
+- Added to `serve({ functions: [...] })`.
+
+#### `supabase/seed.sql` — briefing fixture
+- `org_daily_briefings` row for TENANT_A with `CURRENT_DATE` — seed always has today's briefing for E2E.
+
+#### `src/__tests__/rls/org-daily-briefings.rls.test.ts` — NEW (18 tests)
+- SELECT: all 5 TENANT_A roles pass; TENANT_B cannot read TENANT_A rows; TENANT_A cannot read TENANT_B.
+- INSERT: owner ✅, admin ✅, recruiter ❌, hiring_manager ❌, TENANT_B cross-tenant ❌.
+- UPDATE: owner ✅, recruiter ❌, TENANT_B ❌.
+- DELETE: recruiter ❌, TENANT_B ❌.
+
+#### `src/__tests__/dashboard.test.ts` — 4 new `isBriefingContent` unit tests
+- valid → true, missing field → false, wrong type → false, null → false.
+
+#### `src/__tests__/e2e/dashboard.spec.ts` — E2E-19
+- Daily briefing card renders with win/blocker/action blocks visible (seed fixture ensures today's row).
+
+---
+
 ## 2026-03-11 — [Dashboard] R9/R10 Wave 2 — source quality hire rate + at-risk jobs widget
 
 **Phase:** Build — R1/R3/R4 Dashboard Enhancements (Wave 2 of 3)

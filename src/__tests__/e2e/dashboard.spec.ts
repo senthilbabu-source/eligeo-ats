@@ -70,6 +70,16 @@ test.describe("Dashboard", () => {
     await expect(page.getByText(/all open roles have active pipeline activity/i)).toBeVisible({ timeout: 5000 });
   });
 
+  // E2E-19: Daily Briefing card renders with seed data (R11)
+  test("daily briefing card renders on dashboard", async ({ page }) => {
+    await page.goto("/dashboard");
+    await expect(page.getByText(/daily briefing/i)).toBeVisible({ timeout: 8000 });
+    // Seed has today's briefing — all three blocks should render
+    await expect(page.getByText(/win/i).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/blocker/i).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/action/i).first()).toBeVisible({ timeout: 5000 });
+  });
+
   // E2E-16: Mine mode cookie persistence (R13)
   test("mine mode toggle persists via cookie across reload", async ({ page }) => {
     await page.goto("/dashboard");

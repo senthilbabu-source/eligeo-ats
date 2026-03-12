@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
@@ -13,6 +14,7 @@ import {
   type AtRiskJob,
 } from "@/lib/utils/dashboard";
 import { MineToggle } from "./mine-toggle";
+import { DailyBriefingCard } from "./daily-briefing-card";
 
 export const metadata: Metadata = {
   title: "Dashboard — Eligeo",
@@ -131,6 +133,7 @@ export default async function DashboardPage({
   const mineCookie = cookieStore.get("mine_mode")?.value === "1";
   const mineMode = params["mine"] === "1" || (params["mine"] !== "0" && mineCookie);
   const recruiterFilter = mineMode ? session.userId : null;
+  const isAdmin = session.orgRole === "owner" || session.orgRole === "admin";
 
   const nowMs = new Date().getTime();
   const oneWeekAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -370,6 +373,13 @@ export default async function DashboardPage({
         </div>
         {/* R13: Mine mode toggle — reads/sets cookie via client component */}
         <MineToggle mineMode={mineMode} />
+      </div>
+
+      {/* ── R11: Daily AI Briefing (cache-first, Suspense streaming) ── */}
+      <div className="mt-6">
+        <Suspense fallback={<div className="h-28 animate-pulse rounded-lg bg-muted" />}>
+          <DailyBriefingCard orgId={orgId} isAdmin={isAdmin} />
+        </Suspense>
       </div>
 
       {/* ── Top Metrics ── */}

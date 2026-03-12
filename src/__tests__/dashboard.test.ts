@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { aggregateSources, calcSourcePct, aggregateFunnel, calcTimeToHire, aggregateSourceQuality, findAtRiskJobs } from "@/lib/utils/dashboard";
+import { isBriefingContent } from "@/inngest/functions/analytics/generate-briefing";
 
 describe("aggregateSources", () => {
   it("should use candidate_sources.name (canonical) when source_id is set", () => {
@@ -287,5 +288,23 @@ describe("findAtRiskJobs", () => {
     // both have 3+ apps
     const result = findAtRiskJobs(jobs, { j1: 5, j2: 4 }, {}, NOW);
     expect(result).toHaveLength(0);
+  });
+});
+
+describe("isBriefingContent", () => {
+  it("should return true for valid briefing content", () => {
+    expect(isBriefingContent({ win: "3 hires", blocker: "Backlog", action: "Schedule interviews" })).toBe(true);
+  });
+
+  it("should return false when a required field is missing", () => {
+    expect(isBriefingContent({ win: "3 hires", blocker: "Backlog" })).toBe(false);
+  });
+
+  it("should return false for non-string field values", () => {
+    expect(isBriefingContent({ win: 42, blocker: "Backlog", action: "Do it" })).toBe(false);
+  });
+
+  it("should return false for null", () => {
+    expect(isBriefingContent(null)).toBe(false);
   });
 });
