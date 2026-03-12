@@ -26,7 +26,7 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 - **Phase:** Build — **Phase 4 (Offers) ✅ COMPLETE (5 waves). Pre-P5 Hardening ✅ COMPLETE. Phase 5 (Billing) ← NEXT.**
 - **Build order:** Phase 0 ✅ → Phase 1 ✅ → Phase 2 ✅ → Phase 2.5 ✅ → Phase 2.6 ✅ → Phase 2.7 ✅ → Phase 3 ✅ → Wave F ✅ → Phase 4 ✅ → Hardening ✅ → **Phase 5 (billing) ← NEXT**
 - **Documentation:** ALL 30 docs complete. Post-hardening doc cross-cut passed (2026-03-12). Spec docs describe WHAT; build order changed per ADR-011.
-- **Test count:** 1038 Vitest + 68 E2E = 1106 total. All passing (12 pre-existing talent-pool-members RLS failures unrelated).
+- **Test count:** 1049 Vitest + 68 E2E = 1117 total. **All passing — zero failures.** (12 pre-existing RLS fixture failures fixed in pre-P5 gate.)
 - **Migrations:** 29 total (000–029). Migration 029 adds RPCs (atomic stage move, approval locking), columns (email_verified_at, skills_updated_at, human_review_requested), ai_match_explanations table, candidate_skills trigger.
 - **Key rule:** Every new feature ships with AI-assisted mode from Day 1. No more "AI deferred to v2.0."
 - **Rules:** 90 rules in `docs/AI-RULES.md` (§1-§21)

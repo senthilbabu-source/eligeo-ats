@@ -191,7 +191,7 @@ User clicks "Upgrade"
   ├─ POST /api/v1/billing/checkout-session
   │   ├─ Verify user is organization owner (RBAC: billing:manage)
   │   ├─ Create or retrieve Stripe Customer (upsert stripe_customer_id)
-  │   ├─ stripe.checkout.sessions.create({ // [VERIFY] Stripe Checkout API
+  │   ├─ stripe.checkout.sessions.create({ // ✅ VERIFIED: Stripe SDK 20.4.1 — SessionsResource.d.ts
   │   │     customer: stripe_customer_id,
   │   │     mode: 'subscription',
   │   │     line_items: [{ price: selected_price_id, quantity: seat_count }],
@@ -217,7 +217,7 @@ User clicks "Upgrade"
 Stripe Customer Portal handles payment method updates, invoice history, and cancellation. No custom UI needed.
 
 ```typescript
-// POST /api/v1/billing/portal-session [VERIFY] Stripe Customer Portal API
+// POST /api/v1/billing/portal-session ✅ VERIFIED: Stripe SDK 20.4.1 — BillingPortal/SessionsResource.d.ts
 const session = await stripe.billingPortal.sessions.create({
   customer: org.stripe_customer_id,
   return_url: `${baseUrl}/settings/billing`,
@@ -319,10 +319,16 @@ At the end of each billing period, report overage to Stripe:
 // Inngest cron: billing/report-overage (daily 23:55 UTC) — orgs over limit
 const overage = org.ai_credits_used - org.ai_credits_limit;
 if (overage > 0) {
-  await stripe.subscriptionItems.createUsageRecord( // [VERIFY] Stripe Usage Records API
-    org_ai_overage_subscription_item_id,
-    { quantity: Math.ceil(overage / 100), timestamp: 'now', action: 'set' }
-  );
+  // ✅ VERIFIED: Legacy createUsageRecord() removed in API 2025-03-31.basil.
+  // Replaced with Billing Meters API (stripe.billing.meterEvents.create).
+  // Requires a pre-configured Meter in Stripe Dashboard with event_name = 'ai_credit_overage'.
+  await stripe.billing.meterEvents.create({
+    event_name: 'ai_credit_overage',
+    payload: {
+      stripe_customer_id: org.stripe_customer_id,
+      value: String(Math.ceil(overage / 100)),
+    },
+  });
 }
 ```
 
@@ -333,7 +339,7 @@ if (overage > 0) {
 Seat count = active `organization_members` (where `deleted_at IS NULL`). When members are added/removed, update Stripe subscription quantity:
 
 ```typescript
-// After adding/removing a member: [VERIFY] Stripe subscription items API
+// After adding/removing a member: ✅ VERIFIED: Stripe SDK 20.4.1 — SubscriptionItemsResource.d.ts
 async function syncSeatCount(orgId: string): Promise<void> {
   const { count } = await supabase
     .from('organization_members')

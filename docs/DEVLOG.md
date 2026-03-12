@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-03-12 — Phase 5 Pre-Start Gate: PASSED `[PLAYBOOK]`
+
+**Gate:** §21 pre-start gate for Phase 5 (Billing). All 6 checks passed.
+
+### G3 — [VERIFY] Markers Resolved
+- V-1 ✅ `stripe.checkout.sessions.create()` — all params confirmed in SDK 20.4.1 types
+- V-2 ✅ `stripe.billingPortal.sessions.create()` — `return_url` confirmed
+- V-3 ⚠️→✅ **CRITICAL:** `createUsageRecord()` removed in API 2025-03-31.basil. D03 §6.3 rewritten to use `stripe.billing.meterEvents.create()` (Billing Meters API). Requires pre-configured Meter in Stripe Dashboard.
+- V-4 ✅ `stripe.subscriptionItems.update()` with `proration_behavior: 'create_prorations'` confirmed
+
+### G4 — 12 Pre-Existing RLS Failures FIXED
+- Root cause: fixture/setup collisions on junction table unique constraints (`talent_pool_members` and `applications`)
+- `(talent_pool_id, candidate_id)` and `(candidate_id, job_opening_id)` unique pairs collided between sequential tests
+- Fix: added pre-cleanup before INSERT/DELETE tests to remove stale records from prior failed runs
+- Also fixed `assertTenantIsolation()` call missing client parameter in `talent-pool-members.rls.test.ts`
+- **Scenario A (fixture issue) confirmed — NOT an RLS policy bug**
+
+### Test Impact
+- Tests: 1049 passing (was 1038 + 12 failures = 1050 total; -1 from test rewrite). **Zero failures.**
+- TypeScript: clean `tsc --noEmit`
+
+**[PLAYBOOK] P-30:** Pre-start gates catch real issues. V-3 would have caused silent revenue leakage (deprecated API → $0 overage billing). Junction table RLS test fixtures need unique FK pairs per test, not just unique IDs.
+
+---
+
 ## 2026-03-12 — Pre-Phase 5 Hardening: Waves H1–H4 Complete `[PLAYBOOK]`
 
 **Scope:** Implemented all 12 hardening items across 4 waves. Zero new test failures.

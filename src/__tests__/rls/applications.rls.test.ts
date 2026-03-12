@@ -115,6 +115,12 @@ describe("RLS: applications", () => {
       ["hiring_manager", () => hmClient],
     ] as const) {
       it(`${name} can INSERT applications`, async () => {
+        // Pre-cleanup: remove stale (carol, productManager) from prior runs
+        const svc = createServiceClient();
+        await svc.from("applications").delete()
+          .eq("candidate_id", TENANT_A.candidates.carol.id)
+          .eq("job_opening_id", TENANT_A.jobs.productManager.id);
+
         const testId = crypto.randomUUID();
         const { error } = await (getClient as () => SupabaseClient)()
           .from("applications")
@@ -128,8 +134,6 @@ describe("RLS: applications", () => {
             source: "Direct",
           });
         expect(error).toBeNull();
-        // Cleanup
-        const svc = createServiceClient();
         await svc.from("applications").delete().eq("id", testId);
       });
     }
@@ -183,8 +187,11 @@ describe("RLS: applications", () => {
 
   describe("DELETE", () => {
     it("owner can DELETE application", async () => {
-      // Insert disposable, then delete
       const svc = createServiceClient();
+      // Pre-cleanup
+      await svc.from("applications").delete()
+        .eq("candidate_id", TENANT_A.candidates.carol.id)
+        .eq("job_opening_id", TENANT_A.jobs.productManager.id);
       const testId = crypto.randomUUID();
       await svc.from("applications").insert({
         id: testId,
@@ -206,6 +213,10 @@ describe("RLS: applications", () => {
 
     it("admin can DELETE application", async () => {
       const svc = createServiceClient();
+      // Pre-cleanup
+      await svc.from("applications").delete()
+        .eq("candidate_id", TENANT_A.candidates.carol.id)
+        .eq("job_opening_id", TENANT_A.jobs.productManager.id);
       const testId = crypto.randomUUID();
       await svc.from("applications").insert({
         id: testId,
