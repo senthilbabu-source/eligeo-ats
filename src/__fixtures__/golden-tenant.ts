@@ -100,17 +100,87 @@ export const TENANT_A = {
   interviews: {
     aliceScreening: {
       id: "11111111-7001-4000-a000-000000000001",
+      application_id: "11111111-5001-4000-a000-000000000001",
+      job_id: "11111111-3001-4000-a000-000000000001",
+      interviewer_id: "11111111-1001-4000-a000-000000000003",
+      interview_type: "phone_screen" as const,
       status: "completed" as const,
     },
     aliceTechnical: {
       id: "11111111-7001-4000-a000-000000000002",
+      application_id: "11111111-5001-4000-a000-000000000001",
+      job_id: "11111111-3001-4000-a000-000000000001",
+      interviewer_id: "11111111-1001-4000-a000-000000000005",
+      interview_type: "technical" as const,
       status: "scheduled" as const,
+    },
+  },
+  scorecardTemplates: {
+    engineering: {
+      id: "11111111-7003-4000-a000-000000000001",
+      name: "Engineering Interview",
+    },
+  },
+  scorecardCategories: {
+    technicalSkills: {
+      id: "11111111-7004-4000-a000-000000000001",
+      template_id: "11111111-7003-4000-a000-000000000001",
+      name: "Technical Skills",
+      position: 0,
+      weight: 2.0,
+    },
+    communication: {
+      id: "11111111-7004-4000-a000-000000000002",
+      template_id: "11111111-7003-4000-a000-000000000001",
+      name: "Communication",
+      position: 1,
+      weight: 1.0,
+    },
+  },
+  scorecardAttributes: {
+    systemDesign: {
+      id: "11111111-7005-4000-a000-000000000001",
+      category_id: "11111111-7004-4000-a000-000000000001",
+      name: "System Design",
+    },
+    codeQuality: {
+      id: "11111111-7005-4000-a000-000000000002",
+      category_id: "11111111-7004-4000-a000-000000000001",
+      name: "Code Quality",
+    },
+    clarityOfThought: {
+      id: "11111111-7005-4000-a000-000000000003",
+      category_id: "11111111-7004-4000-a000-000000000002",
+      name: "Clarity of Thought",
     },
   },
   scorecardSubmissions: {
     screeningFeedback: {
       id: "11111111-7002-4000-a000-000000000001",
+      interview_id: "11111111-7001-4000-a000-000000000001",
+      application_id: "11111111-5001-4000-a000-000000000001",
+      submitted_by: "11111111-1001-4000-a000-000000000003",
       recommendation: "strong_yes" as const,
+    },
+  },
+  scorecardRatings: {
+    systemDesignRating: {
+      id: "11111111-7006-4000-a000-000000000001",
+      submission_id: "11111111-7002-4000-a000-000000000001",
+      attribute_id: "11111111-7005-4000-a000-000000000001",
+      rating: 4,
+    },
+    codeQualityRating: {
+      id: "11111111-7006-4000-a000-000000000002",
+      submission_id: "11111111-7002-4000-a000-000000000001",
+      attribute_id: "11111111-7005-4000-a000-000000000002",
+      rating: 5,
+    },
+    clarityRating: {
+      id: "11111111-7006-4000-a000-000000000003",
+      submission_id: "11111111-7002-4000-a000-000000000001",
+      attribute_id: "11111111-7005-4000-a000-000000000003",
+      rating: 5,
     },
   },
   offers: {

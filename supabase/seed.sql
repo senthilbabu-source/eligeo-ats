@@ -421,6 +421,141 @@ VALUES (
 ON CONFLICT (organization_id, briefing_date) DO NOTHING;
 
 -- ============================================================
--- Phase 3+ seed data will be appended below
--- (interviews, scorecards, offers, etc.)
+-- Phase 3: Interviews & Scorecards
+-- ============================================================
+
+-- ─── Scorecard Template (itecbrains default) ─────────────────
+
+INSERT INTO scorecard_templates (id, organization_id, name, description, is_default, created_by) VALUES
+  (
+    '11111111-7003-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'Engineering Interview',
+    'Standard engineering interview evaluation template',
+    TRUE,
+    '11111111-1001-4000-a000-000000000001'
+  );
+
+-- ─── Scorecard Categories ────────────────────────────────────
+
+INSERT INTO scorecard_categories (id, template_id, organization_id, name, position, weight) VALUES
+  (
+    '11111111-7004-4000-a000-000000000001',
+    '11111111-7003-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'Technical Skills',
+    0,
+    2.0
+  ),
+  (
+    '11111111-7004-4000-a000-000000000002',
+    '11111111-7003-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'Communication',
+    1,
+    1.0
+  );
+
+-- ─── Scorecard Attributes ────────────────────────────────────
+
+INSERT INTO scorecard_attributes (id, category_id, organization_id, name, description, position) VALUES
+  (
+    '11111111-7005-4000-a000-000000000001',
+    '11111111-7004-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'System Design',
+    'Ability to design scalable systems',
+    0
+  ),
+  (
+    '11111111-7005-4000-a000-000000000002',
+    '11111111-7004-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'Code Quality',
+    'Clean, maintainable, well-tested code',
+    1
+  ),
+  (
+    '11111111-7005-4000-a000-000000000003',
+    '11111111-7004-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    'Clarity of Thought',
+    'Explains ideas clearly and concisely',
+    0
+  );
+
+-- ─── Interviews (Alice's pipeline) ───────────────────────────
+
+INSERT INTO interviews (id, organization_id, application_id, job_id, interviewer_id, interview_type, scheduled_at, duration_minutes, status, scorecard_template_id, created_by) VALUES
+  (
+    '11111111-7001-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000001',
+    '11111111-3001-4000-a000-000000000001',
+    '11111111-1001-4000-a000-000000000003',  -- Roshelle (recruiter) did screening
+    'phone_screen',
+    NOW() - INTERVAL '5 days',
+    30,
+    'completed',
+    '11111111-7003-4000-a000-000000000001',
+    '11111111-1001-4000-a000-000000000003'
+  ),
+  (
+    '11111111-7001-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000001',
+    '11111111-3001-4000-a000-000000000001',
+    '11111111-1001-4000-a000-000000000005',  -- Taylor (interviewer) for technical
+    'technical',
+    NOW() + INTERVAL '2 days',
+    60,
+    'scheduled',
+    '11111111-7003-4000-a000-000000000001',
+    '11111111-1001-4000-a000-000000000003'
+  );
+
+-- ─── Scorecard Submission (Roshelle's screening feedback) ────
+
+INSERT INTO scorecard_submissions (id, organization_id, interview_id, application_id, submitted_by, overall_recommendation, overall_notes) VALUES
+  (
+    '11111111-7002-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-7001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000001',
+    '11111111-1001-4000-a000-000000000003',  -- Roshelle
+    'strong_yes',
+    'Excellent communication skills. Strong technical foundation. Highly recommend advancing to technical round.'
+  );
+
+-- ─── Scorecard Ratings (Roshelle rated 3 attributes) ─────────
+
+INSERT INTO scorecard_ratings (id, submission_id, attribute_id, organization_id, rating, notes) VALUES
+  (
+    '11111111-7006-4000-a000-000000000001',
+    '11111111-7002-4000-a000-000000000001',
+    '11111111-7005-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    4,
+    'Good system design intuition for current level'
+  ),
+  (
+    '11111111-7006-4000-a000-000000000002',
+    '11111111-7002-4000-a000-000000000001',
+    '11111111-7005-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    5,
+    'Discussed past projects — code quality is clearly a priority'
+  ),
+  (
+    '11111111-7006-4000-a000-000000000003',
+    '11111111-7002-4000-a000-000000000001',
+    '11111111-7005-4000-a000-000000000003',
+    '11111111-2001-4000-a000-000000000001',
+    5,
+    'Very articulate, structured answers'
+  );
+
+-- ============================================================
+-- Phase 4+ seed data will be appended below
+-- (offers, etc.)
 -- ============================================================

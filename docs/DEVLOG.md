@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-03-12 — P3-W1: Migration 026 + Seed + RLS Tests (Interviews & Scorecards)
+
+**Scope:** Phase 3 Wave 1 — database foundation for interviews and scorecards cluster (6 tables).
+
+**What shipped:**
+
+**Migration 026 (`supabase/migrations/00026_interviews.sql`):**
+- 6 tables: `scorecard_templates`, `scorecard_categories`, `scorecard_attributes`, `interviews`, `scorecard_submissions`, `scorecard_ratings`
+- All tables follow ADR-006 (soft delete), ADR-007 (audit triggers), ADR-008 (CHECK constraints)
+- `interviews`: 5 indexes (application, interviewer_schedule, org_status, job, nylas_event), UPDATE allows interviewer_id=self
+- `scorecard_submissions`: UNIQUE(interview_id, submitted_by), blind review SELECT policy
+- `scorecard_ratings`: UNIQUE(submission_id, attribute_id), inherits blind review from parent submission
+- `has_submitted_scorecard_for_application()` — SECURITY DEFINER helper to avoid infinite recursion in blind review self-check
+- Realtime publication: `interviews`, `scorecard_submissions`
+
+**Seed data:** 1 template (Engineering Interview), 2 categories (Technical Skills w=2.0, Communication w=1.0), 3 attributes (System Design, Code Quality, Clarity of Thought), 2 interviews (Alice screening completed, Alice technical scheduled), 1 submission (Roshelle's screening feedback, strong_yes), 3 ratings (4, 5, 5).
+
+**Golden tenant fixtures:** `scorecardTemplates`, `scorecardCategories`, `scorecardAttributes`, `interviews`, `scorecardSubmissions`, `scorecardRatings` expanded in `golden-tenant.ts`.
+
+**RLS tests (75 tests across 6 files):**
+- `interviews.rls.test.ts` — 15 tests: SELECT×5+cross-tenant, INSERT×3 (interviewer blocked), UPDATE×4 (interviewer_id=self), DELETE×2
+- `scorecard-templates.rls.test.ts` — 12 tests: CRUD × roles × cross-tenant
+- `scorecard-categories.rls.test.ts` — 11 tests
+- `scorecard-attributes.rls.test.ts` — 10 tests
+- `scorecard-submissions.rls.test.ts` — 17 tests: blind review (interviewer can't see before submitting own, CAN see after), cross-tenant
+- `scorecard-ratings.rls.test.ts` — 10 tests: inherited blind review, cross-tenant. Uses Bob's application to avoid parallel test pollution with submissions test file.
+
+**Bug fix:** `org-daily-briefings.rls.test.ts` — added cleanup of leftover briefings before insert to avoid duplicate key on re-runs.
+
+**Test counts:** 718 → 793 Vitest (+75 Phase 3 RLS). All passing. TSC clean.
+
+---
+
 ## 2026-03-12 — Wave E: Pre-Phase 3 Completeness Audit Fixes (P0-1 → P1-6)
 
 **Scope:** Systematic resolution of 10 gaps identified in pre-Phase 3 audit. 5 sub-waves covering embedding pipeline, bias rendering, slug collisions, atomic reorder, candidate UI, and email context.

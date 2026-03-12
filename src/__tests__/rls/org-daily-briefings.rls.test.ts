@@ -40,6 +40,12 @@ describe("RLS: org_daily_briefings", () => {
     tenantBClient = await createTestClient(TENANT_B.users.owner.email);
     serviceClient = createServiceClient();
 
+    // Clean up any leftover briefings for today (from prior test runs)
+    await serviceClient.from("org_daily_briefings").delete()
+      .eq("organization_id", TENANT_A.org.id).eq("briefing_date", TODAY);
+    await serviceClient.from("org_daily_briefings").delete()
+      .eq("organization_id", TENANT_B.org.id).eq("briefing_date", TODAY);
+
     // Insert TENANT_A briefing via service role
     testBriefingId = crypto.randomUUID();
     const { error: insErr } = await serviceClient.from("org_daily_briefings").insert({
