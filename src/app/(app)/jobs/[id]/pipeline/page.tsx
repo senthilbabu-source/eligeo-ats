@@ -65,6 +65,25 @@ export default async function PipelinePage({
     .is("deleted_at", null)
     .order("applied_at", { ascending: false });
 
+  // M1-K — compute days_in_stage for each application (latest stage history entry = stage entry time)
+  const appIds = (applications ?? []).map((a) => a.id);
+  const stageEntryByApp: Record<string, Date> = {};
+  if (appIds.length > 0) {
+    const { data: history } = await supabase
+      .from("application_stage_history")
+      .select("application_id, created_at")
+      .in("application_id", appIds)
+      .eq("organization_id", session.orgId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+    for (const row of history ?? []) {
+      if (!stageEntryByApp[row.application_id]) {
+        stageEntryByApp[row.application_id] = new Date(row.created_at);
+      }
+    }
+  }
+  const nowMs = new Date().getTime();
+
   // Group applications by stage
   const applicationsByStage: Record<
     string,
@@ -73,6 +92,7 @@ export default async function PipelinePage({
       status: string;
       current_stage_id: string;
       applied_at: string;
+      days_in_stage: number | null;
       candidate: { id: string; full_name: string; current_title: string | null; current_company: string | null } | null;
     }>
   > = {};
@@ -90,11 +110,17 @@ export default async function PipelinePage({
       current_company: string | null;
     } | null;
 
+    const enteredAt = stageEntryByApp[app.id];
+    const days_in_stage = enteredAt
+      ? Math.floor((nowMs - enteredAt.getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
     const stageApps = applicationsByStage[app.current_stage_id];
     if (stageApps) {
       stageApps.push({
         ...app,
         candidate,
+        days_in_stage,
       });
     }
   }

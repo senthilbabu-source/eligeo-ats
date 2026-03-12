@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/constants/roles";
 import { ApplyToJobForm } from "./apply-to-job-form";
 import { InlineAppActions } from "./inline-app-actions";
+import { NextBestAction } from "./next-best-action";
 
 export async function generateMetadata({
   params,
@@ -277,6 +279,11 @@ export default async function CandidateDetailPage({
           )}
         </p>
       </div>
+
+      {/* CP10 — Next Best Action strip */}
+      <Suspense fallback={null}>
+        <NextBestAction candidateId={candidate.id} orgId={session.orgId} />
+      </Suspense>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         {/* Profile */}

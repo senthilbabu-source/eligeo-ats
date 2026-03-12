@@ -45,6 +45,8 @@ export function RewritePanel({
           }
         })
         .finally(() => setIsCheckingBias(false));
+      // C3 — scroll quality panel into view so metrics are visible alongside diff
+      document.querySelector("[data-jd-quality-panel]")?.scrollIntoView({ behavior: "smooth", block: "start" });
     },
   });
 

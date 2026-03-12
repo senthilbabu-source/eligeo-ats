@@ -31,6 +31,7 @@ interface Application {
   status: string;
   current_stage_id: string;
   applied_at: string;
+  days_in_stage: number | null;
   candidate: {
     id: string;
     full_name: string;
@@ -77,6 +78,14 @@ function DraggableCard({
   const prevStage = currentStageIndex > 0 ? stages[currentStageIndex - 1] : null;
   const nextStage = currentStageIndex < stages.length - 1 ? stages[currentStageIndex + 1] : null;
 
+  // M1-K — left border health indicator based on days_in_stage
+  const days = app.days_in_stage;
+  const healthBorder =
+    days === null ? "" :
+    days > 14 ? "border-l-[3px] border-l-red-400" :
+    days > 7  ? "border-l-[3px] border-l-amber-400" :
+    "";
+
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -87,7 +96,7 @@ function DraggableCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-lg border border-border bg-background p-3 shadow-sm transition-shadow ${
+      className={`rounded-lg border border-border bg-background p-3 shadow-sm transition-shadow ${healthBorder} ${
         isDragging
           ? "scale-[1.02] opacity-50 shadow-lg ring-2 ring-primary/20"
           : ""
@@ -287,7 +296,7 @@ export function PipelineBoard({
         if (!app) return prev;
 
         next[fromStageId] = (next[fromStageId] ?? []).filter((a) => a.id !== applicationId);
-        next[toStageId] = [...(next[toStageId] ?? []), { ...app, current_stage_id: toStageId }];
+        next[toStageId] = [...(next[toStageId] ?? []), { ...app, current_stage_id: toStageId, days_in_stage: 0 }];
         return next;
       });
 

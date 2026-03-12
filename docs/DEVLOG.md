@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-03-11 — AI-Proof Wave C (CP10, M1-K, C3)
+
+**Scope:** Three UX polish items. No new migrations. No new RLS surface.
+
+**CP10 — Next Best Action strip (candidate profile)**
+- New async server component `next-best-action.tsx` with `<Suspense>` in `candidates/[id]/page.tsx`
+- Detects: no active applications (blue strip) or stalled >14 days in stage (amber strip)
+- Pure function `computeNextBestAction()` extracted for unit testing
+- 5 unit tests in `src/__tests__/next-best-action.test.ts` (all pass)
+
+**M1-K — Kanban health indicator**
+- `pipeline/page.tsx`: fetches `application_stage_history`, computes `days_in_stage` per card
+- `Application` interface updated with `days_in_stage: number | null`
+- `DraggableCard`: left border `border-l-[3px]` — amber >7 days, red >14 days, none otherwise
+- Optimistic move resets `days_in_stage` to 0 for instant visual feedback
+
+**C3 — JD quality panel auto-scroll after generation**
+- `jd-quality-panel.tsx`: added `data-jd-quality-panel=""` marker to outer div
+- `rewrite-panel.tsx`: on stream finish, `document.querySelector("[data-jd-quality-panel]")?.scrollIntoView({ behavior: "smooth" })` — no parent coordination needed
+
+**Test delta:** +5 unit tests (next-best-action). Total: ~624 Vitest + 48 E2E.
+
+**Next:** Phase 3 — Interviews + Scorecards. Start with D01 schema cluster 5 + module spec doc.
+
+---
+
 ## 2026-03-11 — AI-Proof Wave B — email enrichment + bias gate + move_stage wiring
 
 **Phase:** AI-Proof Wave B (pre-Phase 3 wiring pass)

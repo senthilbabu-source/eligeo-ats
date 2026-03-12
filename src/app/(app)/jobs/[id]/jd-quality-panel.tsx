@@ -77,7 +77,7 @@ export function JdQualityPanel({ jobId, description, salaryMin, salaryMax, locat
   if (!description || dismissed) return null;
 
   return (
-    <div className="mt-6 rounded-lg border border-border bg-card">
+    <div data-jd-quality-panel="" className="mt-6 rounded-lg border border-border bg-card">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h3 className="text-sm font-medium">Job Description Quality</h3>
