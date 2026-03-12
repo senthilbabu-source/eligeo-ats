@@ -221,12 +221,12 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| O1 | One-click templated offer letter pre-filled | 🟣 P4 | All | Offer templates with merge fields (D06) |
-| O2 | AI recommends compensation based on market + equity | 🟠 v2.0 | Pro+ | Requires comp data source — not available at launch |
-| O3 | Send, track, e-sign without leaving platform | 🟠 v2.0 | Pro+ | Dropbox Sign integration (D06). Manual "mark signed" in v1.0 |
-| O4 | Real-time visibility: opened, viewed, signed | 🟠 v2.0 | Pro+ | Requires Dropbox Sign webhook callbacks |
-| O5 | Offer approval workflows (finance/HR review) | 🟠 v2.0 | Pro+ | Sequential approvals. Auto-approve in v1.0 |
-| O6 | AI flags offers outside approved salary band | 🟣 P4 | Growth+ | Simple range check + AI warning |
+| O1 | One-click templated offer letter pre-filled | 🟣 P4 ✅ BUILT | All | Offer templates with merge fields (D06). `createOffer` server action + `/offers/new` form |
+| O2 | AI recommends compensation based on market + equity | 🟣 P4 ✅ BUILT | Growth+ | `suggestOfferCompensation` AI function (P4-W3). Command bar: "create offer for [name]" |
+| O3 | Send, track, e-sign without leaving platform | 🟣 P4 partial | Pro+ | Manual "mark signed" built. Dropbox Sign integration stubbed (Phase 5). `send-esign` Inngest function ready. |
+| O4 | Real-time visibility: opened, viewed, signed | 🟠 v2.0 | Pro+ | Requires Dropbox Sign webhook callbacks (Phase 5) |
+| O5 | Offer approval workflows (finance/HR review) | 🟣 P4 ✅ BUILT | All | Full sequential approval chain with auto-skip (G-022). Approval inbox at `/approvals`. |
+| O6 | AI flags offers outside approved salary band | 🟣 P4 ✅ BUILT | Growth+ | `checkSalaryBand` AI function (P4-W3). Returns percentile + assessment. |
 
 ---
 

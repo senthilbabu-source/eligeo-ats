@@ -3,7 +3,7 @@
 > **ID:** D06
 > **Status:** Review
 > **Priority:** P1
-> **Last updated:** 2026-03-10
+> **Last updated:** 2026-03-12
 > **Depends on:** D01 (schema — `offers`, `offer_templates`, `offer_approvals`), D02 (API patterns), D03 (billing — plan gating), D05 (design — status badges)
 > **Depended on by:** D08 (Candidate Portal — offer acceptance), D19 (Migration — offer data import)
 > **Last validated against deps:** 2026-03-10
@@ -16,8 +16,9 @@
 Offer Management covers the full lifecycle of employment offers: drafting from templates, multi-step approval chains, e-signature delivery via Dropbox Sign, candidate response tracking, and expiry handling. An offer is always tied to a specific `application` (one candidate + one job opening).
 
 **Scope:**
-- In scope: Offer CRUD, templates, approval chain, e-sign delivery, status tracking, expiry cron, offer analytics.
-- Out of scope: Compensation benchmarking (future), background checks (separate module), onboarding kickoff (separate trigger).
+- In scope: Offer CRUD, templates, approval chain, e-sign delivery, status tracking, expiry cron, offer analytics, AI compensation suggestion, salary band checking, offer letter drafting.
+- Out of scope: Background checks (separate module), onboarding kickoff (separate trigger).
+- **Build status (2026-03-12):** Phase 4 complete (5 waves). State machine, server actions, AI layer, Inngest functions, UI pages all shipped. Dropbox Sign e-sign integration stubbed (Phase 5). Manual "mark signed" available now.
 
 ## 2. User Stories
 
@@ -253,24 +254,23 @@ const OfferResponse = z.object({
 
 | Function ID | Trigger Event | Steps | Concurrency | Rate Limit |
 |-------------|---------------|-------|-------------|------------|
-| `offers/approval-notify` | `ats/offer.submitted` | 1. Find next pending approver 2. Send email + in-app notification | 10 | 20/min/org |
-| `offers/approval-advanced` | `ats/offer.approval-decided` | 1. Check if chain complete 2. If yes: set approved 3. If rejected: reset to draft | 10 | 20/min/org |
-| `offers/send-esign` | `ats/offer.send-requested` | 1. Generate PDF 2. Create Dropbox Sign envelope 3. Update offer status | 5 | 10/min/org |
-| `offers/esign-webhook` | `dropboxsign/webhook.received` | 1. Verify event 2. Update offer status 3. Notify recruiter | 10 | — |
-| `offers/check-expiry` | Cron: `0 * * * *` (hourly) | 1. Find sent offers past expiry_date 2. Set status = expired 3. Void e-sign envelope 4. Notify recruiter | 1 | — |
-| `offers/withdraw` | `ats/offer.withdrawn` | 1. Void e-sign envelope (if sent) 2. Send cancellation email to candidate | 5 | 10/min/org |
+| `offers/approval-notify` | `ats/offer.submitted` | 1. Find next pending approver 2. Fetch offer context 3. Send email + in-app notification | 10/org | 20/min/org | **✅ Shipped** |
+| `offers/approval-advanced` | `ats/offer.approval-decided` | 1. Check chain status 2. If all approved: advance to `approved` 3. If more pending: notify next (with G-022 auto-skip) 4. If rejected: notify recruiter | 10/org | 20/min/org | **✅ Shipped** |
+| `offers/send-esign` | `ats/offer.send-requested` | 1. Fetch offer 2. Resolve context 3. Create e-sign envelope (stub) 4. Update to `sent` 5. Notify recruiter | 5 | 10/min/org | **✅ Shipped** (e-sign stub) |
+| `offers/esign-webhook` | `dropboxsign/webhook.received` | 1. Verify event 2. Update offer status 3. Notify recruiter | 10 | — | Phase 5 |
+| `offers/check-expiry` | Cron: `0 * * * *` (hourly) | 1. Find expired offers 2. Mark expired 3. Void e-sign (stub) 4. Notify recruiters | 1 | — | **✅ Shipped** |
+| `offers/withdraw` | `ats/offer.withdrawn` | 1. Void e-sign envelope (stub) 2. Notify recruiter | 5/org | 10/min/org | **✅ Shipped** |
 
 ## 7. UI Components
 
 | Component | Page | Description |
 |-----------|------|-------------|
-| `OfferBuilder` | `/jobs/:id/offers/new` | Form with template picker, compensation editor, approver selector |
-| `OfferDetail` | `/offers/:id` | Full offer view with status badge, compensation breakdown, approval timeline |
-| `ApprovalTimeline` | `/offers/:id` | Vertical step indicator showing approval chain progress |
-| `ApprovalInbox` | `/approvals` | List of pending approvals for current user across all offers |
-| `OfferStatusBadge` | Various | Semantic status colors per D05 (success=signed, warning=pending, destructive=declined/expired) |
-| `CompensationEditor` | `/offers/new`, `/offer-templates/new` | Structured form for OfferCompensation fields with currency picker |
-| `OfferTemplateList` | `/settings/offer-templates` | Template management CRUD |
+| `OfferForm` | `/offers/new?applicationId=X` | Full compensation editor (base, currency, period, bonus, equity, sign-on), offer details (start/expiry/terms), approver selector with sequence ordering. **✅ Built** |
+| Offer list page | `/offers` | Status filter tabs (8 statuses), pagination, status badges, currency formatting. **✅ Built** |
+| Offer detail page | `/offers/:id` | Compensation breakdown, details card, approval timeline with colored dots, action buttons via `offer-actions.tsx`. **✅ Built** |
+| `OfferActions` | `/offers/:id` | Client component: Submit, Approve, Reject (with notes), Mark Signed, Withdraw. Uses `validActions()` from state machine. **✅ Built** |
+| `ApprovalInbox` | `/approvals` | Pending approvals for current user, "your turn" indicator, candidate/job context. **✅ Built** |
+| `OfferTemplateList` | `/settings/offer-templates` | Template management CRUD. Phase 5. |
 
 ## 8. Edge Cases & Error Handling
 
@@ -301,12 +301,15 @@ const OfferResponse = z.object({
 
 | Type | File | What it tests |
 |------|------|---------------|
-| Unit | `tests/unit/offers/state-machine.test.ts` | All 11 state transitions, guard conditions |
-| Unit | `tests/unit/offers/approval-chain.test.ts` | Sequential approval, rejection reset, auto-skip |
-| Integration | `tests/integration/offers/api.test.ts` | CRUD endpoints, RLS enforcement, Zod validation |
-| Integration | `tests/integration/offers/esign.test.ts` | Dropbox Sign envelope creation/voiding (MSW mock) |
-| Integration | `tests/integration/offers/expiry.test.ts` | Expiry cron detects and transitions offers |
-| E2E | `tests/e2e/offers.spec.ts` | Full flow: create → approve → send → sign |
+| Unit | `src/__tests__/offer-state-machine.test.ts` | 18 tests: All 11 state transitions, guard conditions, terminal states, valid actions | **✅ Built** |
+| Unit | `src/__tests__/offer-ai.test.ts` | 14 tests: AI comp suggestion, offer letter draft, salary band check | **✅ Built** |
+| Unit | `src/__tests__/offer-intent-patterns.test.ts` | 16 tests: create_offer/check_offer patterns, navigation, preserved patterns | **✅ Built** |
+| Unit | `src/__tests__/offer-actions.test.ts` | 34 tests: Server action CRUD, state transitions, permission checks | **✅ Built** |
+| Unit | `src/__tests__/offer-inngest.test.ts` | 15 tests: All 5 Inngest functions (approval notify/advanced, expiry, withdraw, send-esign) | **✅ Built** |
+| RLS | `src/__tests__/rls/offer-templates.rls.test.ts` | 15 tests: 4 ops × roles × 2 tenants | **✅ Built** |
+| RLS | `src/__tests__/rls/offers.rls.test.ts` | 15 tests: 4 ops × roles × 2 tenants | **✅ Built** |
+| RLS | `src/__tests__/rls/offer-approvals.rls.test.ts` | 14 tests: 4 ops × roles × 2 tenants | **✅ Built** |
+| E2E | `src/__tests__/e2e/offers.spec.ts` | Full flow: create → approve → send → sign. **Planned** |
 
 ## 11. Open Questions
 
@@ -314,4 +317,4 @@ const OfferResponse = z.object({
 
 ---
 
-*Changelog: Created 2026-03-10*
+*Changelog: Created 2026-03-10. Updated 2026-03-12 — Phase 4 build complete (5 waves). Reconciled §6 Inngest with shipped code, §7 UI with actual pages, §10 testing with actual test files and counts.*

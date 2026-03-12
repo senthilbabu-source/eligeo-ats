@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-03-12 — Post-Phase 4 Documentation Audit
+
+**Scope:** Cross-cut audit of all 30 docs + CLAUDE.md + MEMORY.md to ensure accuracy and consistency after Phase 4 completion.
+
+### Discrepancies Found & Fixed (9 documents)
+
+| Doc | Issue | Fix |
+|-----|-------|-----|
+| D01 | "40 tables" → should be 43 (+ offer tables from M028) | Updated header + comments |
+| D06 | AI scope said "future"; retries wrong; UI paths wrong; no build status | Added build status, fixed retries, updated UI paths, noted AI built in W3 |
+| D29 | 54 → 56 functions (numbering collision fixed); send-esign retries 3→5; shipped 5→10 | Renumbered §4.8-4.10, updated §8 shipped table |
+| D24 | Missing offer_templates + offer_approvals from RLS matrix; missing Offers row in §5.1 | Added 3 offer tables to §6.2 (~294→~338), added Offers module row |
+| D30 | O2 (AI comp) + O5 (approval chain) marked v2.0 but built in P4 | Updated to ✅ BUILT with details |
+| INDEX | D01 table count, D24 RLS count, D29 shipped count, D30 offer stories | All updated to match |
+| CLAUDE.md | Phase status stale, test count wrong (960→1103), migration count (27→28) | Updated Current State section |
+| MEMORY.md | Phase status, next step, GitHub status | All updated for P4 complete, P5 next |
+| SESSION-HANDOFF | Phase status, Inngest count (5→10), deferred items | Full update for Phase 5 readiness |
+
+### Cross-Cut Verification (19 checks)
+
+**Result: 19/19 PASS** — all numbers now consistent across all docs.
+
+| Metric | Value | Docs Verified |
+|--------|-------|---------------|
+| Tables | 43 | D01, INDEX, CLAUDE.md |
+| Migrations | 28 (000-028) | CLAUDE.md, MEMORY.md |
+| Inngest total | 56 | D29, INDEX |
+| Inngest shipped | 10 | D29, INDEX, SESSION-HANDOFF |
+| Inngest v1.0 scope | 41 | D29 |
+| Test count | 1035 + 68 = 1103 | CLAUDE.md, MEMORY.md, SESSION-HANDOFF |
+| RLS matrix | ~338 cases | D24, INDEX |
+| Phase status | P4 ✅, P5 next | CLAUDE.md, MEMORY.md, SESSION-HANDOFF |
+| send-esign retries | 5 | D06, D29, code |
+
+---
+
 ## 2026-03-12 — Phase 4 Wave 5: UI Pages (Offers + Approvals)
 
 **Scope:** Full offer management UI — list, detail, creation form, approval inbox, and navigation integration.

@@ -3,7 +3,7 @@
 > **ID:** D29
 > **Status:** Review
 > **Priority:** P0
-> **Last updated:** 2026-03-11
+> **Last updated:** 2026-03-12
 > **Depends on:** D03, D06–D12, D13, D17, D19, D23
 > **Depended on by:** Infrastructure setup (Phase 0)
 
@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **54 functions across 10 modules**, covering billing webhooks, offer workflows, interview scheduling, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
+This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **56 functions across 10 modules**, covering billing webhooks, offer workflows, interview scheduling, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
 
 Every background job in the system runs through Inngest. There are no Supabase Edge Functions (ADR-002). Cron jobs are Inngest cron triggers, not Next.js Route Handlers — Inngest manages scheduling, retries, and observability.
 
@@ -59,10 +59,10 @@ Functions only override these defaults when documented in the registry table bel
 |---|-------------|---------|---------|-------------|------|
 | 8 | `offers/approval-notify` | `ats/offer.submitted` | default (3) | 10 per org | Yes |
 | 9 | `offers/approval-advanced` | `ats/offer.approval-decided` | default (3) | 10 per org | Yes |
-| 10 | `offers/send-esign` | `ats/offer.send-requested` | default (3) | 5 | Yes |
+| 10 | `offers/send-esign` | `ats/offer.send-requested` | 5 | 5 per org | Yes |
 | 11 | `offers/esign-webhook` | `dropboxsign/webhook.received` | default (3) | 5 | Yes |
 | 12 | `offers/check-expiry` | Cron: `0 * * * *` (hourly) | default (3) | 1 | Yes |
-| 13 | `offers/withdraw` | `ats/offer.withdrawn` | default (3) | 5 | Yes |
+| 13 | `offers/withdraw` | `ats/offer.withdrawn` | default (3) | 5 per org | Yes |
 
 ### 4.3 Interviews (7 functions)
 
@@ -136,32 +136,32 @@ Functions only override these defaults when documented in the registry table bel
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
-| 41 | `onboarding/csv-import` | `ats/onboarding.csv-uploaded` | 2 | — | Yes |
-| 42 | `onboarding/merge-sync` | `ats/onboarding.merge-sync-requested` | default (3) | — | No (v2.1) |
-| 43 | `onboarding/demo-seed` | `ats/onboarding.demo-seed-requested` | default (3) | — | Yes |
+| 43 | `onboarding/csv-import` | `ats/onboarding.csv-uploaded` | 2 | — | Yes |
+| 44 | `onboarding/merge-sync` | `ats/onboarding.merge-sync-requested` | default (3) | — | No (v2.1) |
+| 45 | `onboarding/demo-seed` | `ats/onboarding.demo-seed-requested` | default (3) | — | Yes |
 
 ### 4.9 Compliance (4 functions)
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
-| 44 | `compliance/dsar-export` | `ats/compliance.dsar-requested` | 2 | — | Yes |
-| 45 | `compliance/retention-cron` | Cron: `0 3 * * 0` (weekly Sunday 3AM UTC) | default (3) | — | Yes |
-| 46 | `compliance/audit-export` | `ats/compliance.audit-export-requested` | default (3) | — | Yes |
-| 47 | `compliance/dei-aggregate` | `ats/compliance.dei-aggregate-requested` | default (3) | — | Yes |
+| 46 | `compliance/dsar-export` | `ats/compliance.dsar-requested` | 2 | — | Yes |
+| 47 | `compliance/retention-cron` | Cron: `0 3 * * 0` (weekly Sunday 3AM UTC) | default (3) | — | Yes |
+| 48 | `compliance/audit-export` | `ats/compliance.audit-export-requested` | default (3) | — | Yes |
+| 49 | `compliance/dei-aggregate` | `ats/compliance.dei-aggregate-requested` | default (3) | — | Yes |
 
 ### 4.10 Data Migration (7 functions) — v2.1
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
-| 48 | `migration/extract` | `ats/migration.extract-requested` | 3 | — | No (v2.1) |
-| 49 | `migration/transform` | `ats/migration.transform-requested` | 3 | — | No (v2.1) |
-| 50 | `migration/validate` | `ats/migration.validate-requested` | 3 | — | No (v2.1) |
-| 51 | `migration/load` | `ats/migration.load-requested` | 3 | — | No (v2.1) |
-| 52 | `migration/verify` | `ats/migration.verify-requested` | 3 | — | No (v2.1) |
-| 53 | `migration/rollback` | `ats/migration.rollback-requested` | 3 | — | No (v2.1) |
-| 54 | `migration/file-download` | `ats/migration.file-download-requested` | 3 | — | No (v2.1) |
+| 50 | `migration/extract` | `ats/migration.extract-requested` | 3 | — | No (v2.1) |
+| 51 | `migration/transform` | `ats/migration.transform-requested` | 3 | — | No (v2.1) |
+| 52 | `migration/validate` | `ats/migration.validate-requested` | 3 | — | No (v2.1) |
+| 53 | `migration/load` | `ats/migration.load-requested` | 3 | — | No (v2.1) |
+| 54 | `migration/verify` | `ats/migration.verify-requested` | 3 | — | No (v2.1) |
+| 55 | `migration/rollback` | `ats/migration.rollback-requested` | 3 | — | No (v2.1) |
+| 56 | `migration/file-download` | `ats/migration.file-download-requested` | 3 | — | No (v2.1) |
 
-> **Note:** Numbering reaches 54 because migration has 7 functions but the total across all modules is 51+3 offset from search module numbering. The authoritative count is **51 unique function IDs** — migration/file-download shares infrastructure with migration/extract in some pipeline configurations. The canonical count by module: 7+6+7+7+7+4+2+3+4+7 = 54 registered functions, 51 unique logical jobs.
+> **Note:** 56 registered function IDs across 10 modules. The canonical count by module: 7+6+7+7+7+4+4+3+4+7 = 56.
 
 ## 5. Cron Schedule Summary
 
@@ -207,21 +207,21 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 ## 8. v1.0 Scope
 
-### Ships in v1.0 (~33 functions)
+### Ships in v1.0 (41 functions)
 
-| Module | Count | Notes |
-|--------|-------|-------|
-| Billing | 7 | All functions |
-| Offers | 6 | All functions |
-| Interviews | 7 | All 7 ship, but `interview/nylas-event-sync` is a **stub** (logs + no-ops) until Nylas integration in v2.0 |
-| Notifications | 7 | All functions |
-| Workflow | 6 | All except `workflow/application-withdrawn` (deferred to v1.1) |
-| Onboarding | 2 | `csv-import` and `demo-seed` only; `merge-sync` is v2.1 |
-| Compliance | 4 | All functions |
-| Analytics | 2 | `analytics/generate-briefing` (Wave 3) + `analytics/refresh-job-embedding` (AI-Proof Wave A). `analytics/refresh-views` and `analytics/export` are v1.1. |
-| **Total** | **41** | |
+| Module | Count | Shipped | Notes |
+|--------|-------|---------|-------|
+| Billing | 7 | 0 | Phase 5 |
+| Offers | 6 | 5 | `esign-webhook` pending (Phase 5 Dropbox Sign). 5/6 shipped in P4-W4. |
+| Interviews | 7 | 1 | `interview-reminder` shipped. `nylas-event-sync` is a stub. Rest are Phase 3+. |
+| Notifications | 7 | 3 | `dispatch`, `send-email`, `interview-reminder` shipped. Rest pending. |
+| Workflow | 6 | 0 | All pending. `application-withdrawn` deferred to v1.1. |
+| Onboarding | 2 | 0 | `csv-import` and `demo-seed` pending. `merge-sync` is v2.1. |
+| Compliance | 4 | 0 | All pending. |
+| Analytics | 2 | 2 | `generate-briefing` (Wave 3) + `generate-candidate-embedding` (AI-Proof). Both shipped. |
+| **Total** | **41** | **10** | **10 of 41 v1.0 functions are shipped and registered in `/api/inngest/route.ts`** |
 
-> Total registry: 54 functions. v1.0 scope: 41 functions. The initial estimate of ~33 grew as compliance (4), onboarding (2), and analytics (2) were scoped into v1.0.
+> Total registry: 56 functions. v1.0 scope: 41 functions. 10 shipped (Phase 4 complete). Remaining 31 ship in Phases 5+.
 
 ### Deferred
 
@@ -235,4 +235,4 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 ---
 
-*Created: 2026-03-11*
+*Created: 2026-03-11. Updated: 2026-03-12 — Phase 4 shipped 5 offer functions, corrected `send-esign` retries to 5 (per D06 §4.2), fixed numbering sequence, updated shipped counts.*
