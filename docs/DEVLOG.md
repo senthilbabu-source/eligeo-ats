@@ -4,6 +4,20 @@
 
 ---
 
+## 2026-03-11 — Wave D / D1: AF1 — Score Feedback Buttons on AiMatchPanel
+
+**Scope:** Close the AI feedback loop — thumbs up/down on each match row in `AiMatchPanel`, writing to `ai_score_feedback` table (Migration 022). No new migrations. No new RLS tests (17 already exist from Wave A).
+
+**What shipped:**
+- `src/lib/actions/ai.ts` — `submitScoreFeedback()` SA: looks up active application for candidate+job, inserts `ai_score_feedback` row (org-scoped, immutable by design per ADR-006). Returns `{ error: "no_application" }` if candidate has no application for this job.
+- `src/app/(app)/jobs/[id]/ai-match-panel.tsx` — feedback state (`Record<string, 'thumbs_up'|'thumbs_down'>`), optimistic update + revert on error, per-row thumbs up/down buttons. Toggle-off: clicking same signal again removes it. Error message "Add candidate to pipeline first" shown inline when `no_application`. Buttons use `e.stopPropagation()` to prevent Link navigation.
+
+**ADR-004:** No new pure functions extracted → no new unit tests required. RLS covered by existing 17 tests in `ai-score-feedback.rls.test.ts`.
+
+**Test count:** 688 Vitest + 52 E2E = 740 total (unchanged — no new test files needed).
+
+---
+
 ## 2026-03-11 — AI-Proof Wave C (CP10, M1-K, C3)
 
 **Scope:** Three UX polish items. No new migrations. No new RLS surface.

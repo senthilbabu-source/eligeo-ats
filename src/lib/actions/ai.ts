@@ -177,6 +177,56 @@ export async function aiGenerateJobDescription(
   return { success: true, text: result.text };
 }
 
+// ── AI Score Feedback ─────────────────────────────────────
+
+export async function submitScoreFeedback({
+  candidateId,
+  jobId,
+  signal,
+  matchScoreAtTime,
+}: {
+  candidateId: string;
+  jobId: string;
+  signal: "thumbs_up" | "thumbs_down";
+  matchScoreAtTime?: number;
+}): Promise<{ success: true } | { error: string }> {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "candidates:view");
+
+  const supabase = await createClient();
+
+  // Look up the most recent application for this candidate + job (any non-deleted status)
+  const { data: application } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("candidate_id", candidateId)
+    .eq("job_opening_id", jobId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!application) {
+    return { error: "no_application" };
+  }
+
+  const { error } = await supabase.from("ai_score_feedback").insert({
+    organization_id: session.orgId,
+    application_id: application.id,
+    signal,
+    given_by: session.userId,
+    match_score_at_time: matchScoreAtTime ?? null,
+  });
+
+  if (error) {
+    logger.error({ error, candidateId, jobId }, "submitScoreFeedback failed");
+    return { error: "Failed to save feedback. Please try again." };
+  }
+
+  return { success: true };
+}
+
 // ── AI Email Draft ────────────────────────────────────────
 
 export async function aiDraftEmail(

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { aiMatchCandidates, aiGenerateJobEmbedding } from "@/lib/actions/ai";
+import { aiMatchCandidates, aiGenerateJobEmbedding, submitScoreFeedback } from "@/lib/actions/ai";
 
 interface AiMatchPanelProps {
   jobId: string;
@@ -18,6 +18,8 @@ interface MatchResult {
   similarity_score: number;
 }
 
+type FeedbackSignal = "thumbs_up" | "thumbs_down";
+
 export function AiMatchPanel({ jobId, hasEmbedding }: AiMatchPanelProps) {
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
@@ -25,6 +27,10 @@ export function AiMatchPanel({ jobId, hasEmbedding }: AiMatchPanelProps) {
   const [hasSearched, setHasSearched] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isGenerating, startGenerating] = useTransition();
+  // AF1 — feedback state keyed by candidateId
+  const [feedback, setFeedback] = useState<Record<string, FeedbackSignal>>({});
+  const [feedbackPending, setFeedbackPending] = useState<Record<string, boolean>>({});
+  const [feedbackError, setFeedbackError] = useState<Record<string, string>>({});
 
   function handleFindMatches() {
     startTransition(async () => {
@@ -51,6 +57,54 @@ export function AiMatchPanel({ jobId, hasEmbedding }: AiMatchPanelProps) {
         handleFindMatches();
       }
     });
+  }
+
+  async function handleFeedback(
+    candidateId: string,
+    signal: FeedbackSignal,
+    matchScore: number,
+  ) {
+    // Toggle off if same signal already set
+    if (feedback[candidateId] === signal) {
+      setFeedback((prev) => {
+        const next = { ...prev };
+        delete next[candidateId];
+        return next;
+      });
+      return;
+    }
+
+    // Optimistic update
+    setFeedback((prev) => ({ ...prev, [candidateId]: signal }));
+    setFeedbackPending((prev) => ({ ...prev, [candidateId]: true }));
+    setFeedbackError((prev) => {
+      const next = { ...prev };
+      delete next[candidateId];
+      return next;
+    });
+
+    const result = await submitScoreFeedback({
+      candidateId,
+      jobId,
+      signal,
+      matchScoreAtTime: Math.round(matchScore * 100),
+    });
+
+    setFeedbackPending((prev) => ({ ...prev, [candidateId]: false }));
+
+    if ("error" in result) {
+      // Revert optimistic update
+      setFeedback((prev) => {
+        const next = { ...prev };
+        delete next[candidateId];
+        return next;
+      });
+      const msg =
+        result.error === "no_application"
+          ? "Add candidate to pipeline first"
+          : result.error;
+      setFeedbackError((prev) => ({ ...prev, [candidateId]: msg }));
+    }
   }
 
   return (
@@ -100,36 +154,80 @@ export function AiMatchPanel({ jobId, hasEmbedding }: AiMatchPanelProps) {
       {hasSearched && matches.length > 0 && (
         <div className="mt-4 space-y-2">
           {matches.map((match) => (
-            <Link
-              key={match.candidate_id}
-              href={`/candidates/${match.candidate_id}`}
-              className="flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{match.full_name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {match.current_title ?? match.email}
-                </p>
-                {match.skills?.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {match.skills.slice(0, 5).map((skill) => (
-                      <span
-                        key={skill}
-                        className="rounded bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="ml-4 text-right">
-                <div className="text-lg font-semibold text-primary">
-                  {Math.round(match.similarity_score * 100)}%
+            <div key={match.candidate_id} className="relative">
+              <Link
+                href={`/candidates/${match.candidate_id}`}
+                className="flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{match.full_name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {match.current_title ?? match.email}
+                  </p>
+                  {match.skills?.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {match.skills.slice(0, 5).map((skill) => (
+                        <span
+                          key={skill}
+                          className="rounded bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground">match</p>
+                <div className="ml-4 text-right">
+                  <div className="text-lg font-semibold text-primary">
+                    {Math.round(match.similarity_score * 100)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">match</p>
+                </div>
+              </Link>
+
+              {/* AF1 — score feedback buttons */}
+              <div className="absolute bottom-3 right-16 flex items-center gap-1">
+                {feedbackError[match.candidate_id] && (
+                  <span className="mr-1 text-xs text-muted-foreground">
+                    {feedbackError[match.candidate_id]}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  disabled={feedbackPending[match.candidate_id]}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void handleFeedback(match.candidate_id, "thumbs_up", match.similarity_score);
+                  }}
+                  title="Good match"
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-sm transition-colors disabled:opacity-40 ${
+                    feedback[match.candidate_id] === "thumbs_up"
+                      ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  👍
+                </button>
+                <button
+                  type="button"
+                  disabled={feedbackPending[match.candidate_id]}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void handleFeedback(match.candidate_id, "thumbs_down", match.similarity_score);
+                  }}
+                  title="Poor match"
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-sm transition-colors disabled:opacity-40 ${
+                    feedback[match.candidate_id] === "thumbs_down"
+                      ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  👎
+                </button>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}
