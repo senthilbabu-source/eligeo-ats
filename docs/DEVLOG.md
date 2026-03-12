@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-03-11 — Wave D / D4: A6 — Skill Gap Explanation per Match Row
+
+**Scope:** Show "✓ React, Node · Missing: Kubernetes" inline on each match card in `AiMatchPanel`. Computes from `job_required_skills` vs candidate's skills array (case-insensitive).
+
+**What shipped:**
+- `src/app/(app)/jobs/[id]/page.tsx` — added `job_required_skills` query (pre-fetch + select skills:skill_id(name) pattern), passes `requiredSkills: string[]` to `AiMatchPanel`.
+- `src/app/(app)/jobs/[id]/ai-match-panel.tsx` — exported `computeSkillGap()` pure function (case-insensitive set lookup), new `requiredSkills` prop, skill gap line rendered below skill chips per match row. Hidden when no required skills defined.
+- `src/__tests__/ai-match-panel.test.ts` — +5 unit tests for `computeSkillGap`.
+
+**Test count:** 698 Vitest + 52 E2E = 750 total (+5 tests).
+
+---
+
 ## 2026-03-11 — Wave D / D3: AF2 — Embedding Staleness Badge on AiMatchPanel
 
 **Scope:** Surface the `embedding_updated_at` column (Migration 022) on the match panel. Badge appears when embedding is >7 days old, alerting recruiters that match scores may be outdated.

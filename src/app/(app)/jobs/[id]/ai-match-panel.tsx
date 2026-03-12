@@ -9,6 +9,8 @@ interface AiMatchPanelProps {
   hasEmbedding: boolean;
   /** AF2 — null means embedding was never (re-)generated after tracking began */
   embeddingUpdatedAt: string | null;
+  /** A6 — required skills for this job (for skill gap explanation per match row) */
+  requiredSkills: string[];
 }
 
 interface MatchResult {
@@ -22,6 +24,24 @@ interface MatchResult {
 
 type FeedbackSignal = "thumbs_up" | "thumbs_down";
 
+/** A6 — compute matched and missing required skills for a candidate */
+export function computeSkillGap(
+  requiredSkills: string[],
+  candidateSkills: string[],
+): { matched: string[]; missing: string[] } {
+  const candidateLower = new Set(candidateSkills.map((s) => s.toLowerCase()));
+  const matched: string[] = [];
+  const missing: string[] = [];
+  for (const skill of requiredSkills) {
+    if (candidateLower.has(skill.toLowerCase())) {
+      matched.push(skill);
+    } else {
+      missing.push(skill);
+    }
+  }
+  return { matched, missing };
+}
+
 /** AF2 — stale when embedding_updated_at is null or older than 7 days */
 export function isEmbeddingStale(embeddingUpdatedAt: string | null, nowMs?: number): boolean {
   if (!embeddingUpdatedAt) return false; // never tracked — no signal to show
@@ -30,7 +50,7 @@ export function isEmbeddingStale(embeddingUpdatedAt: string | null, nowMs?: numb
   return now - updatedMs > 7 * 24 * 60 * 60 * 1000;
 }
 
-export function AiMatchPanel({ jobId, hasEmbedding, embeddingUpdatedAt }: AiMatchPanelProps) {
+export function AiMatchPanel({ jobId, hasEmbedding, embeddingUpdatedAt, requiredSkills }: AiMatchPanelProps) {
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -199,6 +219,28 @@ export function AiMatchPanel({ jobId, hasEmbedding, embeddingUpdatedAt }: AiMatc
                       ))}
                     </div>
                   )}
+                  {/* A6 — skill gap explanation */}
+                  {requiredSkills.length > 0 && (() => {
+                    const { matched, missing } = computeSkillGap(requiredSkills, match.skills ?? []);
+                    if (matched.length === 0 && missing.length === 0) return null;
+                    return (
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        {matched.length > 0 && (
+                          <span className="text-green-600 dark:text-green-400">
+                            ✓ {matched.join(", ")}
+                          </span>
+                        )}
+                        {matched.length > 0 && missing.length > 0 && (
+                          <span className="mx-1 text-muted-foreground/40">·</span>
+                        )}
+                        {missing.length > 0 && (
+                          <span className="text-muted-foreground/70">
+                            Missing: {missing.join(", ")}
+                          </span>
+                        )}
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div className="ml-4 text-right">
                   <div className="text-lg font-semibold text-primary">

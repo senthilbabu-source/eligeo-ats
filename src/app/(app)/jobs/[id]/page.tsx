@@ -67,6 +67,21 @@ export default async function JobDetailPage({
   const meta = (job.metadata ?? {}) as JobMetadata;
   const cloneIntent = meta.clone_intent ?? null;
 
+  // A6 — fetch required skills for skill gap explanation on match panel
+  const { data: requiredSkillRows } = await supabase
+    .from("job_required_skills")
+    .select("skills:skill_id (name)")
+    .eq("job_id", id)
+    .is("deleted_at", null);
+
+  const requiredSkills = (requiredSkillRows ?? [])
+    .map((s) => {
+      const raw = s.skills as unknown;
+      const skill = (Array.isArray(raw) ? raw[0] : raw) as { name: string } | null;
+      return skill?.name ?? "";
+    })
+    .filter(Boolean);
+
   // Parallel queries: application count + per-stage breakdown (JI1/JI3)
   const [{ count: applicationCount }, { data: stageCountRows }] = await Promise.all([
     supabase
@@ -246,6 +261,7 @@ export default async function JobDetailPage({
         jobId={job.id}
         hasEmbedding={job.job_embedding !== null}
         embeddingUpdatedAt={job.embedding_updated_at ?? null}
+        requiredSkills={requiredSkills}
       />
     </div>
   );
