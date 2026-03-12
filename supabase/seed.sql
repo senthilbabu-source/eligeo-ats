@@ -215,6 +215,12 @@ INSERT INTO pipeline_templates (id, organization_id, name, is_default, created_b
     '22222222-1001-4000-a000-000000000001'
   );
 
+INSERT INTO pipeline_stages (id, organization_id, pipeline_template_id, name, stage_type, stage_order, is_terminal) VALUES
+  ('22222222-6002-4000-a000-000000000001', '22222222-2001-4000-a000-000000000001', '22222222-6001-4000-a000-000000000001', 'Applied',   'applied',   0, FALSE),
+  ('22222222-6002-4000-a000-000000000002', '22222222-2001-4000-a000-000000000001', '22222222-6001-4000-a000-000000000001', 'Interview', 'interview', 1, FALSE),
+  ('22222222-6002-4000-a000-000000000003', '22222222-2001-4000-a000-000000000001', '22222222-6001-4000-a000-000000000001', 'Offer',     'offer',     2, FALSE),
+  ('22222222-6002-4000-a000-000000000004', '22222222-2001-4000-a000-000000000001', '22222222-6001-4000-a000-000000000001', 'Hired',     'hired',     3, TRUE);
+
 -- ─── Job Openings (itecbrains) ─────────────────────────────
 
 INSERT INTO job_openings (id, organization_id, pipeline_template_id, title, slug, description, department, location, location_type, employment_type, salary_min, salary_max, salary_currency, status, hiring_manager_id, recruiter_id, headcount, published_at) VALUES
@@ -348,6 +354,18 @@ INSERT INTO applications (id, organization_id, candidate_id, job_opening_id, cur
     '11111111-6002-4000-a000-000000000002',  -- Screening stage
     'active',
     'Referral'
+  );
+
+-- Globex application (cross-tenant RLS test — Dave applies to Python Developer)
+INSERT INTO applications (id, organization_id, candidate_id, job_opening_id, current_stage_id, status, source) VALUES
+  (
+    '22222222-5001-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    '22222222-4001-4000-a000-000000000001',  -- Dave
+    '22222222-3001-4000-a000-000000000001',  -- Python Developer
+    '22222222-6002-4000-a000-000000000001',  -- Applied stage
+    'active',
+    'career_portal'
   );
 
 -- ─── Stage History (itecbrains — Alice's journey) ──────────
@@ -681,7 +699,70 @@ INSERT INTO notification_preferences (id, organization_id, user_id, event_type, 
     'in_app'
   );
 
+-- ─── Offer Templates (Phase 4) ────────────────────────────
+
+INSERT INTO offer_templates (id, organization_id, name, department, compensation, terms_template, created_by) VALUES
+  (
+    '11111111-8002-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'Engineering Offer Template',
+    'Engineering',
+    '{"base_salary": 130000, "currency": "USD", "period": "annual"}'::jsonb,
+    'Standard engineering offer terms. Start date: {{start_date}}.',
+    '11111111-1001-4000-a000-000000000001'  -- Senthil (owner)
+  );
+
+-- Globex template (cross-tenant RLS test)
+INSERT INTO offer_templates (id, organization_id, name, department, compensation, created_by) VALUES
+  (
+    '22222222-8002-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    'Sales Offer Template',
+    'Sales',
+    '{"base_salary": 95000, "currency": "USD", "period": "annual"}'::jsonb,
+    '22222222-1001-4000-a000-000000000001'  -- Morgan (Globex owner)
+  );
+
+-- ─── Offers (Phase 4) ────────────────────────────────────
+
+INSERT INTO offers (id, organization_id, application_id, candidate_id, job_id, template_id, status, compensation, created_by) VALUES
+  (
+    '11111111-8001-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000001',  -- Alice's application
+    '11111111-4001-4000-a000-000000000001',  -- Alice
+    '11111111-3001-4000-a000-000000000001',  -- Senior Engineer
+    '11111111-8002-4000-a000-000000000001',  -- Engineering template
+    'draft',
+    '{"base_salary": 120000, "currency": "USD", "period": "annual"}'::jsonb,
+    '11111111-1001-4000-a000-000000000003'   -- Roshelle (recruiter)
+  );
+
+-- Globex offer (cross-tenant RLS test)
+INSERT INTO offers (id, organization_id, application_id, candidate_id, job_id, status, compensation, created_by) VALUES
+  (
+    '22222222-8001-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    '22222222-5001-4000-a000-000000000001',  -- Dave's application
+    '22222222-4001-4000-a000-000000000001',  -- Dave
+    '22222222-3001-4000-a000-000000000001',  -- Python Developer
+    'draft',
+    '{"base_salary": 95000, "currency": "USD", "period": "annual"}'::jsonb,
+    '22222222-1001-4000-a000-000000000002'   -- Casey (Globex recruiter)
+  );
+
+-- ─── Offer Approvals (Phase 4) ────────────────────────────
+
+INSERT INTO offer_approvals (id, organization_id, offer_id, approver_id, sequence_order, status) VALUES
+  (
+    '11111111-8003-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-8001-4000-a000-000000000001',  -- Alice's offer
+    '11111111-1001-4000-a000-000000000004',  -- Jordan (hiring manager)
+    1,
+    'pending'
+  );
+
 -- ============================================================
--- Phase 4+ seed data will be appended below
--- (offers, etc.)
+-- End of seed data
 -- ============================================================

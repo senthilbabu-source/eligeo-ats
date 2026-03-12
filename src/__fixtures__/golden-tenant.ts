@@ -183,11 +183,37 @@ export const TENANT_A = {
       rating: 5,
     },
   },
+  offerTemplates: {
+    engineering: {
+      id: "11111111-8002-4000-a000-000000000001",
+      name: "Engineering Offer Template",
+      department: "Engineering",
+      compensation: {
+        base_salary: 130000,
+        currency: "USD",
+        period: "annual",
+      },
+      terms_template: "Standard engineering offer terms. Start date: {{start_date}}.",
+    },
+  },
   offers: {
     aliceDraft: {
       id: "11111111-8001-4000-a000-000000000001",
+      application_id: "11111111-5001-4000-a000-000000000001",
+      candidate_id: "11111111-4001-4000-a000-000000000001",
+      job_id: "11111111-3001-4000-a000-000000000001",
+      template_id: "11111111-8002-4000-a000-000000000001",
       status: "draft" as const,
-      compensation: { base_salary: 120000, currency: "USD" },
+      compensation: { base_salary: 120000, currency: "USD", period: "annual" as const },
+    },
+  },
+  offerApprovals: {
+    aliceApprovalHM: {
+      id: "11111111-8003-4000-a000-000000000001",
+      offer_id: "11111111-8001-4000-a000-000000000001",
+      approver_id: "11111111-1001-4000-a000-000000000004", // Jordan (HM)
+      sequence_order: 1,
+      status: "pending" as const,
     },
   },
   emailTemplates: {
@@ -311,9 +337,31 @@ export const TENANT_B = {
       email: "dave@example.com",
     },
   },
+  applications: {
+    daveForPython: {
+      id: "22222222-5001-4000-a000-000000000001",
+      candidate_id: "22222222-4001-4000-a000-000000000001",
+      job_id: "22222222-3001-4000-a000-000000000001",
+      status: "active" as const,
+    },
+  },
   jobSkills: {
     pythonRequired: {
       id: "22222222-6008-4000-a000-000000000001",
+    },
+  },
+  offerTemplates: {
+    sales: {
+      id: "22222222-8002-4000-a000-000000000001",
+      name: "Sales Offer Template",
+      department: "Sales",
+    },
+  },
+  offers: {
+    daveDraft: {
+      id: "22222222-8001-4000-a000-000000000001",
+      status: "draft" as const,
+      compensation: { base_salary: 95000, currency: "USD", period: "annual" as const },
     },
   },
   emailTemplates: {

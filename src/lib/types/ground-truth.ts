@@ -24,9 +24,16 @@ export interface OfferCompensation {
   equity_shares?: number;
   equity_type?: "options" | "rsu" | "phantom";
   equity_vesting?: string;
+  sign_on_bonus?: number;
   relocation?: number;
   other_benefits?: string[];
 }
+
+/** Supported currencies for offers (CHECK constraint in migration 028) */
+export const SUPPORTED_CURRENCIES = [
+  "USD", "EUR", "GBP", "CAD", "AUD", "INR", "SGD", "JPY", "CHF", "SEK",
+] as const;
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 
 /** Auto-action configuration stored in pipeline_stages.auto_actions JSONB */
 export interface AutoAction {
@@ -264,6 +271,25 @@ export type EmailTemplateCategory =
 
 /** Notification channel preference (CHECK constraint in migration 027) */
 export type NotificationChannel = "in_app" | "email" | "both" | "none";
+
+// ── Phase 4: Offers Types ────────────────────────────────────
+
+/** Offer status enum values (CHECK constraint in migration 028) */
+export type OfferStatus =
+  | "draft"
+  | "pending_approval"
+  | "approved"
+  | "sent"
+  | "signed"
+  | "declined"
+  | "expired"
+  | "withdrawn";
+
+/** Offer approval status enum values (CHECK constraint in migration 028) */
+export type OfferApprovalStatus = "pending" | "approved" | "rejected";
+
+/** E-sign provider enum values (CHECK constraint in migration 028) */
+export type EsignProvider = "dropbox_sign" | "docusign";
 
 /** Template variables available for email rendering (D08 §3.3) */
 export interface TemplateVariables {
