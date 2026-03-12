@@ -621,7 +621,8 @@ export function generateRLSTests(config: RLSTestConfig) {
 | ai_score_feedback | org members (own signal only) | org members (self-INSERT) | DENIED ALL | self/owner/admin | 16 (pre-migration spec — Migration 022, AI-Proof Wave A) |
 | email_templates | all roles | owner/admin/recruiter | owner/admin/recruiter | owner/admin (non-system only) | 17 (Migration 027, Wave F) |
 | notification_preferences | self + admin/owner | self only | self only | self only | 15 (Migration 027, Wave F) |
-| **Total** | | | | | **~338 cases** (294 pre-P4 + 44 offers) |
+| ai_match_explanations | org members (SELECT only) | service role only | DENIED ALL | DENIED ALL | 10 (Migration 029, Hardening H3-2) |
+| **Total** | | | | | **~348 cases** (294 pre-P4 + 44 offers + 10 ai_match_explanations) |
 
 ---
 

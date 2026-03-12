@@ -7,6 +7,7 @@ import { assertCan } from "@/lib/constants/roles";
 import { inngest } from "@/inngest/client";
 import * as Sentry from "@sentry/nextjs";
 import logger from "@/lib/utils/logger";
+import { recordInteraction } from "@/lib/utils/record-interaction";
 import { z } from "zod";
 
 // ── Validation Schemas ─────────────────────────────────────
@@ -232,6 +233,17 @@ export async function moveStage(
   const result = Array.isArray(data) ? data[0] : data;
   const candidateId = result?.candidate_id;
 
+  // H3-1: Record stage change on candidate timeline
+  if (candidateId) {
+    await recordInteraction(supabase, {
+      candidateId,
+      organizationId: session.orgId,
+      actorId: session.userId,
+      type: "stage_changed",
+      summary: `Moved to stage ${toStageId}${reason ? ` — ${reason}` : ""}`,
+    });
+  }
+
   revalidatePath("/jobs");
   revalidatePath("/candidates");
   if (candidateId) {
@@ -386,6 +398,43 @@ export async function addCandidateNote(
   }
 
   revalidatePath(`/candidates/${parsed.data.candidateId}`);
+  return { success: true };
+}
+
+// ── H4-3: Request Human Review (EU AI Act) ──────────────
+
+export async function requestHumanReview(applicationId: string) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "applications:move");
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("applications")
+    .update({ human_review_requested: true })
+    .eq("id", applicationId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null);
+
+  if (error) {
+    logger.error({ error }, "Failed to set human_review_requested");
+    Sentry.captureException(error);
+    return { error: "Failed to request human review" };
+  }
+
+  // Notify the recruiter/hiring manager
+  await inngest.send({
+    name: "ats/notification.requested",
+    data: {
+      organizationId: session.orgId,
+      userId: session.userId,
+      eventType: "human_review_requested",
+      entityType: "application",
+      entityId: applicationId,
+    },
+  });
+
+  revalidatePath("/candidates");
   return { success: true };
 }
 

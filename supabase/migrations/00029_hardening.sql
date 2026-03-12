@@ -261,3 +261,45 @@ CREATE TRIGGER audit_ai_match_explanations
 
 ALTER TABLE applications
   ADD COLUMN IF NOT EXISTS human_review_requested BOOLEAN NOT NULL DEFAULT FALSE;
+
+
+-- ═══════════════════════════════════════════════════════════
+-- H2-2: Modified match_candidates_for_job() — adds embedding_stale flag
+-- Replaces the version from migration 00015.
+-- ═══════════════════════════════════════════════════════════
+
+CREATE OR REPLACE FUNCTION match_candidates_for_job(
+  p_job_id UUID,
+  p_organization_id UUID,
+  p_similarity_threshold FLOAT DEFAULT 0.5,
+  p_max_results INTEGER DEFAULT 50
+) RETURNS TABLE (
+  candidate_id UUID,
+  full_name TEXT,
+  email TEXT,
+  current_title TEXT,
+  skills TEXT[],
+  similarity_score FLOAT,
+  embedding_stale BOOLEAN
+) AS $$
+  SELECT
+    c.id AS candidate_id,
+    c.full_name,
+    c.email,
+    c.current_title,
+    c.skills,
+    1 - (c.candidate_embedding <=> j.job_embedding) AS similarity_score,
+    COALESCE(c.skills_updated_at > c.embedding_updated_at, FALSE) AS embedding_stale
+  FROM candidates c
+  CROSS JOIN job_openings j
+  WHERE j.id = p_job_id
+    AND j.organization_id = p_organization_id
+    AND c.organization_id = p_organization_id
+    AND c.candidate_embedding IS NOT NULL
+    AND j.job_embedding IS NOT NULL
+    AND c.deleted_at IS NULL
+    AND j.deleted_at IS NULL
+    AND 1 - (c.candidate_embedding <=> j.job_embedding) >= p_similarity_threshold
+  ORDER BY c.candidate_embedding <=> j.job_embedding ASC
+  LIMIT p_max_results;
+$$ LANGUAGE sql STABLE;

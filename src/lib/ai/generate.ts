@@ -967,3 +967,105 @@ export async function checkSalaryBand(params: {
     return { result: null, error: message };
   }
 }
+
+// ── H3-2: Match Explanation ──────────────────────────────
+
+const matchExplanationSchema = z.object({
+  explanation: z.string().describe("2-3 sentence explanation of why this candidate matches or doesn't match the role"),
+  keyMatches: z.array(z.string()).describe("Top skills/qualifications that align with the job"),
+  keyGaps: z.array(z.string()).describe("Notable missing requirements or experience gaps"),
+});
+
+/**
+ * H3-2: Generate an AI explanation for why a candidate matched a job.
+ * Uses gpt-4o-mini for speed — runs per candidate in the match list.
+ */
+export async function generateMatchExplanation(params: {
+  candidateName: string;
+  candidateSkills: string[];
+  candidateTitle?: string | null;
+  jobTitle: string;
+  requiredSkills: string[];
+  similarityScore: number;
+  organizationId: string;
+  userId?: string;
+}): Promise<{
+  explanation: string | null;
+  keyMatches: string[];
+  keyGaps: string[];
+  error?: string;
+}> {
+  const {
+    candidateName,
+    candidateSkills,
+    candidateTitle,
+    jobTitle,
+    requiredSkills,
+    similarityScore,
+    organizationId,
+    userId,
+  } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "match_explanation");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "match_explanation",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { explanation: null, keyMatches: [], keyGaps: [], error: "Insufficient AI credits" };
+  }
+
+  try {
+    const prompt = [
+      `Analyze why candidate "${candidateName}" ${candidateTitle ? `(${candidateTitle})` : ""} is a match for the "${jobTitle}" role.`,
+      `Similarity score: ${(similarityScore * 100).toFixed(0)}%`,
+      `Candidate skills: ${candidateSkills.length > 0 ? candidateSkills.join(", ") : "None listed"}`,
+      `Required skills: ${requiredSkills.length > 0 ? requiredSkills.join(", ") : "None specified"}`,
+      "",
+      "Provide a concise explanation (2-3 sentences), list key matching qualifications, and note any gaps.",
+      "Be specific about which skills match and which are missing. Do not speculate beyond the data given.",
+    ].join("\n");
+
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: matchExplanationSchema,
+      system: "You are a recruitment analyst. Provide factual, concise match explanations based on skills and role requirements. Never fabricate skills the candidate doesn't have.",
+      prompt,
+      maxOutputTokens: 500,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "match_explanation",
+      entityType: "candidate",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+    });
+
+    return {
+      explanation: object.explanation,
+      keyMatches: object.keyMatches,
+      keyGaps: object.keyGaps,
+    };
+  } catch (err) {
+    Sentry.captureException(err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "match_explanation",
+      latencyMs: Date.now() - startTime,
+      status: "error",
+      errorMessage: message,
+    });
+    return { explanation: null, keyMatches: [], keyGaps: [], error: message };
+  }
+}

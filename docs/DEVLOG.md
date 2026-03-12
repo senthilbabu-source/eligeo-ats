@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-03-12 — Pre-Phase 5 Hardening: Waves H1–H4 Complete `[PLAYBOOK]`
+
+**Scope:** Implemented all 12 hardening items across 4 waves. Zero new test failures.
+
+### Wave H1: Data Integrity (P0)
+- **H1-1:** Atomic stage move via `move_application_stage()` RPC — wraps UPDATE + INSERT in single transaction
+- **H1-2:** Offer approval locking via `approve_offer_rpc()` — SELECT FOR UPDATE prevents concurrent double-advance
+- **H1-3:** Fuzzy candidate dedup — `findPossibleDuplicates()` matches by phone/LinkedIn, returns warning to UI
+- **H1-4:** Email verification for public apply — HMAC-SHA256 signed tokens, 24h expiry, `/api/verify-email` endpoint
+
+### Wave H2: Embedding Freshness (P1)
+- **H2-1:** Auto-refresh candidate embedding on skill change — new Inngest function `candidates/refresh-stale-embedding` triggered by `ats/candidate.skills_updated`
+- **H2-2:** Staleness flag in match RPC — `embedding_stale BOOLEAN` column added to `match_candidates_for_job()` return
+
+### Wave H3: Candidate Context + AI Quality (P1)
+- **H3-1:** `recordInteraction()` utility wired into 7 call sites (moveStage, createOffer, approveOffer, withdrawOffer, markOfferSigned, submitScorecard, createInterview)
+- **H3-2:** AI match explanation — `generateMatchExplanation()` + `ai_match_explanations` table (cached, UPSERT) + `aiGetMatchExplanation()` Server Action
+- **H3-3:** Scorecard auto-summarize — new Inngest function `interviews/auto-summarize` triggered by `ats/scorecard.submitted`, checks all scorecards in, generates summary, notifies HM
+- **H3-4:** NBA enhancement — 5 new rule types (offer_ready, scorecard_complete, high_match_no_interview, at_risk) with priority ordering
+
+### Wave H4: UX + Compliance (P2)
+- **H4-1:** Match score percentile labels — `getMatchLabel()`, `computePercentiles()`, `formatPercentile()` utilities
+- **H4-2:** E-sign `send` transition removed from state machine (dead code — Phase 5 D06 §4.3). `offerSendEsign` Inngest stub deregistered. sign/decline/expire now from `approved` state directly.
+- **H4-3:** EU AI Act disclosure on career portal form + `human_review_requested` column on applications + `requestHumanReview()` Server Action
+
+### Migration 029
+- 2 new RPCs (move_application_stage, approve_offer_rpc)
+- 3 new columns (email_verified_at, skills_updated_at, human_review_requested)
+- 1 new trigger (candidate_skills_updated)
+- 1 new table (ai_match_explanations with RLS + audit)
+- 1 modified RPC (match_candidates_for_job + embedding_stale)
+
+### Test Impact
+- Tests: 1038 passing (was 1035, +3 net). 12 pre-existing talent-pool-members RLS failures unchanged.
+- NBA tests: 5 → 12 (+7 new rule tests)
+- State machine tests: 47 → 43 (-4 send-related, +1 H4-2 verification, net -4)
+- TypeScript: clean `tsc --noEmit`
+- Inngest functions: 11 → 11 (removed send-esign, added auto-summarize + refresh-stale-embedding = net 0... actually 10+2-1 = 11)
+
+**[PLAYBOOK] P-29:** Phase-boundary hardening as a habit. Audit → validate → plan → implement in waves. Atomic RPCs for any multi-write path. EU AI Act compliance is Day 1, not "later."
+
+---
+
 ## 2026-03-12 — Pre-Phase 5 Hardening Plan (H00) `[PLAYBOOK]`
 
 **Scope:** Created `docs/HARDENING.md` — comprehensive hardening plan based on Phase 4 regression audit + architect rebuttal review.

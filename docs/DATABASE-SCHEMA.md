@@ -35,10 +35,11 @@ These are enforced by ADRs. Violating any of them requires a new ADR.
 
 ## Table Inventory
 
-43 tables across 8 clusters. Sub-documents contain full DDL, RLS, indexes, and triggers.
+44 tables across 8 clusters. Sub-documents contain full DDL, RLS, indexes, and triggers.
 <!-- +1: org_daily_briefings added in Migration 021 (Wave 3 dashboard briefing cache) -->
 <!-- +1: ai_score_feedback added in Migration 022 (AI-Proof Wave A) + embedding_updated_at column on job_openings -->
 <!-- +3: offer_templates, offers, offer_approvals added in Migration 028 (Phase 4 Wave 1) + organizations.default_currency column -->
+<!-- +1: ai_match_explanations added in Migration 029 (Pre-P5 Hardening H3-2) + candidates.email_verified_at, candidates.skills_updated_at, applications.human_review_requested columns -->
 
 ### Cluster 1: Core Tenancy ([schema/01-core-tenancy.md](schema/01-core-tenancy.md))
 

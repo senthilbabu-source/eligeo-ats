@@ -5,15 +5,32 @@ interface ActiveApp {
   stageEnteredAt: Date | null;
   stageName: string | null;
   jobTitle: string | null;
+  /** H3-4: Optional enriched signals for richer NBA rules */
+  matchScore?: number | null;
+  hasInterview?: boolean;
+  allScorecardsIn?: boolean;
+  hasApprovedOffer?: boolean;
+  offerSent?: boolean;
 }
 
+type NBAType =
+  | "stalled"
+  | "no_applications"
+  | "high_match_no_interview"
+  | "scorecard_complete"
+  | "offer_ready"
+  | "at_risk";
+
 interface NBAAction {
-  type: "stalled" | "no_applications";
+  type: NBAType;
   message: string;
+  /** H3-4: Priority for ordering when multiple rules match (lower = higher priority) */
+  priority: number;
 }
 
 /**
  * Pure function — determines next best action from active application data.
+ * H3-4: Expanded with richer rule signals beyond the original 14-day stall check.
  * Exported for unit testing.
  */
 export function computeNextBestAction(params: {
@@ -27,31 +44,78 @@ export function computeNextBestAction(params: {
     return {
       type: "no_applications",
       message: "No active applications — consider adding this candidate to a job opening.",
+      priority: 5,
     };
   }
 
-  // Find the most stalled active application
-  let maxDays = 0;
-  let stalledApp: ActiveApp | null = null;
+  const candidates: NBAAction[] = [];
+
   for (const app of activeApps) {
-    if (!app.stageEnteredAt) continue;
-    const days = Math.floor((nowMs - app.stageEnteredAt.getTime()) / (1000 * 60 * 60 * 24));
-    if (days > maxDays) {
-      maxDays = days;
-      stalledApp = app;
+    const job = app.jobTitle ? ` for ${app.jobTitle}` : "";
+    const daysInStage = app.stageEnteredAt
+      ? Math.floor((nowMs - app.stageEnteredAt.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+    // Rule: Offer ready — approved offer not yet sent (highest priority action)
+    if (app.hasApprovedOffer && !app.offerSent) {
+      candidates.push({
+        type: "offer_ready",
+        message: `Offer approved${job} — send to candidate.`,
+        priority: 1,
+      });
+    }
+
+    // Rule: Scorecard complete — all scorecards submitted, no advancement
+    if (app.allScorecardsIn && !app.hasApprovedOffer) {
+      candidates.push({
+        type: "scorecard_complete",
+        message: `All interview feedback received${job} — make a decision.`,
+        priority: 2,
+      });
+    }
+
+    // Rule: High match, no interview scheduled
+    if (
+      app.matchScore != null &&
+      app.matchScore > 0.75 &&
+      app.hasInterview === false
+    ) {
+      candidates.push({
+        type: "high_match_no_interview",
+        message: `Strong match (${(app.matchScore * 100).toFixed(0)}%)${job} — schedule an interview.`,
+        priority: 3,
+      });
+    }
+
+    // Rule: Stalled (existing, kept as-is)
+    if (daysInStage >= stallThresholdDays) {
+      const stage = app.stageName ?? "current stage";
+      candidates.push({
+        type: "stalled",
+        message: `${daysInStage} days in ${stage}${job} — consider advancing or scheduling an interview.`,
+        priority: 4,
+      });
+    }
+
+    // Rule: At risk — in stage > 7 days + low match score
+    if (
+      daysInStage > 7 &&
+      app.matchScore != null &&
+      app.matchScore < 0.5
+    ) {
+      candidates.push({
+        type: "at_risk",
+        message: `Low fit (${(app.matchScore * 100).toFixed(0)}%) and ${daysInStage} days in stage${job} — consider rejection or talent pool.`,
+        priority: 6,
+      });
     }
   }
 
-  if (stalledApp && maxDays >= stallThresholdDays) {
-    const stage = stalledApp.stageName ?? "current stage";
-    const job = stalledApp.jobTitle ? ` for ${stalledApp.jobTitle}` : "";
-    return {
-      type: "stalled",
-      message: `${maxDays} days in ${stage}${job} — consider advancing or scheduling an interview.`,
-    };
-  }
+  if (candidates.length === 0) return null;
 
-  return null;
+  // Return highest-priority (lowest number) action
+  candidates.sort((a, b) => a.priority - b.priority);
+  return candidates[0]!;
 }
 
 /**
@@ -118,16 +182,28 @@ export async function NextBestAction({
 
   if (!action) return null;
 
-  const styles: Record<NBAAction["type"], string> = {
+  const styles: Record<NBAType, string> = {
     stalled:
       "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
     no_applications:
       "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300",
+    high_match_no_interview:
+      "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300",
+    scorecard_complete:
+      "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300",
+    offer_ready:
+      "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
+    at_risk:
+      "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300",
   };
 
-  const icons: Record<NBAAction["type"], string> = {
-    stalled: "⏱",
+  const icons: Record<NBAType, string> = {
+    stalled: "\u23F1",
     no_applications: "+",
+    high_match_no_interview: "\u2728",
+    scorecard_complete: "\u2611",
+    offer_ready: "\u2709",
+    at_risk: "\u26A0",
   };
 
   return (

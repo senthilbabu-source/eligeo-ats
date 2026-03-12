@@ -6,7 +6,9 @@ import { requireAuth } from "@/lib/auth";
 import { assertCan } from "@/lib/constants/roles";
 import * as Sentry from "@sentry/nextjs";
 import logger from "@/lib/utils/logger";
+import { inngest } from "@/inngest/client";
 import { z } from "zod";
+import { recordInteraction } from "@/lib/utils/record-interaction";
 import {
   computeScorecardSummary,
   type RawSubmission,
@@ -136,7 +138,27 @@ export async function submitScorecard(input: {
     .single();
   if (scApp) {
     revalidatePath(`/candidates/${scApp.candidate_id}`);
+
+    // H3-1: Record scorecard submission on candidate timeline
+    await recordInteraction(supabase, {
+      candidateId: scApp.candidate_id,
+      organizationId: session.orgId,
+      actorId: session.userId,
+      type: "scorecard_submitted",
+      summary: `Scorecard submitted — ${data.overallRecommendation.replace("_", " ")}`,
+    });
   }
+
+  // H3-3: Fire event for auto-summarization check
+  await inngest.send({
+    name: "ats/scorecard.submitted",
+    data: {
+      applicationId: data.applicationId,
+      interviewId: data.interviewId,
+      organizationId: session.orgId,
+      submittedBy: session.userId,
+    },
+  });
 
   return { success: true, submissionId: submission.id };
 }

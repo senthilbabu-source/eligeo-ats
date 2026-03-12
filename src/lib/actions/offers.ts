@@ -8,6 +8,7 @@ import { transition, type TransitionContext } from "@/lib/offers/state-machine";
 import { inngest } from "@/inngest/client";
 import * as Sentry from "@sentry/nextjs";
 import logger from "@/lib/utils/logger";
+import { recordInteraction } from "@/lib/utils/record-interaction";
 import { z } from "zod";
 import type { OfferStatus, OfferApprovalStatus } from "@/lib/types/ground-truth";
 import { SUPPORTED_CURRENCIES } from "@/lib/types/ground-truth";
@@ -178,6 +179,15 @@ export async function createOffer(input: z.input<typeof createOfferSchema>) {
     return { success: true, id: offer.id, warning: "Offer created but approvals failed to save." };
   }
 
+  // H3-1: Record offer creation on candidate timeline
+  await recordInteraction(supabase, {
+    candidateId: app.candidate_id,
+    organizationId: session.orgId,
+    actorId: session.userId,
+    type: "offer_created",
+    summary: `Offer created (${data.compensation.currency} ${data.compensation.base_salary} ${data.compensation.period})`,
+  });
+
   revalidateOfferPaths();
   return { success: true, id: offer.id };
 }
@@ -305,7 +315,7 @@ export async function approveOffer(offerId: string, notes?: string) {
   // Fetch offer
   const { data: offer, error: fetchErr } = await supabase
     .from("offers")
-    .select("id, status")
+    .select("id, status, candidate_id")
     .eq("id", offerId)
     .eq("organization_id", session.orgId)
     .is("deleted_at", null)
@@ -361,6 +371,15 @@ export async function approveOffer(offerId: string, notes?: string) {
     Sentry.captureException(rpcErr);
     return { error: "Failed to record approval." };
   }
+
+  // H3-1: Record approval on candidate timeline
+  await recordInteraction(supabase, {
+    candidateId: offer.candidate_id,
+    organizationId: session.orgId,
+    actorId: session.userId,
+    type: "offer_approved",
+    summary: `Offer approval recorded${notes ? ` — ${notes}` : ""}`,
+  });
 
   await inngest.send({
     name: "ats/offer.approval-decided",
@@ -485,7 +504,7 @@ export async function withdrawOffer(offerId: string) {
   // Fetch offer
   const { data: offer, error: fetchErr } = await supabase
     .from("offers")
-    .select("id, status, esign_envelope_id")
+    .select("id, status, candidate_id, esign_envelope_id")
     .eq("id", offerId)
     .eq("organization_id", session.orgId)
     .is("deleted_at", null)
@@ -514,6 +533,15 @@ export async function withdrawOffer(offerId: string) {
     return { error: "Failed to withdraw offer." };
   }
 
+  // H3-1: Record withdrawal on candidate timeline
+  await recordInteraction(supabase, {
+    candidateId: offer.candidate_id,
+    organizationId: session.orgId,
+    actorId: session.userId,
+    type: "offer_withdrawn",
+    summary: "Offer withdrawn",
+  });
+
   await inngest.send({
     name: "ats/offer.withdrawn",
     data: {
@@ -538,7 +566,7 @@ export async function markOfferSigned(offerId: string) {
   // Fetch offer
   const { data: offer, error: fetchErr } = await supabase
     .from("offers")
-    .select("id, status")
+    .select("id, status, candidate_id")
     .eq("id", offerId)
     .eq("organization_id", session.orgId)
     .is("deleted_at", null)
@@ -573,6 +601,15 @@ export async function markOfferSigned(offerId: string) {
     Sentry.captureException(error);
     return { error: "Failed to mark offer as signed." };
   }
+
+  // H3-1: Record signing on candidate timeline
+  await recordInteraction(supabase, {
+    candidateId: offer.candidate_id,
+    organizationId: session.orgId,
+    actorId: session.userId,
+    type: "offer_signed",
+    summary: "Offer marked as signed",
+  });
 
   revalidateOfferPaths();
   return { success: true };

@@ -11,6 +11,7 @@ import {
   buildCandidateEmbeddingText,
   buildJobEmbeddingText,
 } from "@/lib/ai/embeddings";
+import { generateMatchExplanation } from "@/lib/ai/generate";
 import { getRemainingCredits } from "@/lib/ai/credits";
 import { inngest } from "@/inngest/client";
 import { CONFIG } from "@/lib/constants/config";
@@ -425,4 +426,85 @@ export async function aiCheckSalaryBand(input: {
   }
 
   return { success: true, result: result.result };
+}
+
+// ── AI Match Explanation ──────────────────────────────────
+
+/**
+ * H3-2: Generate + cache an AI explanation for a candidate-job match.
+ * Stores in ai_match_explanations table. Returns cached version if exists.
+ */
+export async function aiGetMatchExplanation(input: {
+  candidateId: string;
+  jobId: string;
+  candidateName: string;
+  candidateSkills: string[];
+  candidateTitle?: string | null;
+  jobTitle: string;
+  requiredSkills: string[];
+  similarityScore: number;
+}): Promise<
+  | { success: true; explanation: string; keyMatches: string[]; keyGaps: string[] }
+  | { error: string }
+> {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "candidates:view");
+
+  const supabase = await createClient();
+
+  // Check cache first
+  const { data: cached } = await supabase
+    .from("ai_match_explanations")
+    .select("explanation, key_matches, key_gaps")
+    .eq("organization_id", session.orgId)
+    .eq("candidate_id", input.candidateId)
+    .eq("job_opening_id", input.jobId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (cached) {
+    return {
+      success: true,
+      explanation: cached.explanation,
+      keyMatches: cached.key_matches,
+      keyGaps: cached.key_gaps,
+    };
+  }
+
+  // Generate new explanation
+  const result = await generateMatchExplanation({
+    candidateName: input.candidateName,
+    candidateSkills: input.candidateSkills,
+    candidateTitle: input.candidateTitle,
+    jobTitle: input.jobTitle,
+    requiredSkills: input.requiredSkills,
+    similarityScore: input.similarityScore,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
+
+  if (result.error || !result.explanation) {
+    return { error: result.error ?? "Failed to generate explanation" };
+  }
+
+  // Store in cache (upsert — race-safe)
+  await supabase.from("ai_match_explanations").upsert(
+    {
+      organization_id: session.orgId,
+      candidate_id: input.candidateId,
+      job_opening_id: input.jobId,
+      explanation: result.explanation,
+      key_matches: result.keyMatches,
+      key_gaps: result.keyGaps,
+      similarity_score: input.similarityScore,
+    },
+    { onConflict: "organization_id,candidate_id,job_opening_id" },
+  );
+
+  return {
+    success: true,
+    explanation: result.explanation,
+    keyMatches: result.keyMatches,
+    keyGaps: result.keyGaps,
+  };
 }

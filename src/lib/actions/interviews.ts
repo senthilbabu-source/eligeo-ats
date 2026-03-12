@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth";
 import { assertCan } from "@/lib/constants/roles";
 import * as Sentry from "@sentry/nextjs";
 import logger from "@/lib/utils/logger";
+import { recordInteraction } from "@/lib/utils/record-interaction";
 import { z } from "zod";
 import type { InterviewType, InterviewStatus } from "@/lib/types/ground-truth";
 
@@ -142,6 +143,15 @@ export async function createInterview(_prev: unknown, formData: FormData) {
     Sentry.captureException(error);
     return { error: "Failed to schedule interview." };
   }
+
+  // H3-1: Record interview scheduling on candidate timeline
+  await recordInteraction(supabase, {
+    candidateId: app.candidate_id,
+    organizationId: session.orgId,
+    actorId: session.userId,
+    type: "interview_scheduled",
+    summary: `${data.interviewType.replace("_", " ")} interview scheduled${data.scheduledAt ? ` for ${new Date(data.scheduledAt).toLocaleDateString()}` : ""}`,
+  });
 
   revalidatePath(`/candidates`);
   revalidatePath(`/candidates/${app.candidate_id}`);

@@ -93,13 +93,7 @@ interface OfferCompensation {
         │ all approved  │ withdraw
         ▼               │
   ┌──────────┐          │
-  │ approved │──────────┤
-  └──────────┘          │
-        │               │
-        │ send e-sign   │ withdraw
-        ▼               │
-  ┌──────────┐          │
-  │   sent   │──────────┘
+  │ approved │──────────┘
   └──────────┘
         │         │               │
         │ signed  │ declined      │ expired (cron)
@@ -118,12 +112,12 @@ interface OfferCompensation {
 | `pending_approval` | `approved` | All approvers approved (`sequence_order` complete) | System (auto) |
 | `pending_approval` | `withdrawn` | — | Recruiter, Admin |
 | `pending_approval` | `draft` | Any approver rejected (resets all approvals) | System (auto) |
-| `approved` | `sent` | `esign_provider` set, envelope created | Recruiter |
+| `approved` | `signed` | Candidate signs (manual or e-sign in Phase 5) | Recruiter |
+| `approved` | `declined` | Candidate declines | Recruiter |
+| `approved` | `expired` | `expiry_date < NOW()` | System (cron) |
 | `approved` | `withdrawn` | — | Recruiter, Admin |
-| `sent` | `signed` | E-sign webhook confirms signing | Candidate (via e-sign) |
-| `sent` | `declined` | Candidate declines in e-sign | Candidate (via e-sign) |
-| `sent` | `expired` | `expiry_date < NOW()` | System (cron) |
-| `sent` | `withdrawn` | Voids e-sign envelope | Recruiter, Admin |
+
+> **Note:** The `send` transition (`approved → sent`) and `sent` state are deferred to Phase 5 when Dropbox Sign e-sign integration is activated. Currently, sign/decline/expire transition directly from `approved`. See §4.2.
 
 ## 4. Architecture
 
@@ -153,30 +147,13 @@ Recruiter creates offer (draft)
 
 **Decision (G-022 resolved):** When an approver is removed from the organization during an active approval chain, the system auto-skips their step. Rationale: blocking the entire offer on a departed employee is worse than auto-advancing. The skip is logged in `offer_approvals.notes` as "Auto-approved: approver removed from organization" and recorded in `audit_logs`.
 
-### 4.2 E-Sign Integration (Dropbox Sign)
+### 4.2 E-Sign Integration (Dropbox Sign) — Phase 5
 
-```
-Recruiter clicks "Send Offer"
-  │
-  ├─ Server Action: createEsignEnvelope
-  │   ├─ Validate: offer status = 'approved'
-  │   ├─ Generate offer PDF from template + compensation data
-  │   ├─ Upload to Dropbox Sign via API [VERIFY]
-  │   │   ├─ Create signature request
-  │   │   ├─ Set signer = candidate email
-  │   │   └─ Set callback_url = /api/webhooks/dropbox-sign
-  │   ├─ Store esign_envelope_id on offer
-  │   ├─ Set status = 'sent', sent_at = NOW()
-  │   └─ Notify candidate via email
-  │
-  └─ Dropbox Sign unavailable (G-010)
-      ├─ Inngest retries with exponential backoff (5 attempts over ~1 hour)
-      ├─ If all retries fail: offer stays 'approved', recruiter notified
-      ├─ Recruiter can retry manually or download PDF for manual signing
-      └─ Manual signing: recruiter uploads signed PDF, manually sets status = 'signed'
-```
+> **Current state (Phase 4):** E-sign is a stub. The `send` transition and `sent` state are deferred to Phase 5. Offers transition directly from `approved` to `signed`/`declined`/`expired` via recruiter action or cron. The `offers/send-esign` Inngest function was deregistered in hardening (H4-2).
 
-**Decision (G-010 resolved):** When Dropbox Sign is unavailable, the offer stays in `approved` (not stuck in `sent`). The send action is retried via Inngest. If all retries fail, the recruiter is notified and can either retry or fall back to manual PDF signing. The manual fallback sets `esign_provider = NULL` and `esign_envelope_id = NULL` to indicate manual process.
+**Phase 5 plan:** When Dropbox Sign is activated, a `send` transition (`approved → sent`) will be re-added to the state machine and the `send-esign` Inngest function re-registered. The `sent` state will gate sign/decline/expire (candidate interacts via e-sign link).
+
+**Decision (G-010 resolved):** When Dropbox Sign is unavailable, the offer stays in `approved`. The send action is retried via Inngest. If all retries fail, the recruiter is notified and can fall back to manual PDF signing.
 
 ### 4.3 Integration Points
 
@@ -200,8 +177,8 @@ Recruiter clicks "Send Offer"
 | POST | `/api/v1/offers/:id/submit` | JWT | Submit for approval |
 | POST | `/api/v1/offers/:id/approve` | JWT | Approve (current approver) |
 | POST | `/api/v1/offers/:id/reject` | JWT | Reject (current approver, with notes) |
-| POST | `/api/v1/offers/:id/send` | JWT | Send for e-signature |
-| POST | `/api/v1/offers/:id/withdraw` | JWT | Withdraw offer (voids e-sign if sent) |
+| POST | `/api/v1/offers/:id/send` | JWT | Send for e-signature **(Phase 5 — not active)** |
+| POST | `/api/v1/offers/:id/withdraw` | JWT | Withdraw offer |
 | GET | `/api/v1/offer-templates` | JWT/Key | List templates |
 | POST | `/api/v1/offer-templates` | JWT | Create template |
 | PATCH | `/api/v1/offer-templates/:id` | JWT | Update template |
@@ -256,7 +233,7 @@ const OfferResponse = z.object({
 |-------------|---------------|-------|-------------|------------|
 | `offers/approval-notify` | `ats/offer.submitted` | 1. Find next pending approver 2. Fetch offer context 3. Send email + in-app notification | 10/org | 20/min/org | **✅ Shipped** |
 | `offers/approval-advanced` | `ats/offer.approval-decided` | 1. Check chain status 2. If all approved: advance to `approved` 3. If more pending: notify next (with G-022 auto-skip) 4. If rejected: notify recruiter | 10/org | 20/min/org | **✅ Shipped** |
-| `offers/send-esign` | `ats/offer.send-requested` | 1. Fetch offer 2. Resolve context 3. Create e-sign envelope (stub) 4. Update to `sent` 5. Notify recruiter | 5 | 10/min/org | **✅ Shipped** (e-sign stub) |
+| `offers/send-esign` | `ats/offer.send-requested` | 1. Fetch offer 2. Create e-sign envelope 3. Update to `sent` 4. Notify recruiter | 5 | 10/min/org | **Deregistered** (H4-2 — stub removed, re-add in Phase 5) |
 | `offers/esign-webhook` | `dropboxsign/webhook.received` | 1. Verify event 2. Update offer status 3. Notify recruiter | 10 | — | Phase 5 |
 | `offers/check-expiry` | Cron: `0 * * * *` (hourly) | 1. Find expired offers 2. Mark expired 3. Void e-sign (stub) 4. Notify recruiters | 1 | — | **✅ Shipped** |
 | `offers/withdraw` | `ats/offer.withdrawn` | 1. Void e-sign envelope (stub) 2. Notify recruiter | 5/org | 10/min/org | **✅ Shipped** |
@@ -278,9 +255,9 @@ const OfferResponse = z.object({
 |----------|----------|
 | Approver removed from organization mid-chain | Auto-skip with system note (§4.1, G-022 resolved) |
 | Dropbox Sign unavailable during send | Inngest retry (5 attempts), then manual fallback (§4.2, G-010 resolved) |
-| Candidate signs after expiry_date | Accept the signature — `signed` takes precedence over `expired`. Expiry cron checks `status = 'sent'` only. |
-| Two offers for same application | Allowed but UI shows warning. Only one can be in `sent`/`signed` state — second send blocked. |
-| Offer withdrawn after candidate signs | Not allowed — `signed` is a terminal state. Only `draft`, `pending_approval`, `approved`, `sent` can transition to `withdrawn`. |
+| Candidate signs after expiry_date | Accept the signature — `signed` takes precedence over `expired`. Expiry cron checks `status = 'approved'` (Phase 5: `'sent'`). |
+| Two offers for same application | Allowed but UI shows warning. Only one can be in `approved`/`signed` state — second blocked. |
+| Offer withdrawn after candidate signs | Not allowed — `signed` is a terminal state. Only `draft`, `pending_approval`, `approved` can transition to `withdrawn`. |
 | Approval chain modified after submission | Not allowed while `pending_approval`. Withdraw first, edit approvers, resubmit. |
 | Rejected offer resubmission | Rejection resets to `draft` with previous approvals cleared. Recruiter edits and resubmits. |
 | E-sign envelope voided externally | Dropbox Sign webhook triggers `esign-webhook` function. If offer is `sent`, set to `withdrawn`. |
@@ -301,15 +278,15 @@ const OfferResponse = z.object({
 
 | Type | File | What it tests |
 |------|------|---------------|
-| Unit | `src/__tests__/offer-state-machine.test.ts` | 18 tests: All 11 state transitions, guard conditions, terminal states, valid actions | **✅ Built** |
+| Unit | `src/__tests__/offer-state-machine.test.ts` | 43 tests: State transitions (send removed, sign/decline/expire from approved), guard conditions, terminal states, valid actions, H4-2 verification | **✅ Built** |
 | Unit | `src/__tests__/offer-ai.test.ts` | 14 tests: AI comp suggestion, offer letter draft, salary band check | **✅ Built** |
 | Unit | `src/__tests__/offer-intent-patterns.test.ts` | 16 tests: create_offer/check_offer patterns, navigation, preserved patterns | **✅ Built** |
 | Unit | `src/__tests__/offer-actions.test.ts` | 34 tests: Server action CRUD, state transitions, permission checks | **✅ Built** |
-| Unit | `src/__tests__/offer-inngest.test.ts` | 15 tests: All 5 Inngest functions (approval notify/advanced, expiry, withdraw, send-esign) | **✅ Built** |
+| Unit | `src/__tests__/offer-inngest.test.ts` | 15 tests: 4 Inngest functions (approval notify/advanced, expiry, withdraw). send-esign deregistered (H4-2). | **✅ Built** |
 | RLS | `src/__tests__/rls/offer-templates.rls.test.ts` | 15 tests: 4 ops × roles × 2 tenants | **✅ Built** |
 | RLS | `src/__tests__/rls/offers.rls.test.ts` | 15 tests: 4 ops × roles × 2 tenants | **✅ Built** |
 | RLS | `src/__tests__/rls/offer-approvals.rls.test.ts` | 14 tests: 4 ops × roles × 2 tenants | **✅ Built** |
-| E2E | `src/__tests__/e2e/offers.spec.ts` | Full flow: create → approve → send → sign. **Planned** |
+| E2E | `src/__tests__/e2e/offers.spec.ts` | Full flow: create → approve → sign (send deferred to Phase 5). **Planned** |
 
 ## 11. Open Questions
 
@@ -317,4 +294,4 @@ const OfferResponse = z.object({
 
 ---
 
-*Changelog: Created 2026-03-10. Updated 2026-03-12 — Phase 4 build complete (5 waves). Reconciled §6 Inngest with shipped code, §7 UI with actual pages, §10 testing with actual test files and counts.*
+*Changelog: Created 2026-03-10. Updated 2026-03-12 — Phase 4 build complete (5 waves). Reconciled §6 Inngest with shipped code, §7 UI with actual pages, §10 testing with actual test files and counts. H4-2: removed `send` transition and `sent` state from active state machine (Phase 5 deferred), deregistered `send-esign` Inngest stub, updated transition table/diagram/edge cases.*

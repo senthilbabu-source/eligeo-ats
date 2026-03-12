@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **56 functions across 10 modules**, covering billing webhooks, offer workflows, interview scheduling, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
+This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **58 functions across 11 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
 
 Every background job in the system runs through Inngest. There are no Supabase Edge Functions (ADR-002). Cron jobs are Inngest cron triggers, not Next.js Route Handlers — Inngest manages scheduling, retries, and observability.
 
@@ -59,7 +59,7 @@ Functions only override these defaults when documented in the registry table bel
 |---|-------------|---------|---------|-------------|------|
 | 8 | `offers/approval-notify` | `ats/offer.submitted` | default (3) | 10 per org | Yes |
 | 9 | `offers/approval-advanced` | `ats/offer.approval-decided` | default (3) | 10 per org | Yes |
-| 10 | `offers/send-esign` | `ats/offer.send-requested` | 5 | 5 per org | Yes |
+| 10 | `offers/send-esign` | `ats/offer.send-requested` | 5 | 5 per org | Yes (deregistered H4-2 — stub removed, re-add Phase 5) |
 | 11 | `offers/esign-webhook` | `dropboxsign/webhook.received` | default (3) | 5 | Yes |
 | 12 | `offers/check-expiry` | Cron: `0 * * * *` (hourly) | default (3) | 1 | Yes |
 | 13 | `offers/withdraw` | `ats/offer.withdrawn` | default (3) | 5 per org | Yes |
@@ -74,6 +74,7 @@ Functions only override these defaults when documented in the registry table bel
 | 17 | `interview/nylas-event-sync` | `nylas/webhook.event-updated` | 3 | — | Yes (stub) |
 | 18 | `interview/feedback-reminder` | Cron: `0 9 * * *` (daily 9AM UTC) | default (3) | — | Yes |
 | 19 | `interview/scorecard-submitted` | `ats/scorecard.submitted` | default (3) | — | Yes |
+| 19b | `interviews/auto-summarize` | `ats/scorecard.submitted` | 2 | 3 per org | Yes (**✅ Shipped** — H3-3 hardening) |
 | 20 | `interview/self-schedule-expire` | Cron: `0 * * * *` (hourly) | default (3) | — | Yes |
 
 ### 4.4 Notifications (7 functions)
@@ -100,7 +101,13 @@ Functions only override these defaults when documented in the registry table bel
 | 33 | `workflow/send-email` | `ats/workflow.send-email` | default (3) | — | Yes |
 | 34 | `workflow/bulk-stage-move` | `ats/workflow.bulk-stage-move` | default (3) | — | Yes |
 
-### 4.6 Search (4 functions) — v2.0
+### 4.6 Candidates (1 function)
+
+| # | Function ID | Trigger | Retries | Concurrency | v1.0 |
+|---|-------------|---------|---------|-------------|------|
+| 56b | `candidates/refresh-stale-embedding` | `ats/candidate.skills_updated` | 2 | 1 per candidate | Yes (**✅ Shipped** — H2-1 hardening) |
+
+### 4.7 Search (4 functions) — v2.0
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
@@ -109,7 +116,7 @@ Functions only override these defaults when documented in the registry table bel
 | 37 | `search/full-reindex` | `ats/search.reindex-requested` | 0 | — | No (v2.0) |
 | 38 | `search/sync-health-check` | Cron: `*/5 * * * *` (every 5 min) | default (3) | — | No (v2.0) |
 
-### 4.7 Analytics (4 functions) — v1.0 (briefing + job embedding) + v1.1+ (views/export)
+### 4.8 Analytics (4 functions) — v1.0 (briefing + job embedding) + v1.1+ (views/export)
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
@@ -132,7 +139,7 @@ Functions only override these defaults when documented in the registry table bel
 - **Concurrency:** `1 per job` — prevents duplicate embedding calls on rapid skills edits.
 - **Downstream:** after re-embed, any cached match scores for this job are effectively invalidated. Applications will show refreshed scores on next load.
 
-### 4.8 Onboarding (3 functions)
+### 4.9 Onboarding (3 functions)
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
@@ -140,7 +147,7 @@ Functions only override these defaults when documented in the registry table bel
 | 44 | `onboarding/merge-sync` | `ats/onboarding.merge-sync-requested` | default (3) | — | No (v2.1) |
 | 45 | `onboarding/demo-seed` | `ats/onboarding.demo-seed-requested` | default (3) | — | Yes |
 
-### 4.9 Compliance (4 functions)
+### 4.10 Compliance (4 functions)
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
@@ -149,7 +156,7 @@ Functions only override these defaults when documented in the registry table bel
 | 48 | `compliance/audit-export` | `ats/compliance.audit-export-requested` | default (3) | — | Yes |
 | 49 | `compliance/dei-aggregate` | `ats/compliance.dei-aggregate-requested` | default (3) | — | Yes |
 
-### 4.10 Data Migration (7 functions) — v2.1
+### 4.11 Data Migration (7 functions) — v2.1
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
@@ -161,7 +168,7 @@ Functions only override these defaults when documented in the registry table bel
 | 55 | `migration/rollback` | `ats/migration.rollback-requested` | 3 | — | No (v2.1) |
 | 56 | `migration/file-download` | `ats/migration.file-download-requested` | 3 | — | No (v2.1) |
 
-> **Note:** 56 registered function IDs across 10 modules. The canonical count by module: 7+6+7+7+7+4+4+3+4+7 = 56.
+> **Note:** 58 registered function IDs across 11 modules. The canonical count by module: 7+6+8+7+7+1+4+4+3+4+7 = 58. (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1.)
 
 ## 5. Cron Schedule Summary
 
@@ -196,8 +203,10 @@ Rules:
 | Scope | Limit | Reason |
 |-------|-------|--------|
 | **Default** | No limit | Inngest manages worker concurrency internally |
-| `offers/send-esign` | 5 | Dropbox Sign API rate limit (avoid 429s) |
+| `offers/send-esign` | 5 | Dropbox Sign API rate limit — **deregistered H4-2** (Phase 5) |
 | `offers/esign-webhook` | 5 | Matches send-esign to prevent backpressure |
+| `interviews/auto-summarize` | 3 per org | Prevent duplicate summarization per org (H3-3) |
+| `candidates/refresh-stale-embedding` | 1 per candidate | One embedding regeneration at a time (H2-1) |
 | `offers/withdraw` | 5 | Dropbox Sign cancellation API shares rate limit |
 | `offers/check-expiry` | 1 | Singleton — prevents double-expiry race conditions |
 | `offers/approval-notify` | 10 per org | Prevent approval notification storms during bulk submissions |
@@ -207,21 +216,22 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 ## 8. v1.0 Scope
 
-### Ships in v1.0 (41 functions)
+### Ships in v1.0 (43 functions)
 
 | Module | Count | Shipped | Notes |
 |--------|-------|---------|-------|
 | Billing | 7 | 0 | Phase 5 |
-| Offers | 6 | 5 | `esign-webhook` pending (Phase 5 Dropbox Sign). 5/6 shipped in P4-W4. |
-| Interviews | 7 | 1 | `interview-reminder` shipped. `nylas-event-sync` is a stub. Rest are Phase 3+. |
+| Offers | 6 | 4 | `send-esign` deregistered (H4-2, Phase 5). `esign-webhook` pending (Phase 5). 4/6 active. |
+| Interviews | 8 | 2 | `interview-reminder` + `auto-summarize` (H3-3) shipped. `nylas-event-sync` is a stub. Rest are Phase 3+. |
 | Notifications | 7 | 3 | `dispatch`, `send-email`, `interview-reminder` shipped. Rest pending. |
 | Workflow | 6 | 0 | All pending. `application-withdrawn` deferred to v1.1. |
+| Candidates | 1 | 1 | `refresh-stale-embedding` (H2-1) shipped. |
 | Onboarding | 2 | 0 | `csv-import` and `demo-seed` pending. `merge-sync` is v2.1. |
 | Compliance | 4 | 0 | All pending. |
 | Analytics | 2 | 2 | `generate-briefing` (Wave 3) + `generate-candidate-embedding` (AI-Proof). Both shipped. |
-| **Total** | **41** | **10** | **10 of 41 v1.0 functions are shipped and registered in `/api/inngest/route.ts`** |
+| **Total** | **43** | **12** | **12 of 43 v1.0 functions shipped. 11 actively registered in `/api/inngest/route.ts`** (send-esign deregistered). |
 
-> Total registry: 56 functions. v1.0 scope: 41 functions. 10 shipped (Phase 4 complete). Remaining 31 ship in Phases 5+.
+> Total registry: 58 functions. v1.0 scope: 43 functions. 12 shipped (hardening complete). 11 actively registered. Remaining 31 ship in Phases 5+.
 
 ### Deferred
 
@@ -235,4 +245,4 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 ---
 
-*Created: 2026-03-11. Updated: 2026-03-12 — Phase 4 shipped 5 offer functions, corrected `send-esign` retries to 5 (per D06 §4.2), fixed numbering sequence, updated shipped counts.*
+*Created: 2026-03-11. Updated: 2026-03-12 — Phase 4 shipped 5 offer functions, corrected `send-esign` retries to 5 (per D06 §4.2), fixed numbering sequence. Hardening: added `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1), deregistered `offers/send-esign` (H4-2). Registry: 56→58 functions, v1.0: 41→43, shipped: 10→12 (11 active).*

@@ -139,6 +139,15 @@ export function ApplicationForm({ jobId, jobTitle }: ApplicationFormProps) {
         >
           {isPending ? "Submitting..." : "Submit Application"}
         </button>
+
+        {/* H4-3: EU AI Act disclosure (Article 52) */}
+        <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
+          This employer uses AI to assist in the recruitment process,
+          including candidate-role matching and application screening. A
+          human recruiter reviews all AI-assisted recommendations before
+          any hiring decision is made. You may request human-only review of
+          your application at any time by contacting the employer directly.
+        </p>
       </form>
     </div>
   );

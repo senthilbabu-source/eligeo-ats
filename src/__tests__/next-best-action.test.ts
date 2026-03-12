@@ -55,7 +55,119 @@ describe("computeNextBestAction", () => {
       nowMs: NOW,
       stallThresholdDays: 14,
     });
-    // No entry time → can't determine stall → no action
+    // No entry time -> can't determine stall -> no action
+    expect(result).toBeNull();
+  });
+
+  // ── H3-4: New rule tests ────────────────────────────────
+
+  it("should return high_match_no_interview when match score > 0.75 and no interview", () => {
+    const result = computeNextBestAction({
+      activeApps: [{
+        id: "app-1",
+        stageEnteredAt: daysAgo(3),
+        stageName: "Applied",
+        jobTitle: "Engineer",
+        matchScore: 0.82,
+        hasInterview: false,
+      }],
+      nowMs: NOW,
+    });
+    expect(result?.type).toBe("high_match_no_interview");
+    expect(result?.message).toContain("82%");
+    expect(result?.message).toContain("schedule an interview");
+  });
+
+  it("should return scorecard_complete when all scorecards are in", () => {
+    const result = computeNextBestAction({
+      activeApps: [{
+        id: "app-1",
+        stageEnteredAt: daysAgo(5),
+        stageName: "Interview",
+        jobTitle: "Engineer",
+        allScorecardsIn: true,
+        hasApprovedOffer: false,
+      }],
+      nowMs: NOW,
+    });
+    expect(result?.type).toBe("scorecard_complete");
+    expect(result?.message).toContain("feedback received");
+  });
+
+  it("should return offer_ready when approved offer exists but not sent", () => {
+    const result = computeNextBestAction({
+      activeApps: [{
+        id: "app-1",
+        stageEnteredAt: daysAgo(2),
+        stageName: "Offer",
+        jobTitle: "Engineer",
+        hasApprovedOffer: true,
+        offerSent: false,
+      }],
+      nowMs: NOW,
+    });
+    expect(result?.type).toBe("offer_ready");
+    expect(result?.message).toContain("send to candidate");
+  });
+
+  it("should return at_risk when days > 7 and match score < 0.5", () => {
+    const result = computeNextBestAction({
+      activeApps: [{
+        id: "app-1",
+        stageEnteredAt: daysAgo(10),
+        stageName: "Screening",
+        jobTitle: "Engineer",
+        matchScore: 0.35,
+      }],
+      nowMs: NOW,
+    });
+    expect(result?.type).toBe("at_risk");
+    expect(result?.message).toContain("35%");
+    expect(result?.message).toContain("rejection or talent pool");
+  });
+
+  it("should prioritize offer_ready over stalled when both match", () => {
+    const result = computeNextBestAction({
+      activeApps: [{
+        id: "app-1",
+        stageEnteredAt: daysAgo(20),
+        stageName: "Offer",
+        jobTitle: "Engineer",
+        hasApprovedOffer: true,
+        offerSent: false,
+      }],
+      nowMs: NOW,
+    });
+    // offer_ready (priority 1) should beat stalled (priority 4)
+    expect(result?.type).toBe("offer_ready");
+  });
+
+  it("should not trigger at_risk when days <= 7 even with low match", () => {
+    const result = computeNextBestAction({
+      activeApps: [{
+        id: "app-1",
+        stageEnteredAt: daysAgo(5),
+        stageName: "Applied",
+        jobTitle: "Engineer",
+        matchScore: 0.3,
+      }],
+      nowMs: NOW,
+    });
+    expect(result).toBeNull();
+  });
+
+  it("should not trigger high_match_no_interview when interview exists", () => {
+    const result = computeNextBestAction({
+      activeApps: [{
+        id: "app-1",
+        stageEnteredAt: daysAgo(3),
+        stageName: "Applied",
+        jobTitle: "Engineer",
+        matchScore: 0.9,
+        hasInterview: true,
+      }],
+      nowMs: NOW,
+    });
     expect(result).toBeNull();
   });
 });
