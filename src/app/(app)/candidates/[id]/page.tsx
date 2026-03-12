@@ -8,6 +8,7 @@ import { can } from "@/lib/constants/roles";
 import { ApplyToJobForm } from "./apply-to-job-form";
 import { InlineAppActions } from "./inline-app-actions";
 import { NextBestAction } from "./next-best-action";
+import { EmailDraftPanel } from "./email-draft-panel";
 
 export async function generateMetadata({
   params,
@@ -440,6 +441,19 @@ export default async function CandidateDetailPage({
           )}
         </div>
       </div>
+
+      {/* N1/S6 — AI Email Draft panel */}
+      <EmailDraftPanel
+        candidateName={candidate.full_name}
+        jobOptions={(applications ?? [])
+          .filter((a) => a.status === "active")
+          .map((a) => {
+            const jobRaw = a.job_openings as unknown;
+            const job = (Array.isArray(jobRaw) ? jobRaw[0] : jobRaw) as { title: string; slug: string } | null;
+            return job ? { id: a.job_opening_id, title: job.title } : null;
+          })
+          .filter((j): j is { id: string; title: string } => j !== null)}
+      />
     </div>
   );
 }

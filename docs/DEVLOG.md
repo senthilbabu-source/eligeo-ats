@@ -4,6 +4,20 @@
 
 ---
 
+## 2026-03-11 — Wave D / D2: N1/S6 — Email Draft Panel on Candidate Profile
+
+**Scope:** Surface `aiDraftEmail()` SA (built in Wave B, never called from UI) on the candidate detail page. Closes N1 (rejection) and S6 (outreach) simultaneously.
+
+**What shipped:**
+- `src/app/(app)/candidates/[id]/email-draft-panel.tsx` (NEW) — client component using `useActionState(aiDraftEmail, null)`. Fields: job select (populates from active applications) or free-text fallback, email type (rejection/outreach/update/follow_up), tone (warm/professional/casual), optional context. Result: subject + body with individual Copy buttons (2s flash-then-reset).
+- `src/app/(app)/candidates/[id]/page.tsx` — imports `EmailDraftPanel`, mounts below Applications section, passes `candidate.full_name` + active application job titles as `jobOptions`.
+
+**ADR-004:** No new pure functions extracted → no new unit tests. SA already covered by existing mocks in `ai-generate.test.ts`.
+
+**Test count:** 688 Vitest + 52 E2E = 740 total (unchanged).
+
+---
+
 ## 2026-03-11 — Wave D / D1: AF1 — Score Feedback Buttons on AiMatchPanel
 
 **Scope:** Close the AI feedback loop — thumbs up/down on each match row in `AiMatchPanel`, writing to `ai_score_feedback` table (Migration 022). No new migrations. No new RLS tests (17 already exist from Wave A).
