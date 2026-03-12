@@ -61,6 +61,13 @@ export const PERMISSIONS = [
   // Pipelines
   "pipelines:create",
   "pipelines:view",
+  // Email Templates
+  "email_templates:create",
+  "email_templates:edit",
+  "email_templates:view",
+  "email_templates:delete",
+  // Notifications
+  "notifications:manage",
   // System
   "audit:view",
   "api_keys:manage",
@@ -103,6 +110,10 @@ const RECRUITER_PERMISSIONS: readonly Permission[] = [
   "notes:create",
   "notes:view",
   "pipelines:view",
+  "email_templates:create",
+  "email_templates:edit",
+  "email_templates:view",
+  "notifications:manage",
   "analytics:view",
 ];
 

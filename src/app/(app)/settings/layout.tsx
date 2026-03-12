@@ -7,6 +7,8 @@ export const metadata: Metadata = {
 const settingsNav = [
   { href: "/settings/pipelines", label: "Pipelines" },
   { href: "/settings/scorecards", label: "Scorecards" },
+  { href: "/settings/email-templates", label: "Email Templates" },
+  { href: "/settings/notifications", label: "Notifications" },
 ];
 
 export default function SettingsLayout({

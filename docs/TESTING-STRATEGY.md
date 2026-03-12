@@ -3,7 +3,7 @@
 > **ID:** D24
 > **Status:** Review
 > **Priority:** P1
-> **Last updated:** 2026-03-11
+> **Last updated:** 2026-03-12
 > **Depends on:** D04/ADR-004 (3-tier testing strategy), D01 (schema — golden tenant fixtures)
 > **Depended on by:** D15 (CI/CD — test jobs reference this document)
 > **Last validated against deps:** 2026-03-11
@@ -535,6 +535,7 @@ it('should handle Stripe webhook failure', async () => {
 | **GDPR** (D13) | 90% | Erasure + export | 1 scenario | Per module |
 | **Analytics/Dashboard** (D17) | 80% pure util functions (`calcTimeToHire`, `aggregateSourceQuality`, `findAtRiskJobs`, `generateDailyBriefing` cache paths) | MSW for OpenAI briefing call | 3 scenarios (E2E-16–18) | Per module |
 | **Interviews/Scorecards** (D07) | 80% — scoring utility (`computeScorecardSummary`), AI prompt builder (`buildScorecardSummaryPrompt`), SA error paths (`createScorecardTemplate`, `deleteScorecardTemplate` guard) | 75 RLS tests (6 tables × 4 ops × 2 tenants). MSW for OpenAI summarization | 10 scenarios (settings-scorecards 4 + interviews 6) | Day 1 (P3-W1→W5) |
+| **Notifications** (D08) | 80% — token renderer (`renderTemplate`, `escapeHtml`, `validateMergeFields`), SA CRUD (create/update/delete/preview email templates, preference upsert), Inngest handlers (dispatch routing, send-email rendering, interview reminder windows) | 32 RLS tests (2 tables × 4 ops × 2 tenants + role-specific guards) | 6 scenarios (settings-email-templates 4 + notifications 2) | Wave F |
 
 ### 5.2 Global Minimums (CI Gate)
 
@@ -615,7 +616,9 @@ export function generateRLSTests(config: RLSTestConfig) {
 | notes | all roles | all roles | author | owner/admin | 20 |
 | org_daily_briefings | org members (SELECT only) | service role only | DENIED ALL | DENIED ALL | 8 (pre-migration spec — Migration 021) |
 | ai_score_feedback | org members (own signal only) | org members (self-INSERT) | DENIED ALL | self/owner/admin | 16 (pre-migration spec — Migration 022, AI-Proof Wave A) |
-| **Total** | | | | | **~262 cases** |
+| email_templates | all roles | owner/admin/recruiter | owner/admin/recruiter | owner/admin (non-system only) | 17 (Migration 027, Wave F) |
+| notification_preferences | self + admin/owner | self only | self only | self only | 15 (Migration 027, Wave F) |
+| **Total** | | | | | **~294 cases** |
 
 ---
 
@@ -648,6 +651,8 @@ export function generateRLSTests(config: RLSTestConfig) {
 | E2E-16 | **Mine Mode Cookie Persistence** | Login → navigate to dashboard → click "My Jobs" toggle → reload page → assert "My Jobs" is still active (cookie persisted) | D17, R13 |
 | E2E-17 | **At-Risk Jobs Empty State** | Seed org with recently-active jobs → navigate to dashboard → assert at-risk widget shows green empty state ("All open roles have active pipeline activity") | D17, R10 |
 | E2E-18 | **Recent Apps Navigation** | Navigate to dashboard → click a recent application row → assert navigation to `/candidates/<id>` with stage and status visible | D17, R12 |
+| E2E-19 | **Email Templates Settings** | Navigate to Settings > Email Templates → view seeded templates → navigate to editor → navigate to new template form | D08, Wave F |
+| E2E-20 | **Notification Preferences** | Navigate to Settings > Notifications → verify event type list → verify channel dropdowns | D08, Wave F |
 
 ### 7.3 Failure Scenarios
 

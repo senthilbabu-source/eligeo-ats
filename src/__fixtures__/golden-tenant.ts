@@ -190,6 +190,58 @@ export const TENANT_A = {
       compensation: { base_salary: 120000, currency: "USD" },
     },
   },
+  emailTemplates: {
+    interviewInvite: {
+      id: "11111111-a001-4000-a000-000000000001",
+      name: "Interview Invitation",
+      category: "interview_invite" as const,
+      is_system: true,
+    },
+    rejection: {
+      id: "11111111-a001-4000-a000-000000000002",
+      name: "Application Rejection",
+      category: "rejection" as const,
+      is_system: true,
+    },
+    offer: {
+      id: "11111111-a001-4000-a000-000000000003",
+      name: "Offer Letter",
+      category: "offer" as const,
+      is_system: true,
+    },
+    followUp: {
+      id: "11111111-a001-4000-a000-000000000004",
+      name: "Follow Up",
+      category: "follow_up" as const,
+      is_system: true,
+    },
+    nurture: {
+      id: "11111111-a001-4000-a000-000000000005",
+      name: "Talent Nurture",
+      category: "nurture" as const,
+      is_system: true,
+    },
+    customScreening: {
+      id: "11111111-a001-4000-a000-000000000006",
+      name: "Custom Screening Invite",
+      category: "custom" as const,
+      is_system: false,
+    },
+  },
+  notificationPreferences: {
+    recruiterAppNew: {
+      id: "11111111-a002-4000-a000-000000000001",
+      user_id: "11111111-1001-4000-a000-000000000003", // Roshelle
+      event_type: "application.new",
+      channel: "both" as const,
+    },
+    recruiterScorecard: {
+      id: "11111111-a002-4000-a000-000000000002",
+      user_id: "11111111-1001-4000-a000-000000000003", // Roshelle
+      event_type: "scorecard.submitted",
+      channel: "email" as const,
+    },
+  },
   notes: {
     onAlice: {
       id: "11111111-9001-4000-a000-000000000001",
@@ -262,6 +314,22 @@ export const TENANT_B = {
   jobSkills: {
     pythonRequired: {
       id: "22222222-6008-4000-a000-000000000001",
+    },
+  },
+  emailTemplates: {
+    interviewInvite: {
+      id: "22222222-a001-4000-a000-000000000001",
+      name: "Interview Invitation",
+      category: "interview_invite" as const,
+      is_system: true,
+    },
+  },
+  notificationPreferences: {
+    ownerAppNew: {
+      id: "22222222-a002-4000-a000-000000000001",
+      user_id: "22222222-1001-4000-a000-000000000001", // Morgan
+      event_type: "application.new",
+      channel: "in_app" as const,
     },
   },
 } as const;

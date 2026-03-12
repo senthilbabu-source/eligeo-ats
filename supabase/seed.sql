@@ -556,6 +556,132 @@ INSERT INTO scorecard_ratings (id, submission_id, attribute_id, organization_id,
   );
 
 -- ============================================================
+-- Wave F: Email Templates + Notification Preferences
+-- ============================================================
+
+-- ─── System Email Templates (itecbrains) ──────────────────────
+-- One system template per category — serves as fallback when no org template exists.
+
+INSERT INTO email_templates (id, organization_id, name, subject, body_html, body_text, category, merge_fields, is_system, created_by) VALUES
+  (
+    '11111111-a001-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    'Interview Invitation',
+    'Interview for {{job.title}} at {{organization.name}}',
+    '<p>Hi {{candidate.name}},</p><p>We would like to invite you to an interview for the <strong>{{job.title}}</strong> position.</p><p>Date: {{interview.date}}<br/>Time: {{interview.time}}<br/>Duration: {{interview.duration}}</p><p>Best regards,<br/>{{recruiter.name}}</p>',
+    'Hi {{candidate.name}}, We would like to invite you to an interview for the {{job.title}} position. Date: {{interview.date}}, Time: {{interview.time}}, Duration: {{interview.duration}}. Best regards, {{recruiter.name}}',
+    'interview_invite',
+    ARRAY['candidate.name', 'candidate.email', 'job.title', 'organization.name', 'recruiter.name', 'interview.date', 'interview.time', 'interview.duration'],
+    TRUE,
+    '11111111-1001-4000-a000-000000000001'
+  ),
+  (
+    '11111111-a001-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    'Application Rejection',
+    'Update on your application for {{job.title}}',
+    '<p>Dear {{candidate.name}},</p><p>Thank you for your interest in the <strong>{{job.title}}</strong> position at {{organization.name}}. After careful consideration, we have decided to move forward with other candidates.</p><p>We appreciate your time and wish you the best in your job search.</p><p>Best regards,<br/>{{recruiter.name}}</p>',
+    'Dear {{candidate.name}}, Thank you for your interest in the {{job.title}} position at {{organization.name}}. After careful consideration, we have decided to move forward with other candidates. Best regards, {{recruiter.name}}',
+    'rejection',
+    ARRAY['candidate.name', 'job.title', 'organization.name', 'recruiter.name'],
+    TRUE,
+    '11111111-1001-4000-a000-000000000001'
+  ),
+  (
+    '11111111-a001-4000-a000-000000000003',
+    '11111111-2001-4000-a000-000000000001',
+    'Offer Letter',
+    'Offer for {{job.title}} at {{organization.name}}',
+    '<p>Dear {{candidate.name}},</p><p>We are pleased to extend an offer for the <strong>{{job.title}}</strong> position at {{organization.name}}.</p><p>Please review the attached offer details and let us know if you have any questions.</p><p>Best regards,<br/>{{recruiter.name}}</p>',
+    'Dear {{candidate.name}}, We are pleased to extend an offer for the {{job.title}} position at {{organization.name}}. Please review the attached offer details. Best regards, {{recruiter.name}}',
+    'offer',
+    ARRAY['candidate.name', 'job.title', 'organization.name', 'recruiter.name', 'offer.title', 'offer.start_date', 'offer.expiry_date'],
+    TRUE,
+    '11111111-1001-4000-a000-000000000001'
+  ),
+  (
+    '11111111-a001-4000-a000-000000000004',
+    '11111111-2001-4000-a000-000000000001',
+    'Follow Up',
+    'Following up on your application for {{job.title}}',
+    '<p>Hi {{candidate.name}},</p><p>I wanted to follow up regarding your application for the <strong>{{job.title}}</strong> position. We are still reviewing candidates and will be in touch soon.</p><p>Best regards,<br/>{{recruiter.name}}</p>',
+    'Hi {{candidate.name}}, I wanted to follow up regarding your application for the {{job.title}} position. We are still reviewing candidates and will be in touch soon. Best regards, {{recruiter.name}}',
+    'follow_up',
+    ARRAY['candidate.name', 'job.title', 'recruiter.name'],
+    TRUE,
+    '11111111-1001-4000-a000-000000000001'
+  ),
+  (
+    '11111111-a001-4000-a000-000000000005',
+    '11111111-2001-4000-a000-000000000001',
+    'Talent Nurture',
+    'Exciting opportunities at {{organization.name}}',
+    '<p>Hi {{candidate.name}},</p><p>We have new opportunities that might interest you at {{organization.name}}. Check out our latest openings!</p><p>Best regards,<br/>{{recruiter.name}}</p>',
+    'Hi {{candidate.name}}, We have new opportunities that might interest you at {{organization.name}}. Best regards, {{recruiter.name}}',
+    'nurture',
+    ARRAY['candidate.name', 'organization.name', 'recruiter.name'],
+    TRUE,
+    '11111111-1001-4000-a000-000000000001'
+  );
+
+-- Custom template (non-system, for testing delete permissions)
+INSERT INTO email_templates (id, organization_id, name, subject, body_html, category, merge_fields, is_system, created_by) VALUES
+  (
+    '11111111-a001-4000-a000-000000000006',
+    '11111111-2001-4000-a000-000000000001',
+    'Custom Screening Invite',
+    'Phone Screen for {{job.title}}',
+    '<p>Hi {{candidate.name}},</p><p>We''d like to schedule a phone screen for {{job.title}}.</p>',
+    'custom',
+    ARRAY['candidate.name', 'job.title'],
+    FALSE,
+    '11111111-1001-4000-a000-000000000003'
+  );
+
+-- Globex system template (cross-tenant RLS test)
+INSERT INTO email_templates (id, organization_id, name, subject, body_html, category, merge_fields, is_system, created_by) VALUES
+  (
+    '22222222-a001-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    'Interview Invitation',
+    'Interview at {{organization.name}}',
+    '<p>Hi {{candidate.name}}, you are invited to interview at Globex.</p>',
+    'interview_invite',
+    ARRAY['candidate.name', 'organization.name'],
+    TRUE,
+    '22222222-1001-4000-a000-000000000001'
+  );
+
+-- ─── Notification Preferences (itecbrains) ────────────────────
+-- Recruiter has customized a couple of event preferences
+
+INSERT INTO notification_preferences (id, organization_id, user_id, event_type, channel) VALUES
+  (
+    '11111111-a002-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-1001-4000-a000-000000000003',  -- Roshelle (recruiter)
+    'application.new',
+    'both'
+  ),
+  (
+    '11111111-a002-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-1001-4000-a000-000000000003',  -- Roshelle
+    'scorecard.submitted',
+    'email'
+  );
+
+-- Globex preference (cross-tenant RLS test)
+INSERT INTO notification_preferences (id, organization_id, user_id, event_type, channel) VALUES
+  (
+    '22222222-a002-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    '22222222-1001-4000-a000-000000000001',  -- Morgan (Globex owner)
+    'application.new',
+    'in_app'
+  );
+
+-- ============================================================
 -- Phase 4+ seed data will be appended below
 -- (offers, etc.)
 -- ============================================================

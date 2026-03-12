@@ -4,6 +4,55 @@
 
 ---
 
+## 2026-03-12 — Wave F: Notification Cluster (F1→F4)
+
+**Scope:** Pre-Phase 4 prerequisite — complete notification infrastructure. Without this, Phase 4's "Send Offer" button has no email delivery path. Wave F builds the entire D08 notification cluster from schema to UI.
+
+**What shipped:**
+
+**F1 — Migration 027 + RLS tests:**
+- `supabase/migrations/00027_email_templates_notifications.sql` — NEW. `email_templates` (13 columns) + `notification_preferences` (8 columns). CHECK constraints for categories and channels per ADR-008. Indexes, RLS policies, audit triggers.
+- `supabase/seed.sql` — Added 5 system email templates (interview_invite, rejection, offer, follow_up, nurture) + 1 custom template for TENANT_A. 1 system template for TENANT_B. 3 notification preferences across both tenants.
+- `src/__fixtures__/golden-tenant.ts` — Added `emailTemplates` (6 TENANT_A, 1 TENANT_B) and `notificationPreferences` (2 TENANT_A, 1 TENANT_B) fixture blocks.
+- `src/__tests__/rls/email-templates.rls.test.ts` — 17 RLS tests: SELECT (5 roles + 2 cross-tenant), INSERT/UPDATE/DELETE with role and system-template guards.
+- `src/__tests__/rls/notification-preferences.rls.test.ts` — 15 RLS tests: self-only CRUD, admin/owner visibility, cross-tenant isolation.
+
+**F2 — Token renderer + server actions + unit tests:**
+- `src/lib/types/ground-truth.ts` — Added `EmailTemplateCategory`, `NotificationChannel`, `TemplateVariables` types.
+- `src/lib/constants/roles.ts` — Added 5 permissions: `email_templates:create/edit/view/delete`, `notifications:manage`.
+- `src/lib/notifications/render-template.ts` — NEW. `escapeHtml()`, `resolvePath()`, `renderTemplate()` ({{token}} replacement with HTML escaping), `validateMergeFields()`.
+- `src/lib/actions/notifications.ts` — NEW. 9 server actions: `listEmailTemplates`, `getEmailTemplate`, `createEmailTemplate`, `updateEmailTemplate`, `deleteEmailTemplate`, `previewEmailTemplate`, `getNotificationPreferences`, `setNotificationPreference`, `resetNotificationPreference`.
+- `src/__tests__/render-template.test.ts` — 14 tests: escapeHtml (3), renderTemplate (8), validateMergeFields (3).
+- `src/__tests__/notification-actions.test.ts` — 11 tests: CRUD validation, system template guards, preview rendering, preference upsert.
+
+**F3 — Inngest notification functions:**
+- `src/inngest/functions/notifications/dispatch.ts` — NEW. `dispatchNotification` — preference lookup → fan-out to email/in_app/both/none.
+- `src/inngest/functions/notifications/send-email.ts` — NEW. `sendEmailNotification` — template loading + rendering + Resend delivery. Fallback for missing templates.
+- `src/inngest/functions/notifications/interview-reminder.ts` — NEW. `interviewReminder` — cron (*/15 * * * *), 24h + 1h reminder windows, batch dispatch.
+- `src/app/api/inngest/route.ts` — Registered 3 new functions (total: 5 Inngest functions).
+- `src/__tests__/notification-inngest.test.ts` — 9 tests: dispatch routing (4), send-email rendering (3), reminder window logic (2).
+
+**F4 — Settings UI + E2E tests:**
+- `src/app/(app)/settings/email-templates/page.tsx` — NEW. List page with category badges, System badge, Edit/Delete.
+- `src/app/(app)/settings/email-templates/delete-template-button.tsx` — NEW. Confirm-delete, admin+ only.
+- `src/app/(app)/settings/email-templates/[id]/page.tsx` — NEW. Detail page.
+- `src/app/(app)/settings/email-templates/[id]/email-template-editor.tsx` — NEW. Full editor with preview.
+- `src/app/(app)/settings/email-templates/new/page.tsx` — NEW. Create form.
+- `src/app/(app)/settings/notifications/page.tsx` — NEW. 8 event types with preference dropdowns.
+- `src/app/(app)/settings/notifications/notification-preferences-panel.tsx` — NEW. Auto-saving channel selector.
+- `src/app/(app)/settings/layout.tsx` — Added "Email Templates" and "Notifications" nav entries.
+- `src/__tests__/e2e/settings-email-templates.spec.ts` — 6 E2E tests: template navigation/display (4), notification preferences display (2).
+
+**Test counts:** 892 Vitest (+66 from Wave F: 32 RLS + 25 unit + 9 Inngest) + 68 E2E (+6) = 960 total. All passing. TSC clean.
+
+**Files changed:** 27 total (16 new, 11 modified).
+
+**User stories resolved:** C3 (application confirmation — infra ready), C5 (stage change notifications — infra ready), I3 (interview reminders — built), N2 (automated sequences — dispatcher built), ET1–ET4 (email templates — complete).
+
+`[PLAYBOOK]` Pattern: Prerequisite infrastructure sprints before vertical features prevent "silent no-op" UX bugs. A "Send Offer" button with no email delivery is worse than no button — it erodes trust. Identify infrastructure dependencies BEFORE starting the feature that needs them.
+
+---
+
 ## 2026-03-12 — P3 Audit Fixes (P0-1, P1-1→P1-4)
 
 **Scope:** Post-Phase 3 audit — 5 bug fixes across interviews and scorecards server actions + seed data.

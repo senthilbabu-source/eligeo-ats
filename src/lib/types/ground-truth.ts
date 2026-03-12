@@ -250,3 +250,38 @@ export interface ScorecardSummary {
   weighted_overall: number | null; // null if no ratings
   categories: CategorySummary[];
 }
+
+// ── Wave F: Email Templates + Notifications Types ───────────
+
+/** Email template category (CHECK constraint in migration 027) */
+export type EmailTemplateCategory =
+  | "interview_invite"
+  | "rejection"
+  | "offer"
+  | "follow_up"
+  | "nurture"
+  | "custom";
+
+/** Notification channel preference (CHECK constraint in migration 027) */
+export type NotificationChannel = "in_app" | "email" | "both" | "none";
+
+/** Template variables available for email rendering (D08 §3.3) */
+export interface TemplateVariables {
+  candidate: { name: string; email: string };
+  job: { title: string; department?: string; location?: string };
+  organization: { name: string; logo_url?: string };
+  recruiter: { name: string; email: string };
+  interview?: {
+    date: string;
+    time: string;
+    duration: string;
+    type: string;
+    meeting_url?: string;
+  };
+  offer?: {
+    title: string;
+    start_date?: string;
+    expiry_date?: string;
+  };
+  action_url?: string;
+}

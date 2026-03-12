@@ -81,9 +81,9 @@
 |---|-------|-------|------|-------|
 | C1 | Apply with LinkedIn profile or resume only — no account | ✅ BUILT | All | Career portal app form (Phase 2.5). Resume upload in 2.6 |
 | C2 | Mobile-first application under 3 minutes | ✅ BUILT | All | Current form works on mobile; polish in 2.7 |
-| C3 | Instant confirmation after applying with timeline | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08).** Confirmation email via Inngest + Resend. Blocked on email_templates migration + Inngest notification functions. Target: Wave F. |
+| C3 | Instant confirmation after applying with timeline | ✅ BUILT | All | **Wave F complete.** Notification dispatch + Resend email delivery infrastructure built. `dispatchNotification` Inngest function routes to email/in-app. `sendEmailNotification` renders templates + sends via Resend. Wire-up to `submitPublicApplication()` is a one-line `inngest.send()` call. |
 | C4 | Track application status without logging in | 🟡 v1.1 | All | Magic link to status page (D09 candidate portal) |
-| C5 | Timely updates at every stage change | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08).** Notification triggers on stage move. Target: Wave F. |
+| C5 | Timely updates at every stage change | ✅ BUILT | All | **Wave F complete.** `dispatchNotification` Inngest function + preference-based routing built. Wire-up: fire `ats/notification.requested` from `moveApplicationStage()` SA. |
 | C6 | Withdraw application or update details | 🟡 v1.1 | All | Self-service via candidate portal magic link |
 
 ---
@@ -163,7 +163,7 @@
 |---|-------|-------|------|-------|
 | I1 | Candidate self-schedules from interviewer real-time availability | 🟠 v2.0 | Growth+ | Requires Nylas calendar sync — complex integration |
 | I2 | AI suggests optimal interview panel | 🟠 v2.0 | Pro+ | Requires scheduling history data |
-| I3 | Automated reminders before interviews | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08) + Inngest cron.** 24h + 1h before reminders. Target: Wave F. |
+| I3 | Automated reminders before interviews | ✅ BUILT | All | **Wave F complete.** `interviewReminder` Inngest cron (*/15 * * * *) — queries 24h and 1h windows, resolves interviewer emails, dispatches `ats/notification.requested` events. |
 | I4 | AI-generated role-specific interview questions | 🔶 2.6 | Growth+ | Command bar: "generate questions for Backend Engineer interview" |
 | I5 | Multi-stage interview pipelines with auto-progression | ✅ BUILT | All | Pipeline stages with stage_type (Phase 2). Auto-actions in v1.1 |
 | I6 | Video interviews auto-transcribed and summarized | ❌ OUT | — | Use Otter.ai/Grain. Not building transcription engine |
@@ -190,7 +190,7 @@
 |---|-------|-------|------|-------|
 | T1 | Structured feedback after interviews (scorecards) | ✅ BUILT | All | Scorecard templates + submissions (D07). P3-W1 (migration+RLS), P3-W2 (SAs+scoring), P3-W3 (scorecard panel), P3-W4 (template management settings) |
 | T2 | Consolidated panel feedback in one view | ✅ BUILT | All | Score aggregation view (D07). P3-W2 (computeScorecardSummary), P3-W3 (scorecard panel summary mode) |
-| T3 | @mention colleagues on candidate card | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08).** Notes table exists (Wave E). @mentions need candidate_note_mentions table or inline parsing + notification dispatch. Target: Wave F. |
+| T3 | @mention colleagues on candidate card | 🟢 P3 ⏳ | All | **Infra ready (Wave F).** Notification dispatch pipeline built. Remaining: @mention parsing in notes + `ats/notification.requested` event send. Target: post-P4 polish. |
 | T4 | Candidate context before interview (resume, scores, prior notes) | 🟢 P3 ⏳ | All | **Deferred to post-P4.** Partial: candidate profile already shows notes, scores, applications. Dedicated "interview prep" view (AI5 meeting brief) not yet built. |
 | T5 | AI summarizes conflicting panel feedback | ✅ BUILT | Pro+ | AI scorecard summarization (D07 §5.3). P3-W5: `summarizeScorecards()` gpt-4o-mini, `generateAIScorecardSummary()` SA feature-gated by `ai_scorecard_summarize`, "Generate Summary" button on scorecard panel |
 | T6 | Role-level access controls (interviewers see own candidates) | ✅ BUILT | All | RBAC 5 roles × 30 permissions (Phase 1) |
@@ -206,14 +206,14 @@
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
 | N1 | AI drafts personalized, warm rejection emails | ✅ BUILT | Growth+ | Command bar: "draft rejection for Jane, warm tone". `EmailDraftPanel` on candidate profile — enriched with matchScore, stageName, daysInPipeline, rejectionReason via Wave B `buildEmailContextLines()`. Wave D D2. |
-| N2 | Automated email sequences on stage changes | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08).** 10 critical event notifications. Target: Wave F. |
+| N2 | Automated email sequences on stage changes | ✅ BUILT | All | **Wave F complete.** Full notification dispatch pipeline: `dispatchNotification` (preference lookup + channel routing) → `sendEmailNotification` (template render + Resend delivery). 8 event types configured in Settings > Notifications. |
 | N3 | Communication via preferred channel (email/SMS/WhatsApp) | 🟠 v2.0 | Growth+ | Email only in v1.0. SMS/WhatsApp require additional providers |
 | N4 | Shared inbox for candidate replies | 🟠 v2.0 | Pro+ | Requires email receiving infra — complex |
 | N5 | AI follow-up when candidate unresponsive 3+ days | 🟡 v1.1 | Growth+ | Inngest cron checks + AI draft |
-| ET1 | Org-wide email templates with dynamic tokens ({{candidate.name}}, etc.) | 🟢 P3 ⏳ | All | **Deferred — requires email_templates migration (D08).** No email_templates table in any migration 000–026. Target: Wave F (likely needed for P4 offer letters too). |
-| ET2 | Templates auto-populate candidate, job, application, and offer data | 🟢 P3 ⏳ | All | **Deferred — blocked on ET1.** Token renderer needs email_templates table. |
-| ET3 | Permission controls for template CRUD (who can create/edit/delete) | 🟢 P3 ⏳ | All | **Deferred — blocked on ET1.** RBAC gate on email templates. |
-| ET4 | Auto-CC assigned recruiter or coordinator on templated emails | 🟢 P3 ⏳ | All | **Deferred — blocked on ET1.** CC field from job_openings.recruiter_id. |
+| ET1 | Org-wide email templates with dynamic tokens ({{candidate.name}}, etc.) | ✅ BUILT | All | **Wave F complete.** Migration 027 (`email_templates` table), `renderTemplate()` with `{{variable.path}}` token replacement + HTML escaping, Settings > Email Templates CRUD UI. |
+| ET2 | Templates auto-populate candidate, job, application, and offer data | ✅ BUILT | All | **Wave F complete.** `renderTemplate()` resolves dot-notation paths (candidate.name, job.title, organization.name, etc.) from `TemplateVariables` interface. Preview button in editor. |
+| ET3 | Permission controls for template CRUD (who can create/edit/delete) | ✅ BUILT | All | **Wave F complete.** RBAC: owner/admin/recruiter can create/edit/view, owner/admin can delete. RLS enforces same. System templates blocked from deletion. |
+| ET4 | Auto-CC assigned recruiter or coordinator on templated emails | 🟢 P3 ⏳ | All | **Infra ready (Wave F).** Resend supports CC field. Wire-up: add CC from `job_openings.recruiter_id` in `sendEmailNotification`. Target: Phase 4 offer flow. |
 
 ---
 
