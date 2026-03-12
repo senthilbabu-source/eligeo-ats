@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-03-11 — Wave D / D3: AF2 — Embedding Staleness Badge on AiMatchPanel
+
+**Scope:** Surface the `embedding_updated_at` column (Migration 022) on the match panel. Badge appears when embedding is >7 days old, alerting recruiters that match scores may be outdated.
+
+**What shipped:**
+- `src/app/(app)/jobs/[id]/page.tsx` — added `embedding_updated_at` to job select query, passed as `embeddingUpdatedAt` prop to `AiMatchPanel`.
+- `src/app/(app)/jobs/[id]/ai-match-panel.tsx` — new `embeddingUpdatedAt` prop, exported `isEmbeddingStale()` pure function (7-day threshold), amber badge "⚠ Scores may be outdated" in panel header when stale. Badge hidden when `embeddingUpdatedAt` is null (no tracking yet — avoids false positives on existing embeddings).
+- `src/__tests__/ai-match-panel.test.ts` (NEW) — 5 unit tests for `isEmbeddingStale`: null → false, <7d → false, exactly 7d → false, >7d → true, 30d → true.
+
+**Test count:** 693 Vitest + 52 E2E = 745 total (+5 tests).
+
+---
+
 ## 2026-03-11 — Wave D / D2: N1/S6 — Email Draft Panel on Candidate Profile
 
 **Scope:** Surface `aiDraftEmail()` SA (built in Wave B, never called from UI) on the candidate detail page. Closes N1 (rejection) and S6 (outreach) simultaneously.

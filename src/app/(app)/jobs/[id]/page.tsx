@@ -54,7 +54,7 @@ export default async function JobDetailPage({
       id, title, slug, description, description_previous, metadata,
       department, location, location_type,
       employment_type, salary_min, salary_max, salary_currency, status,
-      headcount, hiring_manager_id, published_at, created_at, job_embedding
+      headcount, hiring_manager_id, published_at, created_at, job_embedding, embedding_updated_at
     `,
     )
     .eq("id", id)
@@ -242,7 +242,11 @@ export default async function JobDetailPage({
         canEdit={can(session.orgRole, "jobs:edit")}
       />
 
-      <AiMatchPanel jobId={job.id} hasEmbedding={job.job_embedding !== null} />
+      <AiMatchPanel
+        jobId={job.id}
+        hasEmbedding={job.job_embedding !== null}
+        embeddingUpdatedAt={job.embedding_updated_at ?? null}
+      />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { aiMatchCandidates, aiGenerateJobEmbedding, submitScoreFeedback } from "
 interface AiMatchPanelProps {
   jobId: string;
   hasEmbedding: boolean;
+  /** AF2 — null means embedding was never (re-)generated after tracking began */
+  embeddingUpdatedAt: string | null;
 }
 
 interface MatchResult {
@@ -20,7 +22,15 @@ interface MatchResult {
 
 type FeedbackSignal = "thumbs_up" | "thumbs_down";
 
-export function AiMatchPanel({ jobId, hasEmbedding }: AiMatchPanelProps) {
+/** AF2 — stale when embedding_updated_at is null or older than 7 days */
+export function isEmbeddingStale(embeddingUpdatedAt: string | null, nowMs?: number): boolean {
+  if (!embeddingUpdatedAt) return false; // never tracked — no signal to show
+  const updatedMs = new Date(embeddingUpdatedAt).getTime();
+  const now = nowMs ?? Date.now();
+  return now - updatedMs > 7 * 24 * 60 * 60 * 1000;
+}
+
+export function AiMatchPanel({ jobId, hasEmbedding, embeddingUpdatedAt }: AiMatchPanelProps) {
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -107,10 +117,23 @@ export function AiMatchPanel({ jobId, hasEmbedding }: AiMatchPanelProps) {
     }
   }
 
+  const stale = hasEmbedding && isEmbeddingStale(embeddingUpdatedAt);
+
   return (
     <div className="mt-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium">AI Candidate Matches</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-medium">AI Candidate Matches</h2>
+          {/* AF2 — staleness badge */}
+          {stale && (
+            <span
+              title="Job description or skills were updated since the last embedding. Scores may be outdated — regenerate to refresh."
+              className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+            >
+              ⚠ Scores may be outdated
+            </span>
+          )}
+        </div>
         {creditsRemaining !== null && (
           <span className="text-xs text-muted-foreground">
             {creditsRemaining} credits remaining
