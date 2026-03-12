@@ -124,6 +124,12 @@ export interface JobMetadata {
   internal_notes?: string;
   clone_intent?: CloneIntent;
   clone_checklist_dismissed?: Partial<Record<CloneChecklistItem, boolean>>;
+  /** Bias check result stored at publish time (Wave B). Used to surface a dismissible banner. */
+  bias_check?: {
+    flaggedTerms: string[];
+    suggestions: Record<string, string>;
+    checkedAt: string; // ISO timestamp
+  };
   [key: string]: unknown;
 }
 

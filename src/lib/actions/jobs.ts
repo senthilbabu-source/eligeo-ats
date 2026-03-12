@@ -10,6 +10,7 @@ import {
   generateAndStoreEmbedding,
   buildJobEmbeddingText,
 } from "@/lib/ai/embeddings";
+import { checkJobDescriptionBias } from "@/lib/ai/generate";
 import type { CloneIntent, JobMetadata, CloneChecklistItem } from "@/lib/types/ground-truth";
 
 // ── Validation Schemas ─────────────────────────────────────
@@ -201,9 +202,50 @@ export async function publishJob(jobId: string) {
   assertCan(session.orgRole, "jobs:publish");
 
   const supabase = await createClient();
+
+  // B2 — bias gate: fetch description + metadata, run bias check, store result
+  // Soft gate: never blocks publish — only stores the result for the UI banner.
+  const { data: job } = await supabase
+    .from("job_openings")
+    .select("description, metadata")
+    .eq("id", jobId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  const updatePayload: Record<string, unknown> = {
+    status: "open",
+    published_at: new Date().toISOString(),
+  };
+
+  if (job?.description) {
+    try {
+      const biasResult = await checkJobDescriptionBias({
+        text: job.description,
+        organizationId: session.orgId,
+        userId: session.userId,
+      });
+
+      if (biasResult.flaggedTerms.length > 0) {
+        const currentMeta = (job.metadata ?? {}) as JobMetadata;
+        updatePayload.metadata = {
+          ...currentMeta,
+          bias_check: {
+            flaggedTerms: biasResult.flaggedTerms,
+            suggestions: biasResult.suggestions,
+            checkedAt: new Date().toISOString(),
+          },
+        };
+      }
+    } catch (err) {
+      // Bias check failure must never block publish — log and proceed
+      Sentry.captureException(err);
+    }
+  }
+
   const { error } = await supabase
     .from("job_openings")
-    .update({ status: "open", published_at: new Date().toISOString() })
+    .update(updatePayload)
     .eq("id", jobId)
     .eq("organization_id", session.orgId)
     .in("status", ["draft", "paused"]);

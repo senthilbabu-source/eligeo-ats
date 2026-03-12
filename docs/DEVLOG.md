@@ -4,6 +4,52 @@
 
 ---
 
+## 2026-03-11 — AI-Proof Wave B — email enrichment + bias gate + move_stage wiring
+
+**Phase:** AI-Proof Wave B (pre-Phase 3 wiring pass)
+**Stories closed:** N1 (email context enrichment), J5 (bias gate in publishJob), AI1 (move_stage wiring)
+**Test count:** 675 → 683 Vitest (+8 unit tests for buildEmailContextLines). Typecheck clean. Lint clean.
+
+### B1 — Email context enrichment (`generate.ts`)
+
+`generateEmailDraft()` now accepts 4 optional enrichment params:
+- `matchScore?: number` — AI match score (0–100), appears as "AI match score: N%"
+- `stageName?: string` — current pipeline stage, appears as "Current pipeline stage: X"
+- `daysInPipeline?: number` — days in pipeline, appears as "Days in pipeline: N"
+- `rejectionReasonLabel?: string` — human-readable rejection reason
+
+New pure helper `buildEmailContextLines()` assembles these into prompt lines when present. Exported for unit testing — 8 new unit tests added to `ai-generate.test.ts` covering all param combinations including falsy edge cases (matchScore=0, empty stageName).
+
+The `generateEmailDraft()` call sites must pass these params to get context-aware emails. The prompt template uses `...buildEmailContextLines(...)` spread, so callers that don't pass them get unchanged behavior.
+
+### B2 — Bias gate in `publishJob()` (`jobs.ts`)
+
+Before setting `status='open'`, `publishJob()` now:
+1. Fetches job description + existing metadata (one extra DB read)
+2. Calls `checkJobDescriptionBias({ text, organizationId, userId })`
+3. If flagged terms found → merges `bias_check: { flaggedTerms, suggestions, checkedAt }` into `job_openings.metadata` JSONB alongside the status update
+4. If no terms flagged → proceeds without touching metadata
+5. If bias check throws (network error, credit exhaustion) → Sentry capture, publish proceeds unblocked
+
+Soft gate design: bias never blocks publish. The banner on the job detail page reads `metadata.bias_check` to surface findings. `JobMetadata` type in `ground-truth.ts` updated with explicit `bias_check?` field.
+
+### B3 — `move_stage` handler in `executeCommand()` (`command-bar.ts` + `command-bar.tsx`)
+
+Previously: intent type `move_stage` was parsed by OpenAI but `executeCommand()` fell through to `return { intent }` — no candidate lookup, no stage resolution, no confirmation.
+
+Now:
+- **Backend**: 4-step resolution — (1) candidates by name ILIKE, (2) active applications, (3) pre-fetch current stage → template IDs (pre-fetch+.in() pattern), (4) target stage by name in those templates
+- **Single match** → returns `confirmMove: { applicationId, candidateId, candidateName, targetStageId, targetStageName, preview }` in response
+- **Multiple matches** → returns standard `results[]` (user picks the right one, navigates to candidate profile)
+- **No match** → returns `{ intent }` with natural language display, no crash
+- **Frontend**: new `confirmMove` state in `CommandBar`. When `confirmMove` present, renders a confirmation panel with `preview` text + "Confirm Move" button. On confirm: calls `moveStage(applicationId, targetStageId)` SA directly, then `router.refresh()` and close.
+
+Exported `ConfirmMove` interface from `command-bar.ts` for frontend type safety.
+
+[PLAYBOOK] P-25 pattern: "Soft gate — never block a user action on AI enrichment. Bias checks, score lookups, enrichment all run opportunistically. They store results for display; they never gate the primary action. When the AI call fails, capture the exception and proceed."
+
+---
+
 ## 2026-03-11 — AI-Proof Wave A — Migration 022 + RLS tests + rejection reason picker (CP9)
 
 **Phase:** AI-Proof Wave A (pre-Phase 3 correctness pass)

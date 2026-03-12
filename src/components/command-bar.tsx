@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { executeCommand } from "@/lib/actions/command-bar";
+import { executeCommand, type ConfirmMove } from "@/lib/actions/command-bar";
+import { moveStage } from "@/lib/actions/candidates";
 import type { ParsedIntent } from "@/lib/ai/intent";
 
 interface CommandResult {
@@ -18,6 +19,7 @@ export function CommandBar() {
   const [intent, setIntent] = useState<ParsedIntent | null>(null);
   const [results, setResults] = useState<CommandResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [confirmMove, setConfirmMove] = useState<ConfirmMove | null>(null);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -32,6 +34,7 @@ export function CommandBar() {
     setIntent(null);
     setResults([]);
     setSelectedIndex(0);
+    setConfirmMove(null);
     setOpen(true);
   }, []);
 
@@ -66,6 +69,7 @@ export function CommandBar() {
       setIntent(response.intent);
       setResults(response.results ?? []);
       setSelectedIndex(0);
+      setConfirmMove(response.confirmMove ?? null);
 
       // Auto-navigate for navigation intents
       if (response.intent.action === "navigate" && response.intent.params.page) {
@@ -157,9 +161,41 @@ export function CommandBar() {
           </div>
 
           {/* Intent display */}
-          {intent && !results.length && intent.action !== "navigate" && intent.action !== "create_job" && intent.action !== "create_candidate" && (
+          {intent && !results.length && !confirmMove && intent.action !== "navigate" && intent.action !== "create_job" && intent.action !== "create_candidate" && (
             <div className="px-4 py-3 text-sm text-muted-foreground">
               {intent.display}
+            </div>
+          )}
+
+          {/* move_stage confirmation panel */}
+          {confirmMove && (
+            <div className="px-4 py-3 border-b border-border">
+              <p className="text-sm font-medium text-foreground">{confirmMove.preview}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Confirm to move this candidate.</p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    startTransition(async () => {
+                      await moveStage(confirmMove.applicationId, confirmMove.targetStageId);
+                      setOpen(false);
+                      router.refresh();
+                    });
+                  }}
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {isPending ? "Moving…" : "Confirm Move"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setConfirmMove(null)}
+                  className="rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 

@@ -89,6 +89,24 @@ const emailDraftSchema = z.object({
 });
 
 /**
+ * Build additional context lines for an email draft prompt from enrichment params.
+ * Pure function — exported for unit testing.
+ */
+export function buildEmailContextLines(params: {
+  matchScore?: number;
+  stageName?: string;
+  daysInPipeline?: number;
+  rejectionReasonLabel?: string;
+}): string[] {
+  const lines: string[] = [];
+  if (params.matchScore !== undefined) lines.push(`AI match score: ${params.matchScore}%`);
+  if (params.stageName) lines.push(`Current pipeline stage: ${params.stageName}`);
+  if (params.daysInPipeline !== undefined) lines.push(`Days in pipeline: ${params.daysInPipeline}`);
+  if (params.rejectionReasonLabel) lines.push(`Rejection reason: ${params.rejectionReasonLabel}`);
+  return lines;
+}
+
+/**
  * Generate an AI-drafted email (rejection, outreach, update).
  */
 export async function generateEmailDraft(params: {
@@ -97,6 +115,14 @@ export async function generateEmailDraft(params: {
   jobTitle: string;
   context?: string;
   tone?: "warm" | "professional" | "casual";
+  /** AI match score (0–100) — included in prompt when present */
+  matchScore?: number;
+  /** Pipeline stage the candidate is currently in */
+  stageName?: string;
+  /** Number of days the candidate has been in the pipeline */
+  daysInPipeline?: number;
+  /** Human-readable rejection reason label */
+  rejectionReasonLabel?: string;
   organizationId: string;
   userId?: string;
 }): Promise<{ subject: string | null; body: string | null; error?: string }> {
@@ -106,6 +132,10 @@ export async function generateEmailDraft(params: {
     jobTitle,
     context,
     tone = "warm",
+    matchScore,
+    stageName,
+    daysInPipeline,
+    rejectionReasonLabel,
     organizationId,
     userId,
   } = params;
@@ -144,6 +174,7 @@ Body should be plain text with line breaks, not HTML.`,
         `Candidate: ${candidateName}`,
         `Role: ${jobTitle}`,
         context && `Context: ${context}`,
+        ...buildEmailContextLines({ matchScore, stageName, daysInPipeline, rejectionReasonLabel }),
       ]
         .filter(Boolean)
         .join("\n"),

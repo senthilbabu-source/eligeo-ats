@@ -7,6 +7,7 @@ import {
   generateEmailDraft,
   streamJobDescription,
   buildIntentContext,
+  buildEmailContextLines,
   checkJobDescriptionBias,
   suggestJobTitle,
   suggestSkillsDelta,
@@ -229,6 +230,61 @@ describe("generateEmailDraft", () => {
     expect(result.body).toBeNull();
     expect(result.error).toBe("Model unavailable");
     expect(Sentry.captureException).toHaveBeenCalledWith(error);
+  });
+});
+
+describe("buildEmailContextLines", () => {
+  it("should return empty array when no enrichment params provided", () => {
+    expect(buildEmailContextLines({})).toEqual([]);
+  });
+
+  it("should include match score line when matchScore is provided", () => {
+    const lines = buildEmailContextLines({ matchScore: 87 });
+    expect(lines).toContain("AI match score: 87%");
+    expect(lines).toHaveLength(1);
+  });
+
+  it("should include match score line when matchScore is 0 (falsy but valid)", () => {
+    const lines = buildEmailContextLines({ matchScore: 0 });
+    expect(lines).toContain("AI match score: 0%");
+  });
+
+  it("should include stage name line when stageName is provided", () => {
+    const lines = buildEmailContextLines({ stageName: "Technical Interview" });
+    expect(lines).toContain("Current pipeline stage: Technical Interview");
+    expect(lines).toHaveLength(1);
+  });
+
+  it("should include days in pipeline when daysInPipeline is provided", () => {
+    const lines = buildEmailContextLines({ daysInPipeline: 14 });
+    expect(lines).toContain("Days in pipeline: 14");
+    expect(lines).toHaveLength(1);
+  });
+
+  it("should include rejection reason when rejectionReasonLabel is provided", () => {
+    const lines = buildEmailContextLines({ rejectionReasonLabel: "Skills mismatch" });
+    expect(lines).toContain("Rejection reason: Skills mismatch");
+    expect(lines).toHaveLength(1);
+  });
+
+  it("should combine all params in order when all are provided", () => {
+    const lines = buildEmailContextLines({
+      matchScore: 72,
+      stageName: "Onsite",
+      daysInPipeline: 30,
+      rejectionReasonLabel: "Culture fit",
+    });
+    expect(lines).toEqual([
+      "AI match score: 72%",
+      "Current pipeline stage: Onsite",
+      "Days in pipeline: 30",
+      "Rejection reason: Culture fit",
+    ]);
+  });
+
+  it("should not include stageName line when stageName is empty string", () => {
+    const lines = buildEmailContextLines({ stageName: "" });
+    expect(lines).toHaveLength(0);
   });
 });
 
