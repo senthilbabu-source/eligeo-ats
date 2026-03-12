@@ -4,6 +4,34 @@
 
 ---
 
+## 2026-03-12 — Pre-Phase 5 Hardening Plan (H00)
+
+**Scope:** Created `docs/HARDENING.md` — comprehensive hardening plan based on Phase 4 regression audit + architect rebuttal review.
+
+### Audit Triage Results
+- **20 findings** from external audit → code-level validation against actual codebase
+- **5 dismissed** (BUG-005 command bar RBAC, BUG-008 skip logging, BUG-007 JWT scope — all already handled)
+- **3 rebuttals accepted** from architect review:
+  - BUG-001: Same-email dedup exists, but cross-email same-person gap is real
+  - BUG-007: Reframed — no JWT, but unverified emails via service client is the actual risk
+  - BUG-002: Trigger works, but candidate timeline is empty for all automated interactions
+- **12 actionable items** across 4 waves (H1–H4)
+
+### Build Plan (4 waves)
+- **H1 (P0):** Atomic stage move RPC, offer approval locking RPC, fuzzy candidate dedup warning, public apply email verification
+- **H2 (P1):** Auto-refresh candidate embedding on skill change, staleness flag in match RPC
+- **H3 (P1):** `recordInteraction()` utility (6 call sites), AI match explanation function + table, scorecard summary auto-trigger, NBA rule enhancement
+- **H4 (P2):** Match score percentile labels, e-sign dead code cleanup, EU AI Act disclosure + human review flag
+
+### Migration 029
+- 2 new RPCs, 3 new columns, 1 new trigger, 1 new table, 1 modified RPC
+- ~64 new tests (projected total: ~1167)
+
+### Key Decision
+- `aiMatchCandidates()` service client usage validated as correct — orgId is JWT-derived, RPC enforces org isolation via explicit WHERE. No change needed.
+
+---
+
 ## 2026-03-12 — Logo Integration (App Nav + Auth Pages)
 
 **Scope:** Added Eligeo logo SVGs to the app UI.

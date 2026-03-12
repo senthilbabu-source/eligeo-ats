@@ -107,6 +107,14 @@ Documents intentionally excluded from pre-code phase. Each has a specific trigge
 
 ---
 
+## Pre-Phase 5 Hardening
+
+| # | Document | Path | Priority | Status | Description |
+|---|----------|------|----------|--------|-------------|
+| H00 | **Hardening Plan** | `docs/HARDENING.md` | P0 | 🟡 In Progress | 4-wave plan (H1–H4): 12 items resolving data integrity risks (atomic stage move, approval locking), candidate dedup, email verification, embedding freshness, candidate timeline, AI match explanations, scorecard auto-trigger, NBA enhancement, percentile labels, e-sign cleanup, AI Act compliance. Migration 029. ~64 new tests. |
+
+---
+
 ## Tracking Documents (Meta)
 
 | Document | Path | Description |
