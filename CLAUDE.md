@@ -23,11 +23,11 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 
 ## Current State
 
-- **Phase:** Build — **Phase 2.7 (UX polish) COMPLETE. Next: Phase 3 (Interviews + Scorecards).**
-- **Build order:** Phase 0 ✅ → Phase 1 ✅ → Phase 2 ✅ → Phase 2.5 ✅ → Phase 2.6 ✅ → Phase 2.7 ✅ → **Phase 3 (interviews) ← NEXT** → Phase 4 (offers) → Phase 5 (billing)
+- **Phase:** Build — **Phase 3 (Interviews + Scorecards) IN PROGRESS. P3-W1 complete.**
+- **Build order:** Phase 0 ✅ → Phase 1 ✅ → Phase 2 ✅ → Phase 2.5 ✅ → Phase 2.6 ✅ → Phase 2.7 ✅ → **Phase 3 (interviews) ← IN PROGRESS** → Phase 4 (offers) → Phase 5 (billing)
 - **Documentation:** ALL 30 docs complete. Spec docs describe WHAT; build order changed per ADR-011.
-- **Test count:** 718 Vitest + 52 E2E = 770 total. All passing.
-- **Migrations:** 25 total (000–025). Migration 025 adds `candidate_notes` table.
+- **Test count:** 793 Vitest + 52 E2E = 845 total. All passing.
+- **Migrations:** 26 total (000–026). Migration 026 adds interviews & scorecards cluster (6 tables).
 - **Key rule:** Every new feature ships with AI-assisted mode from Day 1. No more "AI deferred to v2.0."
 - **Rules:** 90 rules in `docs/AI-RULES.md` (§1-§21)
 - **Governance:** Post-build audit (§13), pre-start gate (§21), downstream impact (§14)

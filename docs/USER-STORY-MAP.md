@@ -441,6 +441,8 @@
 > **2026-03-11 delta (Phase 2.7 final pass):** All Phase 2.7 user stories completed. Marked ✅ BUILT: JI1, JI3, SR6, CP2, CP4, CP7, CP8, CL2, AR4, AR5, T10, JD1, JD2, JD3, JD4, C2, M3. Phase 2.7 is complete. Next: Phase 3 (interviews + scorecards with AI summarization).
 >
 > **2026-03-12 delta (Wave E — pre-Phase 3 completeness):** 10 gaps fixed. Migrations 023–025. Candidate embedding auto-generation (Inngest pipeline), resume_text persistence, bias check banner rendering, slug collision fix, candidate edit panel, candidate_notes table + 16 RLS tests, moveStage revalidation, atomic reorder_pipeline_stages RPC, email context enrichment wiring, batch embedding backfill SA. No new user stories — all fixes to existing built stories. Phase 3 unblocked.
+>
+> **2026-03-12 delta (P3-W1 — database foundation):** Migration 026 applied: 6 tables (interviews, scorecard_templates, scorecard_categories, scorecard_attributes, scorecard_submissions, scorecard_ratings). Seed data + golden-tenant fixtures. 75 RLS tests across 6 files. Blind review via SECURITY DEFINER helper. No user stories marked BUILT yet — database + RLS only, no UI.
 
 ---
 
