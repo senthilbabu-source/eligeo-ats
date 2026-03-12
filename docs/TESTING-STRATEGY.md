@@ -613,7 +613,8 @@ export function generateRLSTests(config: RLSTestConfig) {
 | audit_logs | admin+ | trigger only | DENIED ALL | DENIED ALL | 10 |
 | notes | all roles | all roles | author | owner/admin | 20 |
 | org_daily_briefings | org members (SELECT only) | service role only | DENIED ALL | DENIED ALL | 8 (pre-migration spec — Migration 021) |
-| **Total** | | | | | **~246 cases** |
+| ai_score_feedback | org members (own signal only) | org members (self-INSERT) | DENIED ALL | self/owner/admin | 16 (pre-migration spec — Migration 022, AI-Proof Wave A) |
+| **Total** | | | | | **~262 cases** |
 
 ---
 

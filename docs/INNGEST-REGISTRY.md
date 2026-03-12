@@ -109,20 +109,28 @@ Functions only override these defaults when documented in the registry table bel
 | 37 | `search/full-reindex` | `ats/search.reindex-requested` | 0 | — | No (v2.0) |
 | 38 | `search/sync-health-check` | Cron: `*/5 * * * *` (every 5 min) | default (3) | — | No (v2.0) |
 
-### 4.7 Analytics (3 functions) — v1.0 (briefing) + v1.1+ (views/export)
+### 4.7 Analytics (4 functions) — v1.0 (briefing + job embedding) + v1.1+ (views/export)
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
 | 39 | `analytics/refresh-views` | Cron: `0 2 * * *` (daily 2AM UTC) | default (3) | — | No (v1.1) |
 | 40 | `analytics/export` | `ats/analytics.export-requested` | default (3) | — | No (v1.1) |
 | 41 | `analytics/generate-briefing` | `ats/analytics.briefing-requested` (on-demand per org) | 2 | 1 per org | Yes (Wave 3) |
+| 42 | `analytics/refresh-job-embedding` | `ats/analytics.job-skills-changed` (fired when `job_required_skills` INSERT/UPDATE/DELETE or JD updated) | 2 | 1 per job | Yes (AI-Proof Wave A) |
 
 **`analytics/generate-briefing` details:**
 - **Cache-first:** checks `org_daily_briefings WHERE org_id = $1 AND date = CURRENT_DATE`. If row exists, returns cached content — no OpenAI call.
 - **On miss:** reads pipeline snapshot (open jobs, active apps, hires this week, zero-app jobs 7+ days), calls OpenAI structured output → `{ win: string, blocker: string, action: string }`, upserts `org_daily_briefings` on `(org_id, date)` conflict.
 - **Logging:** logs to `ai_usage_logs` with `action = 'daily_briefing'` (requires Migration 021 to add this value to the CHECK constraint).
-- **Admin regen:** a Server Action deletes today's `org_daily_briefings` row then dispatches `ats/analytics.briefing-requested` to Inngest — triggers a fresh generation.
+- **Admin regen:** Server Action sends `ats/analytics.briefing-requested` with `force: true` — bypasses cache check and upserts a fresh row (does NOT delete the existing row; ON CONFLICT DO UPDATE overwrites content).
 - **Concurrency:** `1 per org` — prevents duplicate OpenAI calls if admin hits regen quickly.
+
+**`analytics/refresh-job-embedding` details (planned — AI-Proof Wave A):**
+- **Trigger:** `ats/analytics.job-skills-changed` — dispatched by the `job_required_skills` mutation server actions and `updateJobDescription()` whenever JD or skills change.
+- **Logic:** Re-generates `job_openings.job_embedding` via OpenAI embeddings API → updates `job_embedding` + sets `embedding_updated_at = NOW()`.
+- **Staleness flag:** Before re-embed runs, the calling SA sets `embedding_updated_at = NULL` (stale signal). UI checks `embedding_updated_at` vs `updated_at` to surface "Scores may be outdated" nudge.
+- **Concurrency:** `1 per job` — prevents duplicate embedding calls on rapid skills edits.
+- **Downstream:** after re-embed, any cached match scores for this job are effectively invalidated. Applications will show refreshed scores on next load.
 
 ### 4.8 Onboarding (3 functions)
 
@@ -210,8 +218,8 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 | Workflow | 6 | All except `workflow/application-withdrawn` (deferred to v1.1) |
 | Onboarding | 2 | `csv-import` and `demo-seed` only; `merge-sync` is v2.1 |
 | Compliance | 4 | All functions |
-| Analytics | 1 | `analytics/generate-briefing` only (Wave 3). `analytics/refresh-views` and `analytics/export` are v1.1. |
-| **Total** | **40** | |
+| Analytics | 2 | `analytics/generate-briefing` (Wave 3) + `analytics/refresh-job-embedding` (AI-Proof Wave A). `analytics/refresh-views` and `analytics/export` are v1.1. |
+| **Total** | **41** | |
 
 > The initial estimate of ~33 was based on excluding compliance and onboarding stubs. With compliance (4), onboarding (2), and analytics briefing (1) included, the v1.0 count is **40 functions**.
 
