@@ -4,6 +4,83 @@
 
 ---
 
+## 2026-03-12 — Phase 4 Wave 3: AI Layer (Offer AI Functions + Command Bar Intents)
+
+**Scope:** AI-first offer capabilities — compensation suggestion, offer letter drafting, salary band checking, and command bar offer intents. Closes deferred items B-02 (AI consideration for offers) and B-03 (offer intents).
+
+**What shipped:**
+
+**AI Generation Functions (`src/lib/ai/generate.ts`):**
+- `suggestOfferCompensation` — AI suggests competitive compensation based on job title, level, location, and candidate's current comp. Returns structured `{base_salary, currency, period, bonus_pct, equity, reasoning}`.
+- `generateOfferLetterDraft` — AI drafts a formal offer letter from compensation data, template terms, and org context. Uses `generateText` (up to 1000 tokens).
+- `checkSalaryBand` — AI evaluates proposed salary against market data. Returns `{withinBand, percentile, assessment (below_market/competitive/above_market), reasoning}`.
+- `buildOfferCompContext` — Pure helper for building compensation suggestion prompts (exported for testing).
+
+**Command Bar Intents (`src/lib/ai/intent.ts` + `src/lib/actions/command-bar.ts`):**
+- New intent actions: `create_offer`, `check_offer`.
+- Quick patterns: "create/new/make/draft offer for [name]", "check/list/view offers for [name]", "offer status [name]".
+- Navigation: "offers", "approvals", "my approvals", "approval inbox" → navigate to respective pages.
+- Command bar execution: `create_offer` searches candidates and returns results with `?action=offer` deep-link. `check_offer` searches offers by candidate name or lists recent offers.
+
+**AI Server Actions (`src/lib/actions/ai.ts`):**
+- `aiSuggestOfferCompensation` — Server action wrapper with auth + permission check.
+- `aiGenerateOfferLetter` — Server action wrapper for offer letter drafting.
+- `aiCheckSalaryBand` — Server action wrapper for salary band validation.
+
+**Credit System (`src/lib/ai/credits.ts`):**
+- Added CREDIT_WEIGHTS: `offer_compensation_suggest: 2`, `offer_letter_draft: 2`, `offer_salary_check: 1`.
+
+**Config (`src/lib/constants/config.ts`):**
+- Added `OFFER_LETTER_MAX_TOKENS: 1000`, `OFFER_COMP_MAX_TOKENS: 300`.
+
+**Tests:**
+- `src/__tests__/offer-ai.test.ts` — 14 tests: buildOfferCompContext (3), suggestOfferCompensation (3), generateOfferLetterDraft (4), checkSalaryBand (4).
+- `src/__tests__/offer-intent-patterns.test.ts` — 16 tests: create_offer patterns (4), check_offer patterns (6), navigation (4), existing patterns preserved (2).
+
+**Test counts:** 1032 Vitest (+30 from P4-W3: 14 AI + 16 intent) + 68 E2E = 1100 total. All unit/integration passing. TSC clean.
+
+**Deferred items closed:** B-02 (AI consideration for D06 — functions built), B-03 (offer intents — built).
+
+**Files changed:** 7 modified (generate.ts, intent.ts, command-bar.ts, ai.ts, credits.ts, config.ts, DEVLOG.md), 2 new test files.
+
+---
+
+## 2026-03-12 — Phase 4 Wave 2: Core Server Actions + State Machine
+
+**Scope:** Pure offer state machine (11 transitions, 8 states) + 9 server actions for the full offer lifecycle. Zero DB dependency in state machine — fully unit-testable.
+
+**What shipped:**
+
+**State Machine (`src/lib/offers/state-machine.ts`):**
+- Pure function `transition(currentStatus, action, ctx)` — validates from-state, runs guard conditions, returns new status or error.
+- 11 transitions: submit, approve_chain_complete, reject, send, sign, decline, expire, withdraw.
+- Guard conditions: compensation required, approver count ≥ 1, expiry in future, all-approved check, esign provider required.
+- Helper functions: `isTerminal()`, `canWithdraw()`, `validActions()`.
+- Withdraw is special-cased — allowed from any non-terminal state (draft, pending_approval, approved, sent).
+
+**Server Actions (`src/lib/actions/offers.ts`):**
+- `createOffer` — from template or blank, with approver chain, server-side application→candidate/job resolution.
+- `updateOffer` — draft-only edits (compensation, dates, terms, esign provider).
+- `submitForApproval` — state machine validates guards, transitions to pending_approval.
+- `approveOffer` — sequential approval chain (enforces turn order), auto-advances to approved when chain complete.
+- `rejectOffer` — requires notes, resets ALL approvals to pending, returns offer to draft (per D06 §3.3).
+- `withdrawOffer` — state machine validates, transitions to withdrawn from any non-terminal state.
+- `markOfferSigned` — manual fallback (approved/sent → signed), clears esign fields for manual process (per D06 §4.2 G-010).
+- `listOffers` — filterable by status, job, candidate.
+- `getOffer` — full detail with approval chain (pre-fetch pattern).
+
+**Tests:**
+- `src/__tests__/offer-state-machine.test.ts` — 47 tests: 8 terminal checks, 8 withdraw eligibility, 7 happy-path transitions, 8 withdraw from all states, 6 guard failures, 5 invalid from-state, 5 validActions.
+- `src/__tests__/offer-actions.test.ts` — 19 tests: createOffer (5), updateOffer (3), submitForApproval (2), withdrawOffer (2), rejectOffer (2), markOfferSigned (2), listOffers (1), getOffer (2).
+
+**Test counts:** 1002 Vitest (+66 from P4-W2: 47 state machine + 19 server action) + 68 E2E = 1070 total. All passing. TSC clean. Lint clean.
+
+**Files changed:** 4 new (state-machine.ts, offers.ts, 2 test files), 0 modified.
+
+**Inngest stubs:** TODO markers for W4 — `ats/offer.submitted`, `ats/offer.approval-decided`, `ats/offer.withdrawn` events.
+
+---
+
 ## 2026-03-12 — Wave F: Notification Cluster (F1→F4)
 
 **Scope:** Pre-Phase 4 prerequisite — complete notification infrastructure. Without this, Phase 4's "Send Offer" button has no email delivery path. Wave F builds the entire D08 notification cluster from schema to UI.

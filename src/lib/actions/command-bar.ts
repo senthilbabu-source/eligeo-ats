@@ -227,5 +227,101 @@ export async function executeCommand(
     };
   }
 
+  // create_offer: search for candidate by name, return results for offer creation
+  if (intent.action === "create_offer") {
+    const candidateName = intent.params.candidate ?? "";
+    if (candidateName) {
+      const supabase = await createClient();
+      const escaped = escapeLikeQuery(candidateName);
+      const { data } = await supabase
+        .from("candidates")
+        .select("id, full_name, email, current_title")
+        .eq("organization_id", session.orgId)
+        .ilike("full_name", `%${escaped}%`)
+        .is("deleted_at", null)
+        .limit(5);
+
+      return {
+        intent,
+        results: (data ?? []).map((c) => ({
+          id: c.id,
+          title: c.full_name,
+          subtitle: c.current_title ?? c.email,
+          href: `/candidates/${c.id}?action=offer`,
+        })),
+      };
+    }
+    return { intent };
+  }
+
+  // check_offer: search offers, optionally filtered by candidate name
+  if (intent.action === "check_offer") {
+    const candidateName = intent.params.candidate ?? "";
+    const supabase = await createClient();
+
+    if (candidateName) {
+      const escaped = escapeLikeQuery(candidateName);
+      const { data: candidates } = await supabase
+        .from("candidates")
+        .select("id, full_name")
+        .eq("organization_id", session.orgId)
+        .ilike("full_name", `%${escaped}%`)
+        .is("deleted_at", null)
+        .limit(5);
+
+      if (candidates?.length) {
+        const candidateIds = candidates.map((c) => c.id);
+        const { data: offers } = await supabase
+          .from("offers")
+          .select("id, status, candidate_id")
+          .eq("organization_id", session.orgId)
+          .in("candidate_id", candidateIds)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        const nameMap = Object.fromEntries(candidates.map((c) => [c.id, c.full_name]));
+
+        return {
+          intent,
+          results: (offers ?? []).map((o) => ({
+            id: o.id,
+            title: nameMap[o.candidate_id] ?? "Unknown",
+            subtitle: `Offer: ${o.status}`,
+            href: `/offers/${o.id}`,
+          })),
+        };
+      }
+    }
+
+    // No candidate filter — show recent offers
+    const { data: offers } = await supabase
+      .from("offers")
+      .select("id, status, candidate_id")
+      .eq("organization_id", session.orgId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    const candidateIds = [...new Set((offers ?? []).map((o) => o.candidate_id))];
+    const { data: candidateRows } = candidateIds.length
+      ? await supabase
+          .from("candidates")
+          .select("id, full_name")
+          .in("id", candidateIds)
+      : { data: [] };
+    const nameMap = Object.fromEntries((candidateRows ?? []).map((c) => [c.id, c.full_name]));
+
+    return {
+      intent,
+      results: (offers ?? []).map((o) => ({
+        id: o.id,
+        title: nameMap[o.candidate_id] ?? "Unknown",
+        subtitle: `Offer: ${o.status}`,
+        href: `/offers/${o.id}`,
+      })),
+    };
+  }
+
   return { intent };
 }

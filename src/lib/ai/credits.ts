@@ -15,6 +15,9 @@ const CREDIT_WEIGHTS: Record<string, number> = {
   title_suggestion: 1,
   skills_delta: 1,
   daily_briefing: 1,
+  offer_compensation_suggest: 2,
+  offer_letter_draft: 2,
+  offer_salary_check: 1,
 };
 
 export type AiAction = keyof typeof CREDIT_WEIGHTS;

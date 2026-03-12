@@ -19,6 +19,8 @@ export interface ParsedIntent {
     | "generate_job_description"
     | "find_matches"
     | "clone_job"
+    | "create_offer"
+    | "check_offer"
     | "navigate"
     | "unknown";
   params: Record<string, string>;
@@ -36,6 +38,8 @@ const intentActions = [
   "generate_job_description",
   "find_matches",
   "clone_job",
+  "create_offer",
+  "check_offer",
   "navigate",
   "unknown",
 ] as const;
@@ -60,7 +64,9 @@ Available actions:
 - generate_job_description: Generate a job description. Params: title, key_points (optional)
 - find_matches: Find AI-matched candidates for a job. Params: job (title or description)
 - clone_job: Clone a job with intent. Params: title (job title to clone), reason (new_location/new_level/repost/different_team), location (new location if applicable), level (new level if applicable)
-- navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines)
+- create_offer: Create an offer for a candidate. Params: candidate (name), job (title, optional)
+- check_offer: Check offer status or list offers. Params: candidate (name, optional), status (draft/pending_approval/approved/sent/signed/declined/expired/withdrawn, optional)
+- navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines/offers/approvals)
 - unknown: Cannot determine intent`;
 
 /**
@@ -191,12 +197,53 @@ function matchQuickPatterns(input: string): ParsedIntent | null {
     };
   }
 
+  // Navigation — offers/approvals
+  if (/^(go to |open |show )?(offers?|offer list)$/i.test(lower)) {
+    return { action: "navigate", params: { page: "offers" }, confidence: 1, display: "Navigate to Offers" };
+  }
+  if (/^(go to |open |show )?(approvals?|approval inbox|my approvals?)$/i.test(lower)) {
+    return { action: "navigate", params: { page: "approvals" }, confidence: 1, display: "Navigate to Approvals" };
+  }
+
   // New job / new candidate
   if (/^(new|create|add) job/i.test(lower)) {
     return { action: "create_job", params: {}, confidence: 1, display: "Create a new job" };
   }
   if (/^(new|create|add) candidate/i.test(lower)) {
     return { action: "create_candidate", params: {}, confidence: 1, display: "Add a new candidate" };
+  }
+
+  // Create offer — "create offer for [candidate]", "new offer for [candidate]", "offer [candidate]"
+  const createOfferMatch = /^(?:create|new|make|draft)\s+offer\s+(?:for\s+)?(.+)$/i.exec(lower);
+  if (createOfferMatch) {
+    const candidate = (createOfferMatch[1] ?? "").trim();
+    return {
+      action: "create_offer",
+      params: { candidate },
+      confidence: 0.95,
+      display: `Create offer for ${candidate}`,
+    };
+  }
+
+  // Check offer — "check offer for [candidate]", "offer status [candidate]", "check offers"
+  const checkOfferMatch = /^(?:check|show|view|list)\s+offers?\s*(?:for\s+)?(.*)$/i.exec(lower);
+  if (checkOfferMatch) {
+    const candidate = (checkOfferMatch[1] ?? "").trim();
+    return {
+      action: "check_offer",
+      params: candidate ? { candidate } : {},
+      confidence: 0.9,
+      display: candidate ? `Check offers for ${candidate}` : "Check all offers",
+    };
+  }
+  if (/^offer status/i.test(lower)) {
+    const rest = lower.replace(/^offer status\s*/i, "").trim();
+    return {
+      action: "check_offer",
+      params: rest ? { candidate: rest } : {},
+      confidence: 0.9,
+      display: rest ? `Check offer status for ${rest}` : "Check offer statuses",
+    };
   }
 
   // Clone job intent patterns (E2) — most-specific first

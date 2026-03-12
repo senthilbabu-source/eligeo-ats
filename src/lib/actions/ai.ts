@@ -315,3 +315,114 @@ export async function aiDraftEmail(
 
   return { success: true, subject: result.subject, body: result.body };
 }
+
+// ── AI Offer Compensation Suggestion ──────────────────────
+
+export async function aiSuggestOfferCompensation(input: {
+  jobTitle: string;
+  department?: string;
+  level?: string;
+  location?: string;
+  orgDefaultCurrency?: string;
+}) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "offers:create");
+
+  if (!input.jobTitle?.trim()) {
+    return { error: "Job title is required" };
+  }
+
+  const { suggestOfferCompensation } = await import("@/lib/ai/generate");
+
+  const result = await suggestOfferCompensation({
+    ...input,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
+
+  if (result.error) {
+    logger.error({ error: result.error }, "AI compensation suggestion failed");
+    return { error: "Failed to suggest compensation. Please try again." };
+  }
+
+  return { success: true, suggestion: result.suggestion };
+}
+
+// ── AI Offer Letter Draft ─────────────────────────────────
+
+export async function aiGenerateOfferLetter(input: {
+  candidateName: string;
+  jobTitle: string;
+  department?: string;
+  compensation: {
+    base_salary: number;
+    currency: string;
+    period: "annual" | "monthly" | "hourly";
+    bonus_pct?: number;
+    bonus_amount?: number;
+    equity_shares?: number;
+    equity_type?: "options" | "rsu" | "phantom";
+    equity_vesting?: string;
+    sign_on_bonus?: number;
+    relocation?: number;
+    other_benefits?: string[];
+  };
+  startDate?: string;
+  termsTemplate?: string;
+  organizationName: string;
+}) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "offers:create");
+
+  if (!input.candidateName?.trim() || !input.jobTitle?.trim()) {
+    return { error: "Candidate name and job title are required" };
+  }
+
+  const { generateOfferLetterDraft } = await import("@/lib/ai/generate");
+
+  const result = await generateOfferLetterDraft({
+    ...input,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
+
+  if (result.error) {
+    logger.error({ error: result.error }, "AI offer letter draft failed");
+    return { error: "Failed to generate offer letter. Please try again." };
+  }
+
+  return { success: true, text: result.text };
+}
+
+// ── AI Salary Band Check ──────────────────────────────────
+
+export async function aiCheckSalaryBand(input: {
+  jobTitle: string;
+  level?: string;
+  location?: string;
+  proposedBaseSalary: number;
+  currency: string;
+  period: string;
+}) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "offers:view");
+
+  if (!input.jobTitle?.trim() || !input.proposedBaseSalary) {
+    return { error: "Job title and proposed salary are required" };
+  }
+
+  const { checkSalaryBand } = await import("@/lib/ai/generate");
+
+  const result = await checkSalaryBand({
+    ...input,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
+
+  if (result.error) {
+    logger.error({ error: result.error }, "AI salary band check failed");
+    return { error: "Failed to check salary band. Please try again." };
+  }
+
+  return { success: true, result: result.result };
+}

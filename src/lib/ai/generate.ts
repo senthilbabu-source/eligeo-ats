@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { chatModel, AI_MODELS } from "./client";
 import { consumeAiCredits, logAiUsage } from "./credits";
 import { CONFIG } from "@/lib/constants/config";
-import type { CloneIntent } from "@/lib/types/ground-truth";
+import type { CloneIntent, OfferCompensation } from "@/lib/types/ground-truth";
 
 /**
  * Generate a full job description from a title and key points.
@@ -652,5 +652,318 @@ export async function summarizeScorecards(params: {
       errorMessage: message,
     });
     return { summary: null, error: message };
+  }
+}
+
+// ── Offer Compensation Suggestion ────────────────────────────
+
+const compensationSuggestionSchema = z.object({
+  base_salary: z.number(),
+  currency: z.string(),
+  period: z.enum(["annual", "monthly", "hourly"]),
+  bonus_pct: z.number().optional(),
+  equity_shares: z.number().optional(),
+  equity_type: z.enum(["options", "rsu", "phantom"]).optional(),
+  sign_on_bonus: z.number().optional(),
+  reasoning: z.string(),
+});
+
+/**
+ * Build context lines for an offer compensation suggestion prompt.
+ * Pure function — exported for unit testing.
+ */
+export function buildOfferCompContext(params: {
+  jobTitle: string;
+  department?: string;
+  level?: string;
+  location?: string;
+  candidateCurrentComp?: Partial<OfferCompensation>;
+  orgDefaultCurrency?: string;
+}): string[] {
+  const lines: string[] = [];
+  lines.push(`Job title: ${params.jobTitle}`);
+  if (params.department) lines.push(`Department: ${params.department}`);
+  if (params.level) lines.push(`Level: ${params.level}`);
+  if (params.location) lines.push(`Location: ${params.location}`);
+  if (params.orgDefaultCurrency) lines.push(`Organization currency: ${params.orgDefaultCurrency}`);
+  if (params.candidateCurrentComp?.base_salary) {
+    lines.push(`Candidate's current compensation: ${params.candidateCurrentComp.currency ?? "USD"} ${params.candidateCurrentComp.base_salary} ${params.candidateCurrentComp.period ?? "annual"}`);
+  }
+  return lines;
+}
+
+/**
+ * Suggest competitive compensation for an offer based on role, level, and location.
+ * Uses gpt-4o-mini for structured output.
+ */
+export async function suggestOfferCompensation(params: {
+  jobTitle: string;
+  department?: string;
+  level?: string;
+  location?: string;
+  candidateCurrentComp?: Partial<OfferCompensation>;
+  orgDefaultCurrency?: string;
+  organizationId: string;
+  userId?: string;
+}): Promise<{
+  suggestion: z.infer<typeof compensationSuggestionSchema> | null;
+  error?: string;
+}> {
+  const { organizationId, userId } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "offer_compensation_suggest");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "offer_compensation_suggest",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { suggestion: null, error: "Insufficient AI credits" };
+  }
+
+  const contextLines = buildOfferCompContext(params);
+
+  try {
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: compensationSuggestionSchema,
+      system:
+        "You are a compensation analyst for a staffing and consulting company. " +
+        "Suggest competitive compensation based on market data for the role, level, and location. " +
+        "Be realistic — base suggestions on typical US tech industry ranges unless a specific location is given. " +
+        "Include a brief reasoning (1-2 sentences) explaining the suggestion.",
+      prompt: contextLines.join("\n"),
+      maxOutputTokens: CONFIG.AI.OFFER_COMP_MAX_TOKENS,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "offer_compensation_suggest",
+      entityType: "offer",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+    });
+
+    return { suggestion: object };
+  } catch (err) {
+    Sentry.captureException(err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "offer_compensation_suggest",
+      latencyMs: Date.now() - startTime,
+      status: "error",
+      errorMessage: message,
+    });
+    return { suggestion: null, error: message };
+  }
+}
+
+// ── Offer Letter Draft ───────────────────────────────────────
+
+/**
+ * Generate an offer letter draft from compensation data and template terms.
+ * Returns formatted text suitable for an offer letter PDF.
+ */
+export async function generateOfferLetterDraft(params: {
+  candidateName: string;
+  jobTitle: string;
+  department?: string;
+  compensation: OfferCompensation;
+  startDate?: string;
+  termsTemplate?: string;
+  organizationName: string;
+  organizationId: string;
+  userId?: string;
+}): Promise<{ text: string | null; error?: string }> {
+  const {
+    candidateName,
+    jobTitle,
+    department,
+    compensation,
+    startDate,
+    termsTemplate,
+    organizationName,
+    organizationId,
+    userId,
+  } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "offer_letter_draft");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "offer_letter_draft",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { text: null, error: "Insufficient AI credits" };
+  }
+
+  const compLines = [
+    `Base salary: ${compensation.currency} ${compensation.base_salary.toLocaleString()} ${compensation.period}`,
+    compensation.bonus_pct ? `Bonus: ${compensation.bonus_pct}% target` : null,
+    compensation.bonus_amount ? `Bonus amount: ${compensation.currency} ${compensation.bonus_amount.toLocaleString()}` : null,
+    compensation.equity_shares ? `Equity: ${compensation.equity_shares} ${compensation.equity_type ?? "shares"}${compensation.equity_vesting ? ` (${compensation.equity_vesting})` : ""}` : null,
+    compensation.sign_on_bonus ? `Sign-on bonus: ${compensation.currency} ${compensation.sign_on_bonus.toLocaleString()}` : null,
+    compensation.relocation ? `Relocation: ${compensation.currency} ${compensation.relocation.toLocaleString()}` : null,
+    compensation.other_benefits?.length ? `Benefits: ${compensation.other_benefits.join(", ")}` : null,
+  ].filter(Boolean);
+
+  const prompt = [
+    `Write a professional offer letter for ${candidateName} for the ${jobTitle} role at ${organizationName}.`,
+    department && `Department: ${department}`,
+    startDate && `Start date: ${startDate}`,
+    "",
+    "Compensation:",
+    ...compLines,
+    "",
+    termsTemplate && `Additional terms/template to incorporate:\n${termsTemplate}`,
+    "",
+    "Format as a formal offer letter with: greeting, congratulations, role details, compensation breakdown, next steps, and closing.",
+    "Keep it professional, warm, and concise (300-500 words).",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  try {
+    const { text, usage } = await generateText({
+      model: chatModel,
+      system:
+        "You are an HR professional drafting employment offer letters. " +
+        "Write clear, professional offer letters that are legally sound and welcoming. " +
+        "Do not include fields you don't have data for — only include compensation components that are provided.",
+      prompt,
+      maxOutputTokens: CONFIG.AI.OFFER_LETTER_MAX_TOKENS,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "offer_letter_draft",
+      entityType: "offer",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+    });
+
+    return { text };
+  } catch (err) {
+    Sentry.captureException(err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "offer_letter_draft",
+      latencyMs: Date.now() - startTime,
+      status: "error",
+      errorMessage: message,
+    });
+    return { text: null, error: message };
+  }
+}
+
+// ── Salary Band Check ────────────────────────────────────────
+
+const salaryCheckSchema = z.object({
+  withinBand: z.boolean(),
+  percentile: z.number().min(0).max(100),
+  assessment: z.enum(["below_market", "competitive", "above_market"]),
+  reasoning: z.string(),
+});
+
+/**
+ * Check if proposed compensation is within market salary bands for the role.
+ * Returns band assessment and percentile estimate.
+ */
+export async function checkSalaryBand(params: {
+  jobTitle: string;
+  level?: string;
+  location?: string;
+  proposedBaseSalary: number;
+  currency: string;
+  period: string;
+  organizationId: string;
+  userId?: string;
+}): Promise<{
+  result: z.infer<typeof salaryCheckSchema> | null;
+  error?: string;
+}> {
+  const { jobTitle, level, location, proposedBaseSalary, currency, period, organizationId, userId } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "offer_salary_check");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "offer_salary_check",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { result: null, error: "Insufficient AI credits" };
+  }
+
+  const prompt = [
+    `Evaluate if this compensation is competitive for the role:`,
+    `Role: ${jobTitle}`,
+    level && `Level: ${level}`,
+    location && `Location: ${location}`,
+    `Proposed base salary: ${currency} ${proposedBaseSalary.toLocaleString()} ${period}`,
+    "",
+    "Assess whether the proposed salary is below market, competitive, or above market.",
+    "Estimate what percentile this falls in (0-100, where 50 is median).",
+    "Base your assessment on typical US tech industry ranges unless a specific location is given.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  try {
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: salaryCheckSchema,
+      system:
+        "You are a compensation analyst. Evaluate proposed salaries against market data. " +
+        "Be realistic and specific. Use US tech market data as baseline unless location-specific data applies.",
+      prompt,
+      maxOutputTokens: CONFIG.AI.OFFER_COMP_MAX_TOKENS,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "offer_salary_check",
+      entityType: "offer",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+    });
+
+    return { result: object };
+  } catch (err) {
+    Sentry.captureException(err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "offer_salary_check",
+      latencyMs: Date.now() - startTime,
+      status: "error",
+      errorMessage: message,
+    });
+    return { result: null, error: message };
   }
 }

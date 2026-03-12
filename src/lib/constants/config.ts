@@ -18,6 +18,10 @@ export const CONFIG = {
     EMAIL_DRAFT_MAX_TOKENS: 500,
     /** Max output tokens for NL intent parsing */
     INTENT_MAX_TOKENS: 200,
+    /** Max output tokens for offer letter draft generation */
+    OFFER_LETTER_MAX_TOKENS: 1000,
+    /** Max output tokens for compensation suggestion */
+    OFFER_COMP_MAX_TOKENS: 300,
   },
   VALIDATION: {
     NAME_MAX_LENGTH: 255,
