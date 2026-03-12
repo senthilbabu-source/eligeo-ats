@@ -30,6 +30,43 @@ const updateCandidateSchema = createCandidateSchema.partial().extend({
   id: z.string().uuid(),
 });
 
+// ── H1-3: Fuzzy Dedup Helper ──────────────────────────────
+// Detects possible same-person duplicates when a candidate is created
+// with a different email (same-email is blocked by UNIQUE constraint).
+
+async function findPossibleDuplicates(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  excludeId: string,
+  _fullName: string,
+  phone?: string,
+  linkedinUrl?: string,
+): Promise<Array<{ id: string; full_name: string; email: string }>> {
+  if (!phone && !linkedinUrl) {
+    // Without phone or LinkedIn, name-only matching has too many false positives
+    return [];
+  }
+
+  const conditions: string[] = [];
+  if (phone) {
+    conditions.push(`phone.eq.${phone}`);
+  }
+  if (linkedinUrl) {
+    conditions.push(`linkedin_url.eq.${linkedinUrl}`);
+  }
+
+  const { data } = await supabase
+    .from("candidates")
+    .select("id, full_name, email")
+    .eq("organization_id", orgId)
+    .neq("id", excludeId)
+    .is("deleted_at", null)
+    .or(conditions.join(","))
+    .limit(5);
+
+  return data ?? [];
+}
+
 // ── Create Candidate ───────────────────────────────────────
 
 export async function createCandidate(_prev: unknown, formData: FormData) {
@@ -88,6 +125,16 @@ export async function createCandidate(_prev: unknown, formData: FormData) {
     return { error: "Failed to create candidate" };
   }
 
+  // H1-3: Fuzzy dedup — check for possible same-person duplicates (different email)
+  const possibleDuplicates = await findPossibleDuplicates(
+    supabase,
+    session.orgId,
+    candidate.id,
+    data.fullName,
+    data.phone,
+    data.linkedinUrl,
+  );
+
   // Fire event for async embedding generation (P0-1)
   await inngest.send({
     name: "ats/candidate.created",
@@ -98,7 +145,11 @@ export async function createCandidate(_prev: unknown, formData: FormData) {
   });
 
   revalidatePath("/candidates");
-  return { success: true, id: candidate.id };
+  return {
+    success: true,
+    id: candidate.id,
+    possibleDuplicates: possibleDuplicates.length > 0 ? possibleDuplicates : undefined,
+  };
 }
 
 // ── Update Candidate ───────────────────────────────────────
@@ -161,49 +212,31 @@ export async function moveStage(
 
   const supabase = await createClient();
 
-  // Get current stage
-  const { data: app, error: fetchError } = await supabase
-    .from("applications")
-    .select("id, current_stage_id, organization_id, candidate_id")
-    .eq("id", applicationId)
-    .eq("organization_id", session.orgId)
-    .is("deleted_at", null)
-    .single();
+  // H1-1: Atomic dual write via RPC — prevents split truth between
+  // applications.current_stage_id and application_stage_history
+  const { data, error } = await supabase.rpc("move_application_stage", {
+    p_application_id: applicationId,
+    p_organization_id: session.orgId,
+    p_to_stage_id: toStageId,
+    p_transitioned_by: session.userId,
+    p_reason: reason ?? null,
+  });
 
-  if (fetchError || !app) {
-    return { error: "Application not found" };
-  }
-
-  // Update application's current stage
-  const { error: updateError } = await supabase
-    .from("applications")
-    .update({ current_stage_id: toStageId })
-    .eq("id", applicationId)
-    .eq("organization_id", app.organization_id);
-
-  if (updateError) {
+  if (error) {
+    if (error.message?.includes("not found")) {
+      return { error: "Application not found" };
+    }
     return { error: "Failed to move stage" };
   }
 
-  // Record stage transition (append-only history)
-  const { error: historyError } = await supabase
-    .from("application_stage_history")
-    .insert({
-      organization_id: app.organization_id,
-      application_id: applicationId,
-      from_stage_id: app.current_stage_id,
-      to_stage_id: toStageId,
-      transitioned_by: session.userId,
-      reason,
-    });
-
-  if (historyError) {
-    return { error: "Stage moved but history recording failed" };
-  }
+  const result = Array.isArray(data) ? data[0] : data;
+  const candidateId = result?.candidate_id;
 
   revalidatePath("/jobs");
   revalidatePath("/candidates");
-  revalidatePath(`/candidates/${app.candidate_id}`);
+  if (candidateId) {
+    revalidatePath(`/candidates/${candidateId}`);
+  }
   return { success: true };
 }
 

@@ -2,6 +2,7 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { inngest } from "@/inngest/client";
+import { createVerificationToken } from "@/lib/utils/email-verification";
 import { z } from "zod";
 
 const applySchema = z.object({
@@ -143,6 +144,21 @@ export async function submitPublicApplication(
   //    Using a NULL-safe approach since transitioned_by is NOT NULL in schema
   //    We skip history for public apps — the application record itself is the source of truth
   //    Stage history will be tracked when internal users move the candidate
+
+  // H1-4: Send verification email for new candidates (existing candidates
+  // are considered already verified from their first application)
+  if (!existingCandidate) {
+    const token = createVerificationToken(candidateId, data.email);
+    await inngest.send({
+      name: "ats/notification.send-email",
+      data: {
+        organizationId: job.organization_id,
+        to: data.email,
+        subject: "Verify your email — application received",
+        body: `Thank you for applying! Please verify your email by clicking the link below:\n\n${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/verify-email?token=${token}\n\nThis link expires in 24 hours.`,
+      },
+    });
+  }
 
   return { success: true, applicationId: application.id };
 }

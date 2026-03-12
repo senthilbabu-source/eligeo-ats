@@ -343,45 +343,23 @@ export async function approveOffer(offerId: string, notes?: string) {
     return { error: "It is not your turn to approve." };
   }
 
-  // Mark this approval as approved
-  const { error: approvalErr } = await supabase
-    .from("offer_approvals")
-    .update({
-      status: "approved" as OfferApprovalStatus,
-      decided_at: new Date().toISOString(),
-      notes: notes ?? null,
-    })
-    .eq("id", nextPending.id)
-    .eq("approver_id", session.userId);
-
-  if (approvalErr) {
-    logger.error({ error: approvalErr }, "Failed to approve offer");
-    Sentry.captureException(approvalErr);
-    return { error: "Failed to record approval." };
-  }
-
-  // Check if all approvals are now approved → auto-advance to 'approved'
-  const remainingPending = pendingApprovals.filter(
-    (a) => a.id !== nextPending.id && a.status === "pending",
+  // H1-2: Atomic approval + advancement via RPC with row-level locking.
+  // Prevents concurrent approvers from double-advancing the offer.
+  const { data: rpcResult, error: rpcErr } = await supabase.rpc(
+    "approve_offer_rpc",
+    {
+      p_offer_id: offerId,
+      p_approval_id: nextPending.id,
+      p_approver_id: session.userId,
+      p_organization_id: session.orgId,
+      p_notes: notes ?? null,
+    },
   );
 
-  if (remainingPending.length === 0) {
-    // All approved — transition offer to 'approved'
-    const ctx = await buildTransitionContext(supabase, offerId, session.orgId);
-    // Override: we just approved the last one, so force allApproved
-    const result = transition(
-      offer.status as OfferStatus,
-      "approve_chain_complete",
-      { ...ctx, allApproved: true },
-    );
-
-    if (result.ok) {
-      await supabase
-        .from("offers")
-        .update({ status: result.to })
-        .eq("id", offerId)
-        .eq("organization_id", session.orgId);
-    }
+  if (rpcErr) {
+    logger.error({ error: rpcErr }, "Failed to approve offer");
+    Sentry.captureException(rpcErr);
+    return { error: "Failed to record approval." };
   }
 
   await inngest.send({
