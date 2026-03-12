@@ -4,9 +4,11 @@
 
 ---
 
-## 2026-03-12 — Pre-Phase 5 Hardening Plan (H00)
+## 2026-03-12 — Pre-Phase 5 Hardening Plan (H00) `[PLAYBOOK]`
 
 **Scope:** Created `docs/HARDENING.md` — comprehensive hardening plan based on Phase 4 regression audit + architect rebuttal review.
+
+**[PLAYBOOK] P-28:** Cross-cut audits at every phase boundary. Regression audit → code validation → rebuttal review → prioritized waves. Atomic RPCs for concurrent operations. Fuzzy dedup with warning (not hard constraint).
 
 ### Audit Triage Results
 - **20 findings** from external audit → code-level validation against actual codebase
@@ -42,9 +44,11 @@
 
 ---
 
-## 2026-03-12 — Post-Phase 4 Documentation Audit
+## 2026-03-12 — Post-Phase 4 Documentation Audit `[PLAYBOOK]`
 
 **Scope:** Cross-cut audit of all 30 docs + CLAUDE.md + MEMORY.md to ensure accuracy and consistency after Phase 4 completion.
+
+**[PLAYBOOK] P-28:** 19-point verification matrix across 30 docs. Update order: code → docs → meta docs (INDEX, CLAUDE.md). Prevents drift between implementation and documentation.
 
 ### Discrepancies Found & Fixed (9 documents)
 
@@ -103,9 +107,11 @@
 
 ---
 
-## 2026-03-12 — Phase 4 Wave 4: Inngest Functions (Background Jobs)
+## 2026-03-12 — Phase 4 Wave 4: Inngest Functions (Background Jobs) `[PLAYBOOK]`
 
 **Scope:** 5 Inngest background functions for the offer lifecycle — approval notifications, approval chain advancement, expiry checking, withdrawal processing, and e-sign sending (stub).
+
+**[PLAYBOOK] P-24/P-25:** Background job lifecycle management — approval-notify, approval-advanced (with auto-skip guards), expiry cron, withdrawal, e-sign stub. Shows how to structure job dependencies and guard conditions for multi-step async workflows.
 
 ### Deliverables
 
@@ -139,9 +145,11 @@ Dropbox Sign integration is stubbed (Phase 5). Functions log stubs for envelope 
 
 ---
 
-## 2026-03-12 — Phase 4 Wave 3: AI Layer (Offer AI Functions + Command Bar Intents)
+## 2026-03-12 — Phase 4 Wave 3: AI Layer (Offer AI Functions + Command Bar Intents) `[PLAYBOOK]`
 
 **Scope:** AI-first offer capabilities — compensation suggestion, offer letter drafting, salary band checking, and command bar offer intents. Closes deferred items B-02 (AI consideration for offers) and B-03 (offer intents).
+
+**[PLAYBOOK] P-27:** Per-action CREDIT_WEIGHTS config (offer_compensation_suggest: 2, offer_letter_draft: 2, offer_salary_check: 1). Separates pricing from business logic — update config, not code.
 
 **What shipped:**
 
@@ -180,9 +188,11 @@ Dropbox Sign integration is stubbed (Phase 5). Functions log stubs for envelope 
 
 ---
 
-## 2026-03-12 — Phase 4 Wave 2: Core Server Actions + State Machine
+## 2026-03-12 — Phase 4 Wave 2: Core Server Actions + State Machine `[PLAYBOOK]`
 
 **Scope:** Pure offer state machine (11 transitions, 8 states) + 9 server actions for the full offer lifecycle. Zero DB dependency in state machine — fully unit-testable.
+
+**[PLAYBOOK] P-24:** Pure state machine pattern — zero DB dependency, 47 unit tests running in <1ms each. Server actions call state machine → persist → emit events. Separation makes both independently testable. Battle-tested prompt: `03-build/prompts/state-machine-builder.md`.
 
 **What shipped:**
 
@@ -216,9 +226,11 @@ Dropbox Sign integration is stubbed (Phase 5). Functions log stubs for envelope 
 
 ---
 
-## 2026-03-12 — Wave F: Notification Cluster (F1→F4)
+## 2026-03-12 — Wave F: Notification Cluster (F1→F4) `[PLAYBOOK]`
 
 **Scope:** Pre-Phase 4 prerequisite — complete notification infrastructure. Without this, Phase 4's "Send Offer" button has no email delivery path. Wave F builds the entire D08 notification cluster from schema to UI.
+
+**[PLAYBOOK] P-25:** Prerequisite infrastructure sprint BEFORE vertical features. A "Send Offer" button with no email delivery is worse than no button — it erodes trust.
 
 **What shipped:**
 

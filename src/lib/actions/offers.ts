@@ -345,7 +345,7 @@ export async function approveOffer(offerId: string, notes?: string) {
 
   // H1-2: Atomic approval + advancement via RPC with row-level locking.
   // Prevents concurrent approvers from double-advancing the offer.
-  const { data: rpcResult, error: rpcErr } = await supabase.rpc(
+  const { error: rpcErr } = await supabase.rpc(
     "approve_offer_rpc",
     {
       p_offer_id: offerId,
