@@ -48,7 +48,7 @@ CREATE POLICY candidate_notes_delete ON candidate_notes
     is_org_member(organization_id)
     AND (
       created_by = auth.uid()
-      OR has_org_role(organization_id, ARRAY['owner', 'admin'])
+      OR has_org_role(organization_id, 'owner', 'admin')
     )
   );
 
