@@ -138,7 +138,7 @@
 | CP6 | Dedicated debrief workflow on profile — panel aligns before hire/no-hire | 🟢 P3 | All | Panel view + decision + notes. Separate from scorecard |
 | CP7 | Candidate pronouns displayed on profile | ✅ BUILT | All | Add pronouns field to candidates table. One migration + UI |
 | CP8 | Profile header: has portfolio, has resume, was a referral indicators | ✅ BUILT | All | Derived from files table + candidate_sources. Badge row in header |
-| CP9 | Rejection reason picker on inline reject action | 🔵 AI-Proof Wave A | All | Schema (`rejection_reason_id`, `rejection_notes`) + SA (`rejectApplication()`) already support this. UI is a confirm-only button with no picker. Fix: select dropdown from `rejection_reasons` table. Unlocks: personalized AI rejection emails, audit trail, source quality by rejection reason. |
+| CP9 | Rejection reason picker on inline reject action | 🔵 AI-Proof Wave A | All | P1 UI fix only (~2h) — no migration needed. Schema (`rejection_reason_id`, `rejection_notes`) + SA (`rejectApplication()`) already fully support this. `inline-app-actions.tsx` calls `rejectApplication(applicationId)` with no reason; fix: select dropdown from `rejection_reasons` table. Ships in Wave A because Wave B email enrichment (N1) depends on rejection reason data being captured. |
 | CP10 | Next Best Action strip on candidate profile | 🔵 AI-Proof Wave C | Growth+ | Server component above profile body. Rules-based: stalled in stage (>org avg), no interviewer assigned, no recent activity in N days. AI-enhanced for Pro+. Turns the profile from data display into an action surface. |
 
 ---

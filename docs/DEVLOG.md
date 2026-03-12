@@ -10,11 +10,11 @@
 **Scope:** Cross-cut audit of all AI-assisted features built to date (Phases 2.5–2.7 + Dashboard)
 
 ### Audit method
-8 specific claims from an AI-first completeness review were verified directly against the codebase (not accepted at face value). 2 were wrong, 6 were valid.
+8 specific claims from an AI-first completeness review were verified directly against the codebase (not accepted at face value). Findings below.
 
-### Claims that were WRONG (audit document errors — not propagated to plan)
-1. **"Rejection reason not stored (P0 schema change needed)"** — FALSE. Migration 011 already has `rejection_reason_id UUID` (FK to `rejection_reasons`) + `rejection_notes TEXT`. `rejectApplication()` already accepts both. Only the UI is missing a picker. This is a UI task, not a schema change.
-2. **"move_stage intent missing from command bar"** — FALSE. `move_stage` is intent type #5 in `intent.ts`. It IS parsed by OpenAI. The gap is that `executeCommand()` has no handler for it — the action is parsed but not fired. Two different things.
+### Claims requiring correction (framing wrong, gap real or non-existent)
+1. **"Rejection reason not stored (P0 schema change needed)"** — WRONG PRIORITY. Migration 011 already has `rejection_reason_id UUID` (FK to `rejection_reasons`) + `rejection_notes TEXT`. `rejectApplication()` already accepts both. The gap is purely UI — `inline-app-actions.tsx` calls `rejectApplication(applicationId)` with no reason argument. **Corrected classification: P1 UI fix (~2h), no migration needed.** Correctly tracked as CP9.
+2. **"move_stage intent missing from command bar"** — WRONG FRAMING, GAP IS REAL. `move_stage` is intent type #5 in `intent.ts` and IS correctly parsed by the OpenAI layer. However, `executeCommand()` in `command-bar.ts` has zero handler for `move_stage` — it falls through to `return { intent }` with no candidate lookup, no stage resolution, no call to `moveStage()`. **Corrected classification: P1 wiring gap (~3-4h), execution layer missing.** The `moveStage()` SA exists in `candidates.ts`. Correctly tracked as AI1 update + Wave B item B3.
 
 ### Claims that were VALID — converted to new stories
 | New Story | Gap | Root Cause |
@@ -30,10 +30,10 @@
 
 ### Waves planned (pre-code — no build started)
 
-**Wave A — Silent correctness failures (P0)**
+**Wave A — Silent correctness failures (P0 — schema/data integrity)**
 - A1: `embedding_updated_at` on `job_openings` + Inngest staleness detection (Migration 022)
 - A2: `ai_score_feedback` table + thumbs-up/down UI on match panel (Migration 022)
-- A3: Rejection reason picker in `inline-app-actions.tsx` (UI only — schema done)
+- A3: Rejection reason picker in `inline-app-actions.tsx` (P1 UI only — schema done; included in Wave A to unblock B1 email enrichment)
 
 **Wave B — Quick wiring wins (P1)**
 - B1: Enrich `generateEmailDraft()` prompt with matchScore, stageName, daysInPipeline, rejectionReasonId
