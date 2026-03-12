@@ -13,9 +13,9 @@ interface ApproverOption {
 
 export function OfferForm({
   applicationId,
-  candidateName,
-  jobTitle,
-  department,
+  candidateName: _candidateName,
+  jobTitle: _jobTitle,
+  department: _department,
   defaultCurrency,
   approverOptions,
 }: {
