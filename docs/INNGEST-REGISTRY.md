@@ -223,15 +223,15 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 | Billing | 7 | 0 | Phase 5 |
 | Offers | 6 | 4 | `send-esign` deregistered (H4-2, Phase 5). `esign-webhook` pending (Phase 5). 4/6 active. |
 | Interviews | 8 | 2 | `interview-reminder` + `auto-summarize` (H3-3) shipped. `nylas-event-sync` is a stub. Rest are Phase 3+. |
-| Notifications | 7 | 3 | `dispatch`, `send-email`, `interview-reminder` shipped. Rest pending. |
+| Notifications | 7 | 2 | `dispatch`, `send-email` shipped (Wave F). Rest pending. |
 | Workflow | 6 | 0 | All pending. `application-withdrawn` deferred to v1.1. |
 | Candidates | 1 | 1 | `refresh-stale-embedding` (H2-1) shipped. |
 | Onboarding | 2 | 0 | `csv-import` and `demo-seed` pending. `merge-sync` is v2.1. |
 | Compliance | 4 | 0 | All pending. |
 | Analytics | 2 | 2 | `generate-briefing` (Wave 3) + `generate-candidate-embedding` (AI-Proof). Both shipped. |
-| **Total** | **43** | **12** | **12 of 43 v1.0 functions shipped. 11 actively registered in `/api/inngest/route.ts`** (send-esign deregistered). |
+| **Total** | **43** | **11** | **12 shipped total** (11 active + 1 deregistered send-esign). 11 registered in `/api/inngest/route.ts`. |
 
-> Total registry: 58 functions. v1.0 scope: 43 functions. 12 shipped (hardening complete). 11 actively registered. Remaining 31 ship in Phases 5+.
+> Total registry: 58 functions. v1.0 scope: 43 functions. 12 shipped (11 active + 1 deregistered send-esign). Remaining 32 ship in Phases 5+.
 
 ### Deferred
 

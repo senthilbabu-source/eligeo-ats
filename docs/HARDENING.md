@@ -402,7 +402,7 @@ Before declaring hardening complete:
 
 - [x] All H1–H4 items implemented and tested
 - [x] Migration 029 applied cleanly to local Supabase
-- [x] `npm test` — 1038 passing (12 pre-existing talent-pool-members RLS failures unchanged)
+- [x] `npm test` — 1038 passing at hardening close. (12 pre-existing talent-pool-members RLS failures were subsequently fixed in Phase 5 pre-gate — junction table fixture collisions, not policy bugs. Post-gate: 1049 passing, zero failures.)
 - [x] `npx tsc --noEmit` — clean
 - [x] Lint clean
 - [x] DEVLOG updated with hardening summary

@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-03-12 — Pre-Phase 5 Documentation Consistency Audit `[PLAYBOOK]`
+
+**Scope:** Cross-cut audit of all 30+ docs to eliminate drift, contradictions, and stale references before Phase 5 code begins. 12 inconsistencies found and fixed.
+
+### Critical Fixes (would have caused Phase 5 code drift)
+1. **D03 §3.2** — Still referenced deprecated `createUsageRecord()` while §6.3 was already updated to Billing Meters API. Internal contradiction resolved.
+2. **D03 header** — `Depended on by: D13 (Observability)` was wrong — D13 is COMPLIANCE, D14 is Observability. Fixed to D14.
+3. **D28 .env.example** — `OPENAI_API_KEY` was in the "v2.0+ (uncomment when needed)" section, directly contradicting the D28 table (v1.0 required) and ADR-011 rule 5. Moved to active v1.0 section.
+
+### Medium Fixes (documentation consistency)
+4. **D03 §5.4** — Listed only 6 Inngest functions, missing `billing/report-overage` cron. Now lists all 7.
+5. **D03 header** — `Last updated: 2026-03-10` → `2026-03-12` (V-markers were resolved this date).
+6. **D29 §8 Notifications** — Listed `interview-reminder` as a shipped notification function. It's an Interview module function (`interview/feedback-reminder`). Fixed to `dispatch`, `send-email` (2 shipped). Shipped column sum corrected to 11 (+ 1 deregistered = 12 total).
+7. **INDEX.md D29** — Said "10 modules" but D29 §1 says "11 modules" (candidates module added in hardening). Fixed.
+8. **HARDENING.md exit criteria** — Checkbox said "12 pre-existing RLS failures unchanged" — added note that these were fixed in Phase 5 pre-gate.
+9. **PRE-GATE P-2 MSW** — Still referenced old `usage_records` API path with "adjust after V-3" note. Updated to `billing/meter_events` path.
+10. **D24 §5.1 Offers** — State machine test count said "18 tests" but actual is 43 (post-hardening H4-2). Updated with accurate breakdown.
+
+### Meta Updates
+11. **MEMORY.md** — Test status updated to 1049/zero failures. Phase state updated.
+12. **SESSION-HANDOFF.md** — Test count, pre-gate row added.
+
+**[PLAYBOOK] P-31:** Pre-phase documentation audits catch real drift. D03 had an internal contradiction (§3.2 vs §6.3) that would have been copy-pasted into code. D28 had OPENAI_API_KEY in the wrong section — a future dev following .env.example would have skipped it. Fix docs BEFORE code, not after.
+
+---
+
 ## 2026-03-12 — Phase 5 Pre-Start Gate: PASSED `[PLAYBOOK]`
 
 **Gate:** §21 pre-start gate for Phase 5 (Billing). All 6 checks passed.

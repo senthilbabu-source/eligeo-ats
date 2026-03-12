@@ -3,10 +3,10 @@
 > **ID:** D03
 > **Status:** Review
 > **Priority:** P0
-> **Last updated:** 2026-03-10
+> **Last updated:** 2026-03-12
 > **Depends on:** D01 (schema — `organizations`, `ai_usage_logs`)
-> **Depended on by:** D06-D12 (feature modules — plan gating), D13 (Observability — billing metrics), D19 (Data Migration — plan assignment)
-> **Last validated against deps:** 2026-03-10
+> **Depended on by:** D06-D12 (feature modules — plan gating), D14 (Observability — billing metrics), D19 (Data Migration — plan assignment)
+> **Last validated against deps:** 2026-03-12
 > **Architecture decisions assumed:** ADR-001 (Supabase client), ADR-005 (multi-org), ADR-006 (soft delete), ADR-007 (audit), ADR-008 (enums)
 
 ---
@@ -106,7 +106,7 @@ Seat-based pricing with included seats per tier. Monthly and annual billing cycl
 Two metered dimensions tracked alongside the base subscription:
 
 1. **Extra seats:** Billed per seat beyond included count. Prorated on add, credited on remove. Stripe `quantity` on a metered subscription item.
-2. **AI credit overages:** When `ai_credits_used` exceeds `ai_credits_limit`, overage is billed at end of billing cycle. Reported to Stripe via `stripe.subscriptionItems.createUsageRecord()`.
+2. **AI credit overages:** When `ai_credits_used` exceeds `ai_credits_limit`, overage is billed at end of billing cycle. Reported to Stripe via `stripe.billing.meterEvents.create()` (Billing Meters API — see §6.3).
 
 | Metered Item | Unit | Price |
 |--------------|------|-------|
@@ -275,6 +275,7 @@ All functions triggered by `stripe/webhook.received`. Idempotent via Stripe even
 | `billing/invoice-paid` | `invoice.paid` | Reset `ai_credits_used` → log billing event |
 | `billing/payment-failed` | `invoice.payment_failed` | Send dunning email → log warning → schedule retry reminder |
 | `billing/trial-ending` | `customer.subscription.trial_will_end` | Send trial-ending email |
+| `billing/report-overage` | Cron: `55 23 * * *` (daily 23:55 UTC) | Calculate AI credit overage → report to Stripe via Billing Meters API |
 
 ## 6. AI Credit Metering
 

@@ -468,13 +468,13 @@ http.post('https://api.stripe.com/v1/subscription_items/:itemId', () =>
   HttpResponse.json({ id: 'si_test_seat_001', quantity: 3 })
 ),
 
-// Usage record (overage reporting — adjust path after V-3 VERIFY resolution)
-http.post('https://api.stripe.com/v1/subscription_items/:itemId/usage_records', () =>
-  HttpResponse.json({ id: 'mbur_test_001', quantity: 5 })
+// Billing Meters — overage reporting (V-3 resolved: uses Billing Meters API, not usage_records)
+http.post('https://api.stripe.com/v1/billing/meter_events', () =>
+  HttpResponse.json({ identifier: 'mevt_test_001' })
 ),
 ```
 
-> Note: The usage record handler path (`/usage_records`) may need to be updated to the new Meters API path after Blocker 1 (V-3) is resolved.
+> Note: V-3 resolved (2026-03-12). `createUsageRecord()` replaced with `stripe.billing.meterEvents.create()`. MSW handler updated to match Billing Meters API path.
 
 ### P-3: Verify D29 Inngest Registry Matches D03
 
