@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-03-12 — Logo Integration (App Nav + Auth Pages)
+
+**Scope:** Added Eligeo logo SVGs to the app UI.
+
+- **App nav:** Icon-only logo (28px) next to "Eligeo" wordmark. Text hidden on mobile, icon-only.
+- **Auth layout:** Full logo with wordmark (180px) centered above login/signup forms.
+- Uses `next/image` for optimization. Assets: `eligeo-icon-only.svg` (nav), `eligeo-logo.svg` (auth).
+
+---
+
 ## 2026-03-12 — Post-Phase 4 Documentation Audit
 
 **Scope:** Cross-cut audit of all 30 docs + CLAUDE.md + MEMORY.md to ensure accuracy and consistency after Phase 4 completion.

@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function AuthLayout({
   children,
 }: {
@@ -5,7 +7,18 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">{children}</div>
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex justify-center">
+          <Image
+            src="/images/eligeo-logo.svg"
+            alt="Eligeo"
+            width={180}
+            height={40}
+            priority
+          />
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

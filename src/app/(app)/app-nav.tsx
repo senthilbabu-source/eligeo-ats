@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/lib/auth/actions";
@@ -23,8 +24,17 @@ export function AppNav({ session }: { session: Session }) {
     <header className="border-b border-border bg-card">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-4 sm:gap-8">
-          <Link href="/dashboard" className="shrink-0 text-lg font-semibold tracking-tight">
-            Eligeo
+          <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
+            <Image
+              src="/images/eligeo-icon-only.svg"
+              alt="Eligeo"
+              width={28}
+              height={28}
+              className="rounded-md"
+            />
+            <span className="hidden text-lg font-semibold tracking-tight sm:inline">
+              Eligeo
+            </span>
           </Link>
           {/* M3: overflow-x-auto lets nav scroll on small screens without wrapping */}
           <nav className="-mx-1 flex items-center gap-0.5 overflow-x-auto px-1 sm:gap-1">
