@@ -57,6 +57,10 @@ vi.mock("@/lib/utils/logger", () => ({
   default: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
+vi.mock("@/inngest/client", () => ({
+  inngest: { send: vi.fn().mockResolvedValue(undefined) },
+}));
+
 // ── Helpers ────────────────────────────────────────────────
 
 const validCreateInput = {

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
 import { assertCan } from "@/lib/constants/roles";
 import { transition, type TransitionContext } from "@/lib/offers/state-machine";
+import { inngest } from "@/inngest/client";
 import * as Sentry from "@sentry/nextjs";
 import logger from "@/lib/utils/logger";
 import { z } from "zod";
@@ -280,7 +281,14 @@ export async function submitForApproval(offerId: string) {
     return { error: "Failed to submit offer for approval." };
   }
 
-  // TODO (W4): Inngest event — ats/offer.submitted → approval-notify
+  await inngest.send({
+    name: "ats/offer.submitted",
+    data: {
+      offerId,
+      organizationId: session.orgId,
+      submittedBy: session.userId,
+    },
+  });
 
   revalidateOfferPaths();
   return { success: true };
@@ -376,7 +384,15 @@ export async function approveOffer(offerId: string, notes?: string) {
     }
   }
 
-  // TODO (W4): Inngest event — ats/offer.approval-decided → approval-advanced
+  await inngest.send({
+    name: "ats/offer.approval-decided",
+    data: {
+      offerId,
+      organizationId: session.orgId,
+      decision: "approved",
+      decidedBy: session.userId,
+    },
+  });
 
   revalidateOfferPaths();
   return { success: true };
@@ -466,7 +482,15 @@ export async function rejectOffer(offerId: string, notes: string) {
     .eq("id", offerId)
     .eq("organization_id", session.orgId);
 
-  // TODO (W4): Inngest event — ats/offer.approval-decided (rejected) → notify recruiter
+  await inngest.send({
+    name: "ats/offer.approval-decided",
+    data: {
+      offerId,
+      organizationId: session.orgId,
+      decision: "rejected",
+      decidedBy: session.userId,
+    },
+  });
 
   revalidateOfferPaths();
   return { success: true };
@@ -512,7 +536,14 @@ export async function withdrawOffer(offerId: string) {
     return { error: "Failed to withdraw offer." };
   }
 
-  // TODO (W4): Inngest event — ats/offer.withdrawn → void e-sign + notify candidate
+  await inngest.send({
+    name: "ats/offer.withdrawn",
+    data: {
+      offerId,
+      organizationId: session.orgId,
+      withdrawnBy: session.userId,
+    },
+  });
 
   revalidateOfferPaths();
   return { success: true };

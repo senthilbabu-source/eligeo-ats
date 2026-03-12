@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-03-12 — Phase 4 Wave 4: Inngest Functions (Background Jobs)
+
+**Scope:** 5 Inngest background functions for the offer lifecycle — approval notifications, approval chain advancement, expiry checking, withdrawal processing, and e-sign sending (stub).
+
+### Deliverables
+
+1. **`offers/approval-notify`** — Triggered by `ats/offer.submitted`. Finds next pending approver, resolves email, dispatches notification via `ats/notification.requested`.
+
+2. **`offers/approval-advanced`** — Triggered by `ats/offer.approval-decided`. Three paths:
+   - Approval + chain complete → auto-advance offer to `approved`, notify recruiter
+   - Approval + more pending → notify next approver (with G-022 auto-skip if approver left org)
+   - Rejection → notify recruiter with rejection notes
+
+3. **`offers/check-expiry`** — Cron `0 * * * *` (hourly). Finds sent offers past `expiry_date`, marks expired, voids e-sign envelopes (stub), notifies recruiters.
+
+4. **`offers/withdraw`** — Triggered by `ats/offer.withdrawn`. Voids e-sign envelope (stub), notifies recruiter.
+
+5. **`offers/send-esign`** — Triggered by `ats/offer.send-requested`. Validates approved status, creates e-sign envelope (stub), updates to `sent`, notifies recruiter. 5 retries per D06 §4.2.
+
+### Wiring
+
+- Server actions `submitForApproval`, `approveOffer`, `rejectOffer`, `withdrawOffer` now emit Inngest events (replaced TODO stubs)
+- All 5 functions registered in `/api/inngest/route.ts` (total: 10 Inngest functions)
+
+### Tests
+
+- 15 new Inngest function tests (3 approval-notify + 4 approval-advanced + 3 check-expiry + 3 withdraw + 2 send-esign)
+- Fixed offer-actions tests to mock `@/inngest/client`
+- **Total: 1035 Vitest + 68 E2E = 1103**
+
+### E-Sign Status
+
+Dropbox Sign integration is stubbed (Phase 5). Functions log stubs for envelope creation/voiding. Manual signing fallback (`markOfferSigned`) works now.
+
+---
+
 ## 2026-03-12 — Phase 4 Wave 3: AI Layer (Offer AI Functions + Command Bar Intents)
 
 **Scope:** AI-first offer capabilities — compensation suggestion, offer letter drafting, salary band checking, and command bar offer intents. Closes deferred items B-02 (AI consideration for offers) and B-03 (offer intents).
