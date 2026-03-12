@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-03-12 — Phase 4 Wave 5: UI Pages (Offers + Approvals)
+
+**Scope:** Full offer management UI — list, detail, creation form, approval inbox, and navigation integration.
+
+### Deliverables
+
+1. **Navigation** — Added "Offers" and "Approvals" links to `app-nav.tsx`.
+
+2. **`/offers` list page** — Status filter tabs (all, draft, pending_approval, approved, sent, signed, expired, withdrawn, rejected), pagination, status badges with color coding, currency formatting, candidate/job name resolution via pre-fetch + `.in()`.
+
+3. **`/offers/[id]` detail page** — Compensation breakdown card (base, bonus, equity, sign-on), details card (start/expiry/terms), approval timeline with colored status dots and approver names. Action buttons rendered via client component based on offer status and user role.
+
+4. **`/offers/[id]/offer-actions.tsx`** — Client component with lifecycle buttons: Submit for Approval, Approve, Reject (with notes input), Mark as Signed, Withdraw. Uses `useTransition` for pending states, `validActions()` from state machine to determine available actions.
+
+5. **`/approvals` inbox** — Shows pending approvals for current user. Determines "your turn" by finding lowest pending `sequence_order` per offer. Displays candidate name, job title, and total approver count.
+
+6. **`/offers/new` creation flow** — Server component requiring `?applicationId` query param. Client form with full compensation editor (base salary, currency, period, bonus %, equity shares/type/vesting, sign-on bonus), offer details (start/expiry dates, terms), and approver selector with toggle buttons showing sequence order numbers.
+
+### Notes
+
+- No new tests in W5 (pure UI pages). Test count unchanged: 1035 Vitest + 68 E2E.
+- Pre-existing `talent-pool-members.rls.test.ts` failures (12) unrelated to W5.
+
+---
+
 ## 2026-03-12 — Phase 4 Wave 4: Inngest Functions (Background Jobs)
 
 **Scope:** 5 Inngest background functions for the offer lifecycle — approval notifications, approval chain advancement, expiry checking, withdrawal processing, and e-sign sending (stub).
