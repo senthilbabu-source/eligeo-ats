@@ -14,6 +14,7 @@ import {
   type RawAttribute,
   type RawCategory,
 } from "@/lib/scoring";
+import { summarizeScorecards } from "@/lib/ai/generate";
 import type { ScorecardSummary } from "@/lib/types/ground-truth";
 
 // ── Validation Schemas ─────────────────────────────────────
@@ -576,6 +577,141 @@ export async function updateScorecardTemplate(input: {
   revalidatePath(`/settings`);
 
   return { success: true, id: input.templateId };
+}
+
+// ── AI Scorecard Summary ─────────────────────────────────
+
+export async function generateAIScorecardSummary(
+  applicationId: string,
+): Promise<{ summary: string } | { error: string }> {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "scorecards:view");
+
+  // D07 §5.3: Gated by ai_scorecard_summarize feature flag (Pro + Enterprise)
+  if (!session.featureFlags?.ai_scorecard_summarize) {
+    return { error: "AI scorecard summarization is not available on your plan." };
+  }
+
+  const supabase = await createClient();
+
+  // Fetch submissions
+  const { data: submissions, error: subErr } = await supabase
+    .from("scorecard_submissions")
+    .select("id, submitted_by, overall_recommendation, overall_notes")
+    .eq("application_id", applicationId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null);
+
+  if (subErr) {
+    logger.error({ error: subErr }, "Failed to fetch submissions for AI summary");
+    Sentry.captureException(subErr);
+    return { error: "Failed to load scorecard data." };
+  }
+
+  if (!submissions || submissions.length === 0) {
+    return { error: "No scorecard submissions to summarize." };
+  }
+
+  // Fetch submitter names
+  const submitterIds = submissions.map((s) => s.submitted_by);
+  const { data: profiles } = await supabase
+    .from("user_profiles")
+    .select("id, full_name")
+    .in("id", submitterIds);
+
+  const nameMap = new Map(
+    (profiles ?? []).map((p) => [p.id, p.full_name ?? "Interviewer"]),
+  );
+
+  // Fetch ratings
+  const submissionIds = submissions.map((s) => s.id);
+  const { data: ratings } = await supabase
+    .from("scorecard_ratings")
+    .select("submission_id, attribute_id, rating, notes")
+    .in("submission_id", submissionIds)
+    .is("deleted_at", null);
+
+  // Fetch attributes + categories
+  const attrIds = [...new Set((ratings ?? []).map((r) => r.attribute_id))];
+
+  const { data: attributes } = await supabase
+    .from("scorecard_attributes")
+    .select("id, name, category_id")
+    .in("id", attrIds);
+
+  const catIds = [...new Set((attributes ?? []).map((a) => a.category_id))];
+
+  const { data: categories } = await supabase
+    .from("scorecard_categories")
+    .select("id, name, weight")
+    .in("id", catIds);
+
+  // Build raw data for the scoring utility to compute summary
+  const rawSubmissions: RawSubmission[] = submissions.map((s) => ({
+    id: s.id,
+    submitted_by: s.submitted_by,
+    submitter_name: nameMap.get(s.submitted_by) ?? "Interviewer",
+    overall_recommendation: s.overall_recommendation as RawSubmission["overall_recommendation"],
+  }));
+
+  const rawRatings: RawRating[] = (ratings ?? []).map((r) => ({
+    submission_id: r.submission_id,
+    attribute_id: r.attribute_id,
+    rating: r.rating,
+    notes: r.notes,
+  }));
+
+  const rawAttributes: RawAttribute[] = (attributes ?? []).map((a) => ({
+    id: a.id,
+    name: a.name,
+    category_id: a.category_id,
+  }));
+
+  const rawCategories: RawCategory[] = (categories ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    weight: c.weight,
+  }));
+
+  const computed = computeScorecardSummary(
+    applicationId,
+    rawSubmissions,
+    rawRatings,
+    rawAttributes,
+    rawCategories,
+  );
+
+  // Transform for AI prompt
+  const aiCategories = computed.categories.map((cat) => ({
+    name: cat.category_name,
+    weight: cat.weight,
+    avgRating: cat.avg_rating,
+    attributes: cat.attributes.map((attr) => ({
+      name: attr.attribute_name,
+      avgRating: attr.avg_rating,
+      ratings: attr.ratings.map((r) => ({
+        submitterName: r.submitter_name,
+        rating: r.rating,
+        notes: r.notes,
+      })),
+    })),
+  }));
+
+  const result = await summarizeScorecards({
+    totalSubmissions: computed.total_submissions,
+    recommendations: computed.recommendations,
+    weightedOverall: computed.weighted_overall,
+    categories: aiCategories,
+    organizationId: session.orgId,
+    userId: session.userId,
+    applicationId,
+  });
+
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  return { summary: result.summary ?? "" };
 }
 
 export async function deleteScorecardTemplate(templateId: string) {

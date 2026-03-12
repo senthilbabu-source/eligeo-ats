@@ -134,7 +134,7 @@
 | CP2 | Days in current stage visible on candidate profile | ✅ BUILT | All | Calculate from application_stage_history.moved_at. Simple UI addition |
 | CP3 | AI flags candidates at closing risk | 🟡 v1.1 | Growth+ | Inngest cron: no activity 5+ days + offer-pending pattern |
 | CP4 | Referral source automatically tagged on profile | ✅ BUILT | All | candidate_sources FK already on candidates table. Surface in profile header |
-| CP5 | AI highlights aggregated across all of a candidate's interviews | 🟢 P3 | Pro+ | Requires scorecard data from P3. gpt-4o summary pass |
+| CP5 | AI highlights aggregated across all of a candidate's interviews | ✅ BUILT | Pro+ | P3-W5: AI scorecard summarization on scorecard panel. `generateAIScorecardSummary()` aggregates all submissions per application |
 | CP6 | Dedicated debrief workflow on profile — panel aligns before hire/no-hire | 🟢 P3 | All | Panel view + decision + notes. Separate from scorecard |
 | CP7 | Candidate pronouns displayed on profile | ✅ BUILT | All | Add pronouns field to candidates table. One migration + UI |
 | CP8 | Profile header: has portfolio, has resume, was a referral indicators | ✅ BUILT | All | Derived from files table + candidate_sources. Badge row in header |
@@ -191,7 +191,7 @@
 | T2 | Consolidated panel feedback in one view | ✅ BUILT | All | Score aggregation view (D07). P3-W2 (computeScorecardSummary), P3-W3 (scorecard panel summary mode) |
 | T3 | @mention colleagues on candidate card | 🟢 P3 | All | Notes with @mentions + notification (D08) |
 | T4 | Candidate context before interview (resume, scores, prior notes) | 🟢 P3 | All | Interview prep view with all prior data |
-| T5 | AI summarizes conflicting panel feedback | 🟢 P3 | Pro+ | AI scorecard summarization (D07, gated by feature flag) |
+| T5 | AI summarizes conflicting panel feedback | ✅ BUILT | Pro+ | AI scorecard summarization (D07 §5.3). P3-W5: `summarizeScorecards()` gpt-4o-mini, `generateAIScorecardSummary()` SA feature-gated by `ai_scorecard_summarize`, "Generate Summary" button on scorecard panel |
 | T6 | Role-level access controls (interviewers see own candidates) | ✅ BUILT | All | RBAC 5 roles × 30 permissions (Phase 1) |
 | T7 | Toggle between individual scorecard view and attribute summary view | ✅ BUILT | All | P3-W3 scorecard panel: submit form mode + summary view mode (dual-mode slide-over) |
 | T8 | Each competency rated visually by every panellist (alignment heatmap) | 🟢 P3 | All | Per-panellist columns on attribute summary. Spot consensus vs. disagreement |
@@ -371,7 +371,7 @@
 | AI2 | AI daily summary: where every open role stands | 🟡 v1.1 | Growth+ | Inngest morning digest + OpenAI summarization |
 | AI3 | AI suggests next best action on every open role | 🔶 2.6 | Growth+ | Command bar context: stale candidates, pending feedback. **AI-Proof Wave C**: CP10 (Next Best Action strip on candidate profile) is the on-page equivalent. |
 | AI4 | AI drafts all candidate communications | 🔶 2.6 | Growth+ | Command bar: "draft update for all phone screen candidates". Context enrichment shipped in Wave B (see N1). |
-| AI5 | AI meeting brief before debrief (scores + feedback summary) | 🟢 P3 | Pro+ | AI scorecard summarization before panel debrief |
+| AI5 | AI meeting brief before debrief (scores + feedback summary) | ✅ BUILT | Pro+ | P3-W5: AI scorecard summarization — "Generate Summary" button on scorecard panel, gpt-4o-mini digest of all ratings + notes + recommendations |
 
 ---
 
@@ -445,6 +445,8 @@
 > **2026-03-12 delta (P3-W1 — database foundation):** Migration 026 applied: 6 tables (interviews, scorecard_templates, scorecard_categories, scorecard_attributes, scorecard_submissions, scorecard_ratings). Seed data + golden-tenant fixtures. 75 RLS tests across 6 files. Blind review via SECURITY DEFINER helper. No user stories marked BUILT yet — database + RLS only, no UI.
 >
 > **2026-03-12 delta (P3-W2→W4 — interviews + scorecards UI):** Marked ✅ BUILT: T1 (structured scorecards), T2 (consolidated panel feedback), T7 (individual/summary toggle). P3-W2: server actions + scoring utility + 13 unit tests. P3-W3: interview card, schedule modal, scorecard panel, /interviews page. P3-W4: scorecard template CRUD settings + updateScorecardTemplate SA + 10 E2E tests (settings-scorecards + interviews).
+>
+> **2026-03-12 delta (P3-W5 — AI scorecard summarization):** Marked ✅ BUILT: T5 (AI summarizes conflicting panel feedback), CP5 (AI highlights aggregated across interviews), AI5 (AI meeting brief before debrief). Phase 3 now fully complete. 816 Vitest + 62 E2E = 878 total.
 
 ---
 

@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { submitScorecard } from "@/lib/actions/scorecards";
 import { getScorecardTemplateDetail } from "@/lib/actions/scorecards";
 import { getScorecardSummary } from "@/lib/actions/scorecards";
+import { generateAIScorecardSummary } from "@/lib/actions/scorecards";
 import type { OverallRecommendation, ScorecardSummary } from "@/lib/types/ground-truth";
 
 interface ScorecardPanelProps {
@@ -84,6 +85,9 @@ export function ScorecardPanel({
   const [ratingNotes, setRatingNotes] = useState<Record<string, string>>({});
   const [recommendation, setRecommendation] = useState<OverallRecommendation | "">("");
   const [overallNotes, setOverallNotes] = useState("");
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
 
   // Load template and/or summary
   useEffect(() => {
@@ -222,6 +226,45 @@ export function ScorecardPanel({
                 </div>
               </div>
             ))}
+
+            {/* AI Summary */}
+            <div className="rounded-lg border border-border p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">AI Summary</span>
+                {!aiSummary && (
+                  <button
+                    type="button"
+                    disabled={aiSummaryLoading}
+                    onClick={async () => {
+                      setAiSummaryLoading(true);
+                      setAiSummaryError(null);
+                      const result = await generateAIScorecardSummary(applicationId);
+                      setAiSummaryLoading(false);
+                      if ("error" in result) {
+                        setAiSummaryError(result.error);
+                      } else {
+                        setAiSummary(result.summary);
+                      }
+                    }}
+                    className="rounded-md bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                    data-testid="ai-summary-button"
+                  >
+                    {aiSummaryLoading ? "Generating..." : "Generate Summary"}
+                  </button>
+                )}
+              </div>
+              {aiSummaryError && (
+                <p className="mt-2 text-xs text-destructive">{aiSummaryError}</p>
+              )}
+              {aiSummary && (
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{aiSummary}</p>
+              )}
+              {!aiSummary && !aiSummaryError && !aiSummaryLoading && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Generate an AI-powered summary of all interview feedback.
+                </p>
+              )}
+            </div>
           </div>
         )}
 

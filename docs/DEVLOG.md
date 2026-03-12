@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-03-12 — P3-W5: AI Scorecard Summarization
+
+**Scope:** Phase 3 Wave 5 — AI-powered scorecard feedback summarization per D07 §5.3.
+
+**What shipped:**
+
+**AI summarization function:**
+- `src/lib/ai/generate.ts` — Added `buildScorecardSummaryPrompt()` (pure, exported for testing) + `summarizeScorecards()` (gpt-4o-mini, 3–5 sentence digest). Uses `feedback_summarize` credit action. Follows existing generate.ts patterns (credit check → LLM call → usage logging).
+
+**Server Action:**
+- `src/lib/actions/scorecards.ts` — Added `generateAIScorecardSummary()`. Feature-gated by `ai_scorecard_summarize` flag (Pro + Enterprise). Fetches submissions + ratings, computes summary via `computeScorecardSummary()`, transforms for AI prompt, calls `summarizeScorecards()`. Logs to `ai_usage_logs` with `action = 'feedback_summarize'`, `entity_type = 'application'`.
+
+**UI:**
+- `src/app/(app)/candidates/[id]/scorecard-panel.tsx` — Added "Generate Summary" button in scorecard summary view. Shows inline AI summary below category breakdowns. Error/loading states handled. `data-testid="ai-summary-button"` for E2E targeting.
+
+**Unit tests (10 new):**
+- `src/__tests__/scorecard-summary.test.ts` — 10 tests for `buildScorecardSummaryPrompt()`: submission count grammar (singular/plural), recommendation tally, weighted overall (present/null), category headers with weight+avg, attribute names+averages, interviewer notes inclusion, multiple categories, empty categories.
+
+**Test counts:** 816 Vitest (+10) + 62 E2E = 878 total. TSC clean. No regressions.
+
+---
+
 ## 2026-03-12 — P3-W4: Scorecard Template Management UI + E2E Tests
 
 **Scope:** Phase 3 Wave 4 — scorecard template CRUD in Settings + E2E tests for interview/scorecard flow.

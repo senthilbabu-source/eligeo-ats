@@ -519,3 +519,138 @@ export async function suggestSkillsDelta(params: {
     };
   }
 }
+
+// ── Scorecard Summarization ──────────────────────────────────
+
+/**
+ * Build a structured prompt from scorecard data for AI summarization.
+ * Pure function — exported for unit testing.
+ */
+export function buildScorecardSummaryPrompt(params: {
+  totalSubmissions: number;
+  recommendations: { strong_yes: number; yes: number; no: number; strong_no: number };
+  weightedOverall: number | null;
+  categories: Array<{
+    name: string;
+    weight: number;
+    avgRating: number;
+    attributes: Array<{
+      name: string;
+      avgRating: number;
+      ratings: Array<{ submitterName: string; rating: number; notes?: string | null }>;
+    }>;
+  }>;
+}): string {
+  const lines: string[] = [];
+  const { totalSubmissions, recommendations, weightedOverall, categories } = params;
+
+  lines.push(`Interview feedback from ${totalSubmissions} interviewer${totalSubmissions !== 1 ? "s" : ""}.`);
+  lines.push(
+    `Recommendations: ${recommendations.strong_yes} strong yes, ${recommendations.yes} yes, ${recommendations.no} no, ${recommendations.strong_no} strong no.`,
+  );
+  if (weightedOverall !== null) {
+    lines.push(`Weighted overall score: ${weightedOverall.toFixed(1)} / 5.0`);
+  }
+  lines.push("");
+
+  for (const cat of categories) {
+    lines.push(`## ${cat.name} (weight: ${cat.weight}, avg: ${cat.avgRating.toFixed(1)}/5)`);
+    for (const attr of cat.attributes) {
+      lines.push(`- ${attr.name}: avg ${attr.avgRating.toFixed(1)}/5`);
+      for (const r of attr.ratings) {
+        const notePart = r.notes ? ` — "${r.notes}"` : "";
+        lines.push(`  ${r.submitterName}: ${r.rating}/5${notePart}`);
+      }
+    }
+    lines.push("");
+  }
+
+  return lines.join("\n").trim();
+}
+
+/**
+ * Generate an AI summary of scorecard feedback for an application.
+ * D07 §5.3 — gpt-4o-mini, 3–5 sentence digest highlighting consensus,
+ * disagreements, and key strengths/weaknesses.
+ */
+export async function summarizeScorecards(params: {
+  totalSubmissions: number;
+  recommendations: { strong_yes: number; yes: number; no: number; strong_no: number };
+  weightedOverall: number | null;
+  categories: Array<{
+    name: string;
+    weight: number;
+    avgRating: number;
+    attributes: Array<{
+      name: string;
+      avgRating: number;
+      ratings: Array<{ submitterName: string; rating: number; notes?: string | null }>;
+    }>;
+  }>;
+  organizationId: string;
+  userId?: string;
+  applicationId: string;
+}): Promise<{ summary: string | null; error?: string }> {
+  const { organizationId, userId, applicationId, ...scorecardData } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "feedback_summarize");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "feedback_summarize",
+      entityType: "application",
+      entityId: applicationId,
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { summary: null, error: "Insufficient AI credits" };
+  }
+
+  const prompt = buildScorecardSummaryPrompt(scorecardData);
+
+  try {
+    const { text, usage } = await generateText({
+      model: chatModel,
+      system:
+        "You are a talent acquisition analyst. Summarize interview scorecard feedback in 3–5 concise sentences. " +
+        "Highlight areas of consensus and disagreement among interviewers. " +
+        "Call out key strengths and weaknesses. " +
+        "Do not include candidate names or interviewer names. Be objective and actionable.",
+      prompt,
+      maxOutputTokens: 300,
+    });
+
+    const latencyMs = Date.now() - startTime;
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "feedback_summarize",
+      entityType: "application",
+      entityId: applicationId,
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs,
+      status: "success",
+    });
+
+    return { summary: text };
+  } catch (err) {
+    Sentry.captureException(err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "feedback_summarize",
+      entityType: "application",
+      entityId: applicationId,
+      latencyMs: Date.now() - startTime,
+      status: "error",
+      errorMessage: message,
+    });
+    return { summary: null, error: message };
+  }
+}
