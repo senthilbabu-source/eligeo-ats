@@ -181,3 +181,72 @@ export interface ApplicationMetadata {
   custom_answers?: Record<string, unknown>;
   [key: string]: unknown;
 }
+
+// ── Phase 3: Interviews + Scorecards Types ──────────────────
+
+/** Interview type enum values (CHECK constraint in migration 026) */
+export type InterviewType =
+  | "phone_screen"
+  | "technical"
+  | "behavioral"
+  | "panel"
+  | "culture_fit"
+  | "final"
+  | "other";
+
+/** Interview status enum values (CHECK constraint in migration 026) */
+export type InterviewStatus =
+  | "scheduled"
+  | "confirmed"
+  | "completed"
+  | "cancelled"
+  | "no_show";
+
+/** Overall recommendation enum values (CHECK constraint in migration 026) */
+export type OverallRecommendation = "strong_no" | "no" | "yes" | "strong_yes";
+
+/** Per-attribute rating in a scorecard submission */
+export interface ScorecardRatingInput {
+  attribute_id: string;
+  rating: number; // 1–5
+  notes?: string;
+}
+
+/** Recommendation tally for scorecard summary */
+export interface RecommendationTally {
+  strong_yes: number;
+  yes: number;
+  no: number;
+  strong_no: number;
+}
+
+/** Per-attribute aggregate in scorecard summary */
+export interface AttributeSummary {
+  attribute_id: string;
+  attribute_name: string;
+  avg_rating: number;
+  ratings: Array<{
+    submission_id: string;
+    submitter_name: string;
+    rating: number;
+    notes: string | null;
+  }>;
+}
+
+/** Per-category aggregate in scorecard summary */
+export interface CategorySummary {
+  category_id: string;
+  category_name: string;
+  weight: number;
+  avg_rating: number;
+  attributes: AttributeSummary[];
+}
+
+/** Aggregated scorecard summary for an application (D07 §4.3) */
+export interface ScorecardSummary {
+  application_id: string;
+  total_submissions: number;
+  recommendations: RecommendationTally;
+  weighted_overall: number | null; // null if no ratings
+  categories: CategorySummary[];
+}

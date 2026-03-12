@@ -4,6 +4,22 @@
 
 ---
 
+## 2026-03-12 — P3-W2: Server Actions + Types + Scoring (Interviews & Scorecards)
+
+**Scope:** Phase 3 Wave 2 — server actions, type definitions, and pure scoring utility for interviews and scorecards.
+
+**What shipped:**
+
+- `src/lib/types/ground-truth.ts` — Added Phase 3 types: `InterviewType`, `InterviewStatus`, `OverallRecommendation`, `ScorecardRatingInput`, `RecommendationTally`, `AttributeSummary`, `CategorySummary`, `ScorecardSummary`.
+- `src/lib/scoring.ts` — NEW. Pure scoring utility: `computeScorecardSummary()` (weighted category aggregation, per-attribute averages, recommendation tallies), `tallyRecommendations()`. No DB dependency — fully testable.
+- `src/lib/actions/interviews.ts` — NEW. 7 server actions: `createInterview`, `updateInterview`, `completeInterview`, `markNoShow`, `cancelInterview`, `getInterviewsForApplication`, `getInterview`. Zod validation, org isolation, soft-delete filters, status guards.
+- `src/lib/actions/scorecards.ts` — NEW. 7 server actions: `submitScorecard` (submission + ratings + auto-complete interview), `updateSubmission`, `getScorecardSummary` (blind-review-aware aggregation via scoring utility), `createScorecardTemplate` (with nested categories + attributes), `getScorecardTemplates`, `getScorecardTemplateDetail`, `deleteScorecardTemplate` (cascade soft-delete).
+- `src/__tests__/scoring.test.ts` — NEW. 13 unit tests: recommendation tallies, weighted overall, per-category/attribute averages, single submission, asymmetric weights, orphan ratings, rounding.
+
+**Test counts:** 793 → 806 Vitest (+13). All passing. TSC clean.
+
+---
+
 ## 2026-03-12 — P3-W1: Migration 026 + Seed + RLS Tests (Interviews & Scorecards)
 
 **Scope:** Phase 3 Wave 1 — database foundation for interviews and scorecards cluster (6 tables).
