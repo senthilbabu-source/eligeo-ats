@@ -4,6 +4,52 @@
 
 ---
 
+## 2026-03-12 — Wave E: Pre-Phase 3 Completeness Audit Fixes (P0-1 → P1-6)
+
+**Scope:** Systematic resolution of 10 gaps identified in pre-Phase 3 audit. 5 sub-waves covering embedding pipeline, bias rendering, slug collisions, atomic reorder, candidate UI, and email context.
+
+**What shipped:**
+
+**E-1 (P0-1 + P0-2 + P2-5) — Candidate embedding pipeline:**
+- `src/inngest/functions/ai/generate-candidate-embedding.ts` — NEW. Inngest function triggered by `ats/candidate.created` event. Fetches candidate, builds text from name/title/company/skills/resume, generates embedding via `generateAndStoreEmbedding()`. Concurrency limited per org.
+- `src/app/api/inngest/route.ts` — Registered new function.
+- `src/lib/actions/candidates.ts` — `createCandidate` now persists `resume_text` and fires `ats/candidate.created` Inngest event.
+- `src/lib/actions/public-apply.ts` — Same Inngest event on public application with new candidate.
+- `src/app/(app)/candidates/new/candidate-form.tsx` — Hidden `resumeText` field preserves parsed text through form submit.
+- `src/lib/ai/embeddings.ts` — Sets `embedding_updated_at` on store.
+- `src/lib/actions/ai.ts` — `aiBatchGenerateCandidateEmbeddings()` SA for backfilling up to 500 candidates missing embeddings.
+- `supabase/migrations/00023_candidate_embedding_updated_at.sql` — Adds `embedding_updated_at` to candidates table.
+- `src/__tests__/candidate-embedding-pipeline.test.ts` — 4 unit tests.
+
+**E-2 (P0-3 + P0-4) — Bias banner + slug collision fix:**
+- `src/app/(app)/jobs/[id]/bias-check-banner.tsx` — NEW. Dismissible amber banner rendering flagged bias terms with suggestions.
+- `src/app/(app)/jobs/[id]/page.tsx` — Renders `BiasCheckBanner` when `meta.bias_check` exists.
+- `src/lib/actions/jobs.ts` — `createJob` and `updateJob` use `findAvailableSlug()` to prevent 23505 collisions.
+
+**E-3 (P1-4) — Atomic stage reorder:**
+- `supabase/migrations/00024_reorder_stages_rpc.sql` — `reorder_pipeline_stages()` RPC with SECURITY DEFINER, atomic CASE WHEN UPDATE.
+- `src/lib/actions/pipelines.ts` — Replaced sequential for-loop with single RPC call.
+- `src/__tests__/pipelines.test.ts` — Updated to verify RPC invocation.
+
+**E-4 (P1-1 + P1-2) — Candidate edit + notes:**
+- `src/app/(app)/candidates/[id]/edit-candidate-panel.tsx` — NEW. Inline edit form for candidate profile fields.
+- `src/app/(app)/candidates/[id]/candidate-notes.tsx` — NEW. Add note form + chronological timeline + delete (author or owner/admin).
+- `src/lib/actions/candidates.ts` — `addCandidateNote()` and `deleteCandidateNote()` SAs.
+- `supabase/migrations/00025_candidate_notes.sql` — Table + 4 RLS policies + indexes + audit trigger.
+- `src/__tests__/rls/candidate-notes.rls.test.ts` — 16 RLS tests (4 ops × roles × 2 tenants). Pending migration apply.
+
+**E-5 (P1-3 + P1-6) — moveStage revalidation + email context:**
+- `src/lib/actions/candidates.ts` — `moveStage()` now revalidates `/candidates/${id}` path.
+- `src/app/(app)/candidates/[id]/email-draft-panel.tsx` — Added enrichment hidden fields (stageName, daysInPipeline, rejectionReasonLabel).
+- `src/app/(app)/candidates/[id]/page.tsx` — Passes enrichment data to EmailDraftPanel, renders EditCandidatePanel + CandidateNotes.
+- `src/lib/actions/ai.ts` — `aiDraftEmail()` forwards context fields to `generateEmailDraft()`.
+
+**Migrations:** 023 (embedding_updated_at), 024 (reorder RPC), 025 (candidate_notes). Run `supabase db reset` to apply.
+
+**Test count:** 702 Vitest + 52 E2E = 754 total (+4 embedding + 16 RLS pending migration). tsc clean.
+
+---
+
 ## 2026-03-11 — Wave D / D5: AR3 — Resume Paste + AI Parse on CandidateForm
 
 **Scope:** Surface `aiParseResume()` SA (built Phase 2.6, previously unreachable) on the `/candidates/new` form. Collapsible section — paste resume text → "Extract with AI" → form fields auto-fill.

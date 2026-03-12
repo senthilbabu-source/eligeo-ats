@@ -372,21 +372,17 @@ export async function reorderStages(
 
   const supabase = await createClient();
 
-  // Update each stage's order in sequence
-  for (let i = 0; i < parsed.data.stageIds.length; i++) {
-    const { error } = await supabase
-      .from("pipeline_stages")
-      .update({ stage_order: i })
-      .eq("id", parsed.data.stageIds[i])
-      .eq("pipeline_template_id", pipelineTemplateId)
-      .eq("organization_id", session.orgId)
-      .is("deleted_at", null);
+  // Atomic reorder via Postgres RPC (migration 024) — all-or-nothing
+  const { error } = await supabase.rpc("reorder_pipeline_stages", {
+    p_pipeline_template_id: pipelineTemplateId,
+    p_organization_id: session.orgId,
+    p_stage_ids: parsed.data.stageIds,
+  });
 
-    if (error) {
-      logger.error({ error, stageId: parsed.data.stageIds[i] }, "Failed to reorder stage");
-      Sentry.captureException(error);
-      return { error: "Failed to reorder stages" };
-    }
+  if (error) {
+    logger.error({ error, pipelineTemplateId }, "Failed to reorder stages");
+    Sentry.captureException(error);
+    return { error: "Failed to reorder stages" };
   }
 
   revalidatePath(`/settings/pipelines/${pipelineTemplateId}`);

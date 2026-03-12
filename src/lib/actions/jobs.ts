@@ -105,13 +105,15 @@ export async function createJob(_prev: unknown, formData: FormData) {
   const data = parsed.data;
   const supabase = await createClient();
 
+  const slug = await findAvailableSlug(supabase, session.orgId, slugify(data.title));
+
   const { data: job, error } = await supabase
     .from("job_openings")
     .insert({
       organization_id: session.orgId,
       pipeline_template_id: data.pipelineTemplateId,
       title: data.title,
-      slug: slugify(data.title),
+      slug,
       description: data.description,
       department: data.department,
       location: data.location,
@@ -168,7 +170,7 @@ export async function updateJob(formData: FormData) {
   const dbUpdates: Record<string, unknown> = {};
   if (updates.title) {
     dbUpdates.title = updates.title;
-    dbUpdates.slug = slugify(updates.title);
+    dbUpdates.slug = await findAvailableSlug(supabase, session.orgId, slugify(updates.title));
   }
   if (updates.description !== undefined) dbUpdates.description = updates.description;
   if (updates.department !== undefined) dbUpdates.department = updates.department;
@@ -187,6 +189,9 @@ export async function updateJob(formData: FormData) {
     .eq("organization_id", session.orgId);
 
   if (error) {
+    if (error.code === "23505") {
+      return { error: "A job with this title already exists in your organization" };
+    }
     return { error: "Failed to update job" };
   }
 

@@ -9,6 +9,8 @@ import { ApplyToJobForm } from "./apply-to-job-form";
 import { InlineAppActions } from "./inline-app-actions";
 import { NextBestAction } from "./next-best-action";
 import { EmailDraftPanel } from "./email-draft-panel";
+import { EditCandidatePanel } from "./edit-candidate-panel";
+import { CandidateNotes } from "./candidate-notes";
 
 export async function generateMetadata({
   params,
@@ -199,6 +201,15 @@ export default async function CandidateDetailPage({
     .is("deleted_at", null)
     .order("name");
 
+  // P1-2 — fetch candidate notes
+  const { data: notes } = await supabase
+    .from("candidate_notes")
+    .select("id, content, created_at, created_by, user_profiles:created_by (full_name)")
+    .eq("candidate_id", id)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
   // Stable timestamp for days-in-stage calculation (avoids impure Date.now in JSX)
   const nowMs = new Date().getTime();
 
@@ -253,6 +264,20 @@ export default async function CandidateDetailPage({
           <h1 className="text-2xl font-semibold tracking-tight">
             {candidate.full_name}
           </h1>
+          {can(session.orgRole, "candidates:edit") && (
+            <EditCandidatePanel
+              candidate={{
+                id: candidate.id,
+                full_name: candidate.full_name,
+                email: candidate.email,
+                phone: candidate.phone,
+                current_title: candidate.current_title,
+                current_company: candidate.current_company,
+                location: candidate.location,
+                linkedin_url: candidate.linkedin_url,
+              }}
+            />
+          )}
           {/* CP8 — profile header badges */}
           {hasResume && (
             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
@@ -442,7 +467,21 @@ export default async function CandidateDetailPage({
         </div>
       </div>
 
-      {/* N1/S6 — AI Email Draft panel */}
+      {/* P1-2 — Candidate notes + activity timeline */}
+      <CandidateNotes
+        candidateId={candidate.id}
+        notes={(notes ?? []) as unknown as Array<{
+          id: string;
+          content: string;
+          created_at: string;
+          created_by: string;
+          user_profiles: { full_name: string } | null;
+        }>}
+        currentUserId={session.userId}
+        isOwnerOrAdmin={can(session.orgRole, "candidates:edit")}
+      />
+
+      {/* N1/S6 — AI Email Draft panel (P1-6: with context enrichment) */}
       <EmailDraftPanel
         candidateName={candidate.full_name}
         jobOptions={(applications ?? [])
@@ -450,9 +489,20 @@ export default async function CandidateDetailPage({
           .map((a) => {
             const jobRaw = a.job_openings as unknown;
             const job = (Array.isArray(jobRaw) ? jobRaw[0] : jobRaw) as { title: string; slug: string } | null;
-            return job ? { id: a.job_opening_id, title: job.title } : null;
+            const stageRaw = a.pipeline_stages as unknown;
+            const stage = (Array.isArray(stageRaw) ? stageRaw[0] : stageRaw) as { name: string } | null;
+            const stageEnteredAt = stageEntryByApplication[a.id];
+            const daysInStage = stageEnteredAt
+              ? Math.floor((nowMs - stageEnteredAt.getTime()) / (1000 * 60 * 60 * 24))
+              : undefined;
+            return job ? {
+              id: a.job_opening_id,
+              title: job.title,
+              stageName: stage?.name,
+              daysInStage,
+            } : null;
           })
-          .filter((j): j is { id: string; title: string } => j !== null)}
+          .filter((j) => j !== null)}
       />
     </div>
   );

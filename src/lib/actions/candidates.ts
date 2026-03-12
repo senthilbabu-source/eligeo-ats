@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
 import { assertCan } from "@/lib/constants/roles";
+import { inngest } from "@/inngest/client";
+import * as Sentry from "@sentry/nextjs";
+import logger from "@/lib/utils/logger";
 import { z } from "zod/v4";
 
 // ── Validation Schemas ─────────────────────────────────────
@@ -20,6 +23,7 @@ const createCandidateSchema = z.object({
   sourceId: z.string().uuid().optional(),
   skills: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
+  resumeText: z.string().optional(),
 });
 
 const updateCandidateSchema = createCandidateSchema.partial().extend({
@@ -47,6 +51,7 @@ export async function createCandidate(_prev: unknown, formData: FormData) {
     sourceId: formData.get("sourceId") || undefined,
     skills: skillsRaw ? JSON.parse(skillsRaw as string) : [],
     tags: tagsRaw ? JSON.parse(tagsRaw as string) : [],
+    resumeText: (formData.get("resumeText") as string) || undefined,
   });
 
   if (!parsed.success) {
@@ -71,6 +76,7 @@ export async function createCandidate(_prev: unknown, formData: FormData) {
       source_id: data.sourceId,
       skills: data.skills,
       tags: data.tags,
+      resume_text: data.resumeText,
     })
     .select("id")
     .single();
@@ -81,6 +87,15 @@ export async function createCandidate(_prev: unknown, formData: FormData) {
     }
     return { error: "Failed to create candidate" };
   }
+
+  // Fire event for async embedding generation (P0-1)
+  await inngest.send({
+    name: "ats/candidate.created",
+    data: {
+      candidateId: candidate.id,
+      organizationId: session.orgId,
+    },
+  });
 
   revalidatePath("/candidates");
   return { success: true, id: candidate.id };
@@ -149,7 +164,7 @@ export async function moveStage(
   // Get current stage
   const { data: app, error: fetchError } = await supabase
     .from("applications")
-    .select("id, current_stage_id, organization_id")
+    .select("id, current_stage_id, organization_id, candidate_id")
     .eq("id", applicationId)
     .eq("organization_id", session.orgId)
     .is("deleted_at", null)
@@ -187,7 +202,8 @@ export async function moveStage(
   }
 
   revalidatePath("/jobs");
-  revalidatePath(`/candidates`);
+  revalidatePath("/candidates");
+  revalidatePath(`/candidates/${app.candidate_id}`);
   return { success: true };
 }
 
@@ -296,4 +312,69 @@ export async function createApplication(
   revalidatePath("/jobs");
   revalidatePath("/candidates");
   return { success: true, id: app.id };
+}
+
+// ── Candidate Notes ──────────────────────────────────────
+
+const addNoteSchema = z.object({
+  candidateId: z.string().uuid(),
+  content: z.string().min(1).max(5000),
+});
+
+export async function addCandidateNote(
+  _prev: unknown,
+  formData: FormData,
+) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "candidates:view");
+
+  const parsed = addNoteSchema.safeParse({
+    candidateId: formData.get("candidateId"),
+    content: formData.get("content"),
+  });
+
+  if (!parsed.success) {
+    return { error: "Note content is required (max 5000 characters)" };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("candidate_notes").insert({
+    organization_id: session.orgId,
+    candidate_id: parsed.data.candidateId,
+    content: parsed.data.content,
+    created_by: session.userId,
+  });
+
+  if (error) {
+    logger.error({ error }, "Failed to add candidate note");
+    Sentry.captureException(error);
+    return { error: "Failed to add note" };
+  }
+
+  revalidatePath(`/candidates/${parsed.data.candidateId}`);
+  return { success: true };
+}
+
+export async function deleteCandidateNote(noteId: string, candidateId: string) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "candidates:view");
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("candidate_notes")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", noteId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null);
+
+  if (error) {
+    logger.error({ error }, "Failed to delete candidate note");
+    Sentry.captureException(error);
+    return { error: "Failed to delete note" };
+  }
+
+  revalidatePath(`/candidates/${candidateId}`);
+  return { success: true };
 }

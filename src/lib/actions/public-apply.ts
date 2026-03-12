@@ -1,6 +1,7 @@
 "use server";
 
 import { createServiceClient } from "@/lib/supabase/server";
+import { inngest } from "@/inngest/client";
 import { z } from "zod/v4";
 
 const applySchema = z.object({
@@ -96,6 +97,7 @@ export async function submitPublicApplication(
         phone: data.phone,
         linkedin_url: data.linkedinUrl,
         source: "career_portal",
+        resume_text: data.coverLetter,
       })
       .select("id")
       .single();
@@ -104,6 +106,15 @@ export async function submitPublicApplication(
       return { error: "Failed to submit application. Please try again." };
     }
     candidateId = newCandidate.id;
+
+    // Fire event for async embedding generation (P0-1)
+    await inngest.send({
+      name: "ats/candidate.created",
+      data: {
+        candidateId: newCandidate.id,
+        organizationId: job.organization_id,
+      },
+    });
   }
 
   // 4. Create application

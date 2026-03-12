@@ -11,6 +11,7 @@ import { TitleSuggestionBadge } from "./title-suggestion";
 import { SkillsDeltaPanel } from "./skills-delta-panel";
 import { CloneChecklist } from "./clone-checklist";
 import { JdQualityPanel } from "./jd-quality-panel";
+import { BiasCheckBanner } from "./bias-check-banner";
 import type { JobMetadata } from "@/lib/types/ground-truth";
 
 export async function generateMetadata({
@@ -226,6 +227,14 @@ export default async function JobDetailPage({
             })}
           </div>
         </div>
+      )}
+
+      {meta.bias_check && meta.bias_check.flaggedTerms.length > 0 && (
+        <BiasCheckBanner
+          flaggedTerms={meta.bias_check.flaggedTerms}
+          suggestions={meta.bias_check.suggestions}
+          checkedAt={meta.bias_check.checkedAt}
+        />
       )}
 
       {job.description && (

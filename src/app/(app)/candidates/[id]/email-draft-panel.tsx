@@ -3,9 +3,17 @@
 import { useActionState, useState } from "react";
 import { aiDraftEmail } from "@/lib/actions/ai";
 
+interface JobOption {
+  id: string;
+  title: string;
+  stageName?: string;
+  daysInStage?: number;
+  rejectionReasonLabel?: string;
+}
+
 interface EmailDraftPanelProps {
   candidateName: string;
-  jobOptions: Array<{ id: string; title: string }>;
+  jobOptions: JobOption[];
 }
 
 const EMAIL_TYPES = [
@@ -24,6 +32,8 @@ const TONES = [
 export function EmailDraftPanel({ candidateName, jobOptions }: EmailDraftPanelProps) {
   const [state, formAction, isPending] = useActionState(aiDraftEmail, null);
   const [copiedField, setCopiedField] = useState<"subject" | "body" | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const selectedJob = jobOptions.find((j) => j.id === selectedJobId);
 
   async function copyToClipboard(text: string, field: "subject" | "body") {
     await navigator.clipboard.writeText(text);
@@ -39,6 +49,10 @@ export function EmailDraftPanel({ candidateName, jobOptions }: EmailDraftPanelPr
 
       <form action={formAction} className="mt-4 space-y-4">
         <input type="hidden" name="candidateName" value={candidateName} />
+        {/* P1-6 — enrichment context hidden fields */}
+        <input type="hidden" name="stageName" value={selectedJob?.stageName ?? ""} />
+        <input type="hidden" name="daysInPipeline" value={selectedJob?.daysInStage?.toString() ?? ""} />
+        <input type="hidden" name="rejectionReasonLabel" value={selectedJob?.rejectionReasonLabel ?? ""} />
 
         <div className="grid grid-cols-2 gap-4">
           {/* Job title */}
@@ -51,6 +65,10 @@ export function EmailDraftPanel({ candidateName, jobOptions }: EmailDraftPanelPr
                 id="ed-jobTitle"
                 name="jobTitle"
                 required
+                onChange={(e) => {
+                  const job = jobOptions.find((j) => j.title === e.target.value);
+                  setSelectedJobId(job?.id ?? "");
+                }}
                 className="mt-1 block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 <option value="">Select job...</option>

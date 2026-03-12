@@ -12,6 +12,7 @@ import {
   buildJobEmbeddingText,
 } from "@/lib/ai/embeddings";
 import { getRemainingCredits } from "@/lib/ai/credits";
+import { inngest } from "@/inngest/client";
 import { CONFIG } from "@/lib/constants/config";
 
 // ── AI Resume Parse ───────────────────────────────────────
@@ -68,6 +69,49 @@ export async function aiGenerateCandidateEmbedding(candidateId: string) {
     entityId: candidateId,
     text,
   });
+}
+
+/**
+ * Batch-generate embeddings for all candidates missing one.
+ * Sends Inngest events (rate-limited by concurrency config on the function).
+ * Returns the count of candidates queued.
+ */
+export async function aiBatchGenerateCandidateEmbeddings(): Promise<
+  { success: true; queued: number } | { error: string }
+> {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "candidates:view");
+
+  const supabase = await createClient();
+
+  const { data: candidates, error } = await supabase
+    .from("candidates")
+    .select("id")
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .is("candidate_embedding", null)
+    .limit(500);
+
+  if (error) {
+    logger.error({ error }, "Failed to fetch candidates for batch embedding");
+    return { error: "Failed to fetch candidates" };
+  }
+
+  if (!candidates?.length) {
+    return { success: true, queued: 0 };
+  }
+
+  const events = candidates.map((c) => ({
+    name: "ats/candidate.created" as const,
+    data: {
+      candidateId: c.id,
+      organizationId: session.orgId,
+    },
+  }));
+
+  await inngest.send(events);
+
+  return { success: true, queued: candidates.length };
 }
 
 export async function aiGenerateJobEmbedding(jobId: string) {
@@ -241,6 +285,12 @@ export async function aiDraftEmail(
   const context = (formData.get("context") as string) || undefined;
   const tone = (formData.get("tone") as "warm" | "professional" | "casual") || "warm";
 
+  // P1-6 — enrichment params from hidden fields
+  const stageName = (formData.get("stageName") as string) || undefined;
+  const daysInPipelineRaw = formData.get("daysInPipeline") as string;
+  const daysInPipeline = daysInPipelineRaw ? parseInt(daysInPipelineRaw, 10) : undefined;
+  const rejectionReasonLabel = (formData.get("rejectionReasonLabel") as string) || undefined;
+
   if (!candidateName || !jobTitle || !type) {
     return { error: "Missing required fields" };
   }
@@ -251,6 +301,9 @@ export async function aiDraftEmail(
     jobTitle,
     context,
     tone,
+    stageName,
+    daysInPipeline: Number.isFinite(daysInPipeline) ? daysInPipeline : undefined,
+    rejectionReasonLabel,
     organizationId: session.orgId,
     userId: session.userId,
   });

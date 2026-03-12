@@ -100,7 +100,10 @@ export async function generateAndStoreEmbedding(params: {
 
     const { error: updateError } = await supabase
       .from(table)
-      .update({ [column]: JSON.stringify(embedding) })
+      .update({
+        [column]: JSON.stringify(embedding),
+        embedding_updated_at: new Date().toISOString(),
+      })
       .eq("id", entityId)
       .eq("organization_id", organizationId);
 

@@ -118,6 +118,7 @@ export function CandidateForm({ sources }: { sources: Source[] }) {
   // AR3 — resume paste section state
   const [showResumePaste, setShowResumePaste] = useState(false);
   const [resumeText, setResumeText] = useState("");
+  const [parsedResumeText, setParsedResumeText] = useState("");
   const [parseError, setParseError] = useState<string | null>(null);
   const [isParsing, startParsing] = useTransition();
 
@@ -148,6 +149,7 @@ export function CandidateForm({ sources }: { sources: Source[] }) {
         if (d.current_company) setCurrentCompany(d.current_company);
         if (d.linkedin_url) setLinkedinUrl(d.linkedin_url);
         if (d.skills?.length) setSkills(d.skills);
+        setParsedResumeText(resumeText);
         setShowResumePaste(false);
         setResumeText("");
       }
@@ -295,6 +297,9 @@ export function CandidateForm({ sources }: { sources: Source[] }) {
           <input type="hidden" name="sourceId" value="" />
         </div>
       </div>
+
+      {/* Hidden field: persist parsed resume text for embedding generation */}
+      <input type="hidden" name="resumeText" value={parsedResumeText} />
 
       <TagInput
         label="Skills"

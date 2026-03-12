@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Mocks ──────────────────────────────────────────────────
 
-const { mockFrom } = vi.hoisted(() => {
-  return { mockFrom: vi.fn() };
+const { mockFrom, mockRpc } = vi.hoisted(() => {
+  return { mockFrom: vi.fn(), mockRpc: vi.fn() };
 });
 
 function createChainMock(resolveValue: unknown = { data: null, error: null, count: 0 }) {
@@ -23,7 +23,7 @@ function createChainMock(resolveValue: unknown = { data: null, error: null, coun
 }
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn().mockResolvedValue({ from: mockFrom }),
+  createClient: vi.fn().mockResolvedValue({ from: mockFrom, rpc: mockRpc }),
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -237,8 +237,8 @@ describe("reorderStages", () => {
     expect(result).toEqual({ error: "Invalid input" });
   });
 
-  it("should update stage_order for each stage", async () => {
-    mockFrom.mockReturnValue(createChainMock({ data: null, error: null }));
+  it("should call RPC to atomically reorder stages", async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
 
     const stageIds = [
       "11111111-6002-4000-a000-000000000003",
@@ -251,5 +251,10 @@ describe("reorderStages", () => {
       stageIds,
     );
     expect(result).toEqual({ success: true });
+    expect(mockRpc).toHaveBeenCalledWith("reorder_pipeline_stages", {
+      p_pipeline_template_id: "11111111-6001-4000-a000-000000000001",
+      p_organization_id: "11111111-2001-4000-a000-000000000001",
+      p_stage_ids: stageIds,
+    });
   });
 });
