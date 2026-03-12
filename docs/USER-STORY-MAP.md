@@ -58,7 +58,7 @@
 | S3 | AI-suggested Boolean search strings for LinkedIn | 🟠 v2.0 | Pro+ | Nice-to-have, not core hiring loop |
 | S4 | Auto-enrich profiles from public data | ❌ OUT | — | GDPR legal risk. Let candidates self-enrich via LinkedIn import |
 | S5 | AI identifies passive candidates from careers page engagement | 🟠 v2.0 | Pro+ | Requires analytics tracking + talent pool |
-| S6 | AI drafts personalized outreach messages | 🔶 2.6 | Growth+ | Command bar: "draft outreach for Jane re: Backend Engineer". ⚠️ Backend ready: `aiDraftEmail()` SA exists with full Wave B context enrichment (`buildEmailContextLines()`). UI missing — no email draft panel anywhere in app. Wave D D2. |
+| S6 | AI drafts personalized outreach messages | ✅ BUILT | Growth+ | Command bar: "draft outreach for Jane re: Backend Engineer". `EmailDraftPanel` on candidate profile (`/candidates/[id]`) — type/tone/context selectors, calls `aiDraftEmail()` with Wave B context enrichment. Wave D D2. |
 
 ---
 
@@ -107,9 +107,9 @@
 | A3 | AI flags career progression patterns from past hires | 🟠 v2.0 | Pro+ | Requires historical hire data (not available at launch) |
 | A4 | Custom screening criteria per role | 🔶 2.6 | Growth+ | Job-specific required skills + weights |
 | A5 | AI detects duplicate/spam applications | 🔶 2.6 | All | Email dedup already exists. AI spam detection: simple heuristics |
-| A6 | Plain-language explanation of AI score | 🔶 2.6 | Growth+ | "Matched: React, Node. Missing: Kubernetes. 3 yrs vs 5 required." ⚠️ UI missing — `AiMatchPanel` shows score % only; no matched/missing skill breakdown. Compute from `job_required_skills` vs `candidate.skills`. Wave D D4. |
-| AF1 | AI score feedback — recruiter thumbs-up/down on match panel | 🔵 AI-Proof Wave A | Growth+ | `ai_score_feedback` table (Migration 022). Without this loop, AI matching has no signal from recruiter decisions and erodes trust over time. Advancing a low-score candidate and rejecting a high-score one are both learning signals. ⚠️ Backend complete: Migration 022 + 17 RLS tests. UI missing — no feedback buttons on `AiMatchPanel`. The entire feedback loop is unreachable from the product. Wave D D1 (P0). |
-| AF2 | Job embedding staleness detection | 🔵 AI-Proof Wave A | All | `embedding_updated_at TIMESTAMPTZ` on `job_openings` (Migration 022). When `job_required_skills` changes or JD is updated → stale flag → "Scores may be outdated" nudge on match panel + Inngest background re-embed. Without this, all match scores silently degrade on every JD/skills edit. ⚠️ Column exists in DB (Migration 022). UI missing — no staleness badge on `AiMatchPanel`. Wave D D3 (P1). |
+| A6 | Plain-language explanation of AI score | ✅ BUILT | Growth+ | "Matched: React, Node. Missing: Kubernetes. 3 yrs vs 5 required." `computeSkillGap()` on `AiMatchPanel` — compares `job_required_skills` vs `candidate.skills` (case-insensitive). Wave D D4. |
+| AF1 | AI score feedback — recruiter thumbs-up/down on match panel | ✅ BUILT | Growth+ | `ai_score_feedback` table (Migration 022) + `submitScoreFeedback()` SA + thumbs up/down buttons on `AiMatchPanel`. Optimistic UI + graceful error when no application exists. Wave D D1. |
+| AF2 | Job embedding staleness detection | ✅ BUILT | All | `embedding_updated_at TIMESTAMPTZ` on `job_openings` (Migration 022). Amber "⚠ Scores may be outdated" badge on `AiMatchPanel` when embedding >7 days stale. `isEmbeddingStale()` pure function. Wave D D3. |
 
 ---
 
@@ -119,7 +119,7 @@
 |---|-------|-------|------|-------|
 | AR1 | Review resumes in anonymized mode — names, photos, contact hidden | 🟠 v2.0 | Growth+ | `is_anonymized` flag exists (D2). Toggle UI + PDF redaction pipeline needed |
 | AR2 | Exact and similar keyword matches highlighted on resume | 🟡 v1.1 | Growth+ | Frontend highlight pass against job required skills. No backend change |
-| AR3 | AI extracts and surfaces top skills and language proficiencies | ✅ BUILT | Growth+ | Phase 2.6 resume parser (`parseResume()` + `extractSkills()`). ⚠️ Backend ready: `aiParseResume()` SA exists. UI missing — `CandidateForm` (`/candidates/new`) has no resume text field or AI parse button; form is pure manual entry. Wave D D5 (P1). |
+| AR3 | AI extracts and surfaces top skills and language proficiencies | ✅ BUILT | Growth+ | Phase 2.6 resume parser (`parseResume()` + `extractSkills()`). Collapsible resume paste section on `/candidates/new` — "Extract with AI" calls `aiParseResume()`, pre-fills all form fields. Wave D D5. |
 | AR4 | Advance, reject, or leave feedback without leaving the resume screen | ✅ BUILT | All | Inline action panel on candidate detail. Extends AR5 sequential view |
 | AR5 | Sequential navigation through all applicants in a review queue | ✅ BUILT | All | Prev/next controls with position indicator. Uses existing application list |
 | AR6 | Admin enforces anonymized review as default for specific roles or org-wide | 🟠 v2.0 | Growth+ | Pipeline-stage setting + org-level config. Depends on AR1 |
@@ -204,7 +204,7 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| N1 | AI drafts personalized, warm rejection emails | 🔶 2.6 | Growth+ | Command bar: "draft rejection for Jane, warm tone". ✅ Wave B complete: `generateEmailDraft()` enriched with matchScore, stageName, daysInPipeline, rejectionReason via `buildEmailContextLines()`. ⚠️ UI still missing — no email draft panel in app; `aiDraftEmail()` SA is built but no form calls it. Wave D D2 (P0). |
+| N1 | AI drafts personalized, warm rejection emails | ✅ BUILT | Growth+ | Command bar: "draft rejection for Jane, warm tone". `EmailDraftPanel` on candidate profile — enriched with matchScore, stageName, daysInPipeline, rejectionReason via Wave B `buildEmailContextLines()`. Wave D D2. |
 | N2 | Automated email sequences on stage changes | 🟢 P3 | All | 10 critical event notifications (D08) |
 | N3 | Communication via preferred channel (email/SMS/WhatsApp) | 🟠 v2.0 | Growth+ | Email only in v1.0. SMS/WhatsApp require additional providers |
 | N4 | Shared inbox for candidate replies | 🟠 v2.0 | Pro+ | Requires email receiving infra — complex |
