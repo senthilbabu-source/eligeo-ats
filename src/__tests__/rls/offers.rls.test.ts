@@ -30,7 +30,7 @@ describe("RLS: offers", () => {
   let serviceClient: SupabaseClient;
 
   const offerId = TENANT_A.offers.aliceDraft.id;
-  const tenantBOfferId = TENANT_B.offers.daveDraft.id;
+  const _tenantBOfferId = TENANT_B.offers.daveDraft.id;
   const cleanupIds: string[] = [];
 
   beforeAll(async () => {

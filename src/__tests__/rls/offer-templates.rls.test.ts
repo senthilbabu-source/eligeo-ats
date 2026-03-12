@@ -29,7 +29,7 @@ describe("RLS: offer_templates", () => {
   let serviceClient: SupabaseClient;
 
   const templateId = TENANT_A.offerTemplates.engineering.id;
-  const tenantBTemplateId = TENANT_B.offerTemplates.sales.id;
+  const _tenantBTemplateId = TENANT_B.offerTemplates.sales.id;
   const cleanupIds: string[] = [];
 
   beforeAll(async () => {
