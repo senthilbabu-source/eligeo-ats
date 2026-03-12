@@ -23,7 +23,7 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 
 ## Current State
 
-- **Phase:** Build — **Phase 3 (Interviews + Scorecards) IN PROGRESS. P3-W1+W2 complete.**
+- **Phase:** Build — **Phase 3 (Interviews + Scorecards) IN PROGRESS. P3-W1+W2+W3 complete.**
 - **Build order:** Phase 0 ✅ → Phase 1 ✅ → Phase 2 ✅ → Phase 2.5 ✅ → Phase 2.6 ✅ → Phase 2.7 ✅ → **Phase 3 (interviews) ← IN PROGRESS** → Phase 4 (offers) → Phase 5 (billing)
 - **Documentation:** ALL 30 docs complete. Spec docs describe WHAT; build order changed per ADR-011.
 - **Test count:** 806 Vitest + 52 E2E = 858 total. All passing.

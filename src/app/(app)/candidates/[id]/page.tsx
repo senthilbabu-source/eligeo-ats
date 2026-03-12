@@ -11,6 +11,7 @@ import { NextBestAction } from "./next-best-action";
 import { EmailDraftPanel } from "./email-draft-panel";
 import { EditCandidatePanel } from "./edit-candidate-panel";
 import { CandidateNotes } from "./candidate-notes";
+import { ApplicationInterviews } from "./application-interviews";
 
 export async function generateMetadata({
   params,
@@ -426,38 +427,45 @@ export default async function CandidateDetailPage({
               ? Math.floor((nowMs - stageEnteredAt.getTime()) / (1000 * 60 * 60 * 24))
               : null;
             return (
-              <div
-                key={app.id}
-                className="flex items-center justify-between rounded-lg border border-border bg-card p-4"
-              >
-                <div>
-                  <p className="font-medium">{job?.title ?? "Unknown Job"}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Applied{" "}
-                    {new Date(app.applied_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center justify-end gap-3">
-                    {daysInStage !== null && (
-                      <span className="text-xs text-muted-foreground">
-                        {daysInStage}d in stage
-                      </span>
-                    )}
-                    <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                      {stage?.name ?? app.status}
-                    </span>
+              <div key={app.id} className="space-y-2">
+                <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4">
+                  <div>
+                    <p className="font-medium">{job?.title ?? "Unknown Job"}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Applied{" "}
+                      {new Date(app.applied_at).toLocaleDateString()}
+                    </p>
                   </div>
-                  {/* AR4 — inline advance/reject */}
-                  {can(session.orgRole, "applications:move") && (
-                    <InlineAppActions
-                      applicationId={app.id}
-                      nextStageId={nextStageByApplication[app.id] ?? null}
-                      isActive={app.status === "active"}
-                      rejectionReasons={rejectionReasons ?? []}
-                    />
-                  )}
+                  <div className="text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      {daysInStage !== null && (
+                        <span className="text-xs text-muted-foreground">
+                          {daysInStage}d in stage
+                        </span>
+                      )}
+                      <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                        {stage?.name ?? app.status}
+                      </span>
+                    </div>
+                    {/* AR4 — inline advance/reject */}
+                    {can(session.orgRole, "applications:move") && (
+                      <InlineAppActions
+                        applicationId={app.id}
+                        nextStageId={nextStageByApplication[app.id] ?? null}
+                        isActive={app.status === "active"}
+                        rejectionReasons={rejectionReasons ?? []}
+                      />
+                    )}
+                  </div>
                 </div>
+                {/* P3-W3 — Interview list per application */}
+                {app.status === "active" && (
+                  <div className="ml-4 rounded-lg border border-border/50 bg-card/50 p-4">
+                    <Suspense fallback={<p className="text-xs text-muted-foreground">Loading interviews...</p>}>
+                      <ApplicationInterviews applicationId={app.id} />
+                    </Suspense>
+                  </div>
+                )}
               </div>
             );
           })}

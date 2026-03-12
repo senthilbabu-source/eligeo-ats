@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-03-12 — P3-W3: Interview UI (Schedule + List + Scorecard + Schedule Page)
+
+**Scope:** Phase 3 Wave 3 — full interview UI layer on candidate detail page + dedicated interviewer schedule page.
+
+**What shipped:**
+
+**Candidate detail page — interview section (per application):**
+- `src/app/(app)/candidates/[id]/application-interviews.tsx` — NEW. Async server component that fetches interviews, interviewer names, submission status, org members, and scorecard templates for each application. Renders inside `<Suspense>` per active application.
+- `src/app/(app)/candidates/[id]/interview-list.tsx` — NEW. Client component wrapping interview cards + schedule modal + scorecard panel. Manages open/close state for modal and scorecard slide-over.
+- `src/app/(app)/candidates/[id]/interview-card.tsx` — NEW. Client component showing interview type, status badge (5 states), interviewer name, date/time, duration, location, meeting URL link, overdue feedback badge, scored badge. Action menu (complete/no-show/cancel) for non-terminal interviews. Scorecard button for confirmed/completed.
+- `src/app/(app)/candidates/[id]/schedule-interview-modal.tsx` — NEW. Client component modal for scheduling interviews: interviewer picker, type selector (7 types), datetime, duration, location, meeting URL, scorecard template picker, feedback deadline, notes. Uses `useActionState` with `createInterview` SA.
+- `src/app/(app)/candidates/[id]/scorecard-panel.tsx` — NEW. Slide-over panel with dual mode: (1) submission form with star ratings per attribute, grouped by category with weights, overall recommendation radio (4 options), notes; (2) summary view showing total submissions, recommendation tally, weighted overall score, per-category averages with progress bars.
+- `src/app/(app)/candidates/[id]/page.tsx` — Modified. Added `ApplicationInterviews` in `<Suspense>` under each active application card.
+
+**Interviewer schedule page:**
+- `src/app/(app)/interviews/page.tsx` — NEW. Dedicated page showing upcoming interviews. Mine/All filter (mine default). Upcoming/Past toggle. Shows interview type, status, candidate name (linked), job title, date/time, duration, meeting URL. Pre-fetches via `.in()` pattern.
+- `src/app/(app)/app-nav.tsx` — Added "Interviews" nav link between Candidates and Pools.
+
+**Test counts:** 806 Vitest (no change — UI-only wave). TSC clean. No regressions.
+
+---
+
 ## 2026-03-12 — P3-W2: Server Actions + Types + Scoring (Interviews & Scorecards)
 
 **Scope:** Phase 3 Wave 2 — server actions, type definitions, and pure scoring utility for interviews and scorecards.
