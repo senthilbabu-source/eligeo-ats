@@ -128,6 +128,15 @@ export async function submitScorecard(input: {
 
   revalidatePath(`/candidates`);
   revalidatePath(`/jobs`);
+  // Revalidate candidate detail page
+  const { data: scApp } = await supabase
+    .from("applications")
+    .select("candidate_id")
+    .eq("id", data.applicationId)
+    .single();
+  if (scApp) {
+    revalidatePath(`/candidates/${scApp.candidate_id}`);
+  }
 
   return { success: true, submissionId: submission.id };
 }
@@ -160,7 +169,7 @@ export async function updateSubmission(input: {
     .eq("id", input.submissionId)
     .eq("organization_id", session.orgId)
     .is("deleted_at", null)
-    .select("id")
+    .select("id, application_id")
     .single();
 
   if (error || !data) {
@@ -168,6 +177,16 @@ export async function updateSubmission(input: {
   }
 
   revalidatePath(`/candidates`);
+  revalidatePath(`/jobs`);
+  // Revalidate candidate detail page
+  const { data: usApp } = await supabase
+    .from("applications")
+    .select("candidate_id")
+    .eq("id", data.application_id)
+    .single();
+  if (usApp) {
+    revalidatePath(`/candidates/${usApp.candidate_id}`);
+  }
 
   return { success: true };
 }
@@ -341,6 +360,7 @@ export async function createScorecardTemplate(input: {
   }
 
   // Insert categories + attributes
+  const failedCategories: string[] = [];
   for (const cat of data.categories) {
     const { data: catRow, error: catErr } = await supabase
       .from("scorecard_categories")
@@ -356,6 +376,7 @@ export async function createScorecardTemplate(input: {
 
     if (catErr || !catRow) {
       logger.error({ error: catErr }, "Failed to create scorecard category");
+      failedCategories.push(cat.name);
       continue;
     }
 
@@ -377,8 +398,15 @@ export async function createScorecardTemplate(input: {
           { error: attrErr },
           "Failed to create scorecard attributes",
         );
+        failedCategories.push(cat.name);
       }
     }
+  }
+
+  if (failedCategories.length > 0) {
+    return {
+      error: `Template created but failed to save categories: ${failedCategories.join(", ")}. Please edit the template to retry.`,
+    };
   }
 
   revalidatePath(`/settings`);
@@ -537,6 +565,7 @@ export async function updateScorecardTemplate(input: {
   }
 
   // Insert new categories + attributes
+  const failedCats: string[] = [];
   for (const cat of data.categories) {
     const { data: catRow, error: catErr } = await supabase
       .from("scorecard_categories")
@@ -552,6 +581,7 @@ export async function updateScorecardTemplate(input: {
 
     if (catErr || !catRow) {
       logger.error({ error: catErr }, "Failed to create scorecard category");
+      failedCats.push(cat.name);
       continue;
     }
 
@@ -570,8 +600,15 @@ export async function updateScorecardTemplate(input: {
 
       if (attrErr) {
         logger.error({ error: attrErr }, "Failed to create scorecard attributes");
+        failedCats.push(cat.name);
       }
     }
+  }
+
+  if (failedCats.length > 0) {
+    return {
+      error: `Template updated but failed to save categories: ${failedCats.join(", ")}. Please edit the template to retry.`,
+    };
   }
 
   revalidatePath(`/settings`);
@@ -719,6 +756,27 @@ export async function deleteScorecardTemplate(templateId: string) {
   assertCan(session.orgRole, "interviews:create");
 
   const supabase = await createClient();
+
+  // Guard: reject delete if active interviews reference this template
+  const { count, error: countErr } = await supabase
+    .from("interviews")
+    .select("id", { count: "exact", head: true })
+    .eq("scorecard_template_id", templateId)
+    .eq("organization_id", session.orgId)
+    .not("status", "in", '("cancelled","no_show")')
+    .is("deleted_at", null);
+
+  if (countErr) {
+    logger.error({ error: countErr }, "Failed to check template usage");
+    Sentry.captureException(countErr);
+    return { error: "Failed to verify template usage." };
+  }
+
+  if (count && count > 0) {
+    return {
+      error: `Cannot delete: ${count} active interview${count > 1 ? "s" : ""} use this template. Reassign or cancel them first.`,
+    };
+  }
 
   // Soft-delete template (ADR-006)
   const { error } = await supabase

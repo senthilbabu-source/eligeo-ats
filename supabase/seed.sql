@@ -129,7 +129,7 @@ VALUES
     'pro',
     'active',
     NULL,
-    '{"ai_scoring": true, "bulk_import": true, "career_page": true}'::jsonb
+    '{"ai_scoring": true, "bulk_import": true, "career_page": true, "ai_scorecard_summarize": true}'::jsonb
   ),
   (
     '22222222-2001-4000-a000-000000000001',

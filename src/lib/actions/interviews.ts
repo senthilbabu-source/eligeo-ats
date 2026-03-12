@@ -9,6 +9,34 @@ import logger from "@/lib/utils/logger";
 import { z } from "zod/v4";
 import type { InterviewType, InterviewStatus } from "@/lib/types/ground-truth";
 
+// ── Helpers ────────────────────────────────────────────────
+
+async function revalidateInterviewPaths(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  interviewId: string,
+  orgId: string,
+) {
+  revalidatePath(`/candidates`);
+  revalidatePath(`/jobs`);
+  // Resolve candidate_id for detail page revalidation
+  const { data: iv } = await supabase
+    .from("interviews")
+    .select("application_id")
+    .eq("id", interviewId)
+    .eq("organization_id", orgId)
+    .single();
+  if (iv) {
+    const { data: app } = await supabase
+      .from("applications")
+      .select("candidate_id")
+      .eq("id", iv.application_id)
+      .single();
+    if (app) {
+      revalidatePath(`/candidates/${app.candidate_id}`);
+    }
+  }
+}
+
 // ── Validation Schemas ─────────────────────────────────────
 
 const INTERVIEW_TYPES: InterviewType[] = [
@@ -78,7 +106,7 @@ export async function createInterview(_prev: unknown, formData: FormData) {
   // Resolve job_id from application (server-side — never trust client)
   const { data: app, error: appErr } = await supabase
     .from("applications")
-    .select("id, job_id")
+    .select("id, job_opening_id, candidate_id")
     .eq("id", data.applicationId)
     .eq("organization_id", session.orgId)
     .is("deleted_at", null)
@@ -93,7 +121,7 @@ export async function createInterview(_prev: unknown, formData: FormData) {
     .insert({
       organization_id: session.orgId,
       application_id: data.applicationId,
-      job_id: app.job_id,
+      job_id: app.job_opening_id,
       interviewer_id: data.interviewerId,
       interview_type: data.interviewType,
       scheduled_at: data.scheduledAt,
@@ -116,6 +144,7 @@ export async function createInterview(_prev: unknown, formData: FormData) {
   }
 
   revalidatePath(`/candidates`);
+  revalidatePath(`/candidates/${app.candidate_id}`);
   revalidatePath(`/jobs`);
 
   return { success: true, id: interview.id };
@@ -181,8 +210,7 @@ export async function updateInterview(input: {
     return { error: "Failed to update interview." };
   }
 
-  revalidatePath(`/candidates`);
-  revalidatePath(`/jobs`);
+  await revalidateInterviewPaths(supabase, data.id, session.orgId);
 
   return { success: true };
 }
@@ -209,8 +237,7 @@ export async function completeInterview(interviewId: string) {
     return { error: "Cannot complete this interview." };
   }
 
-  revalidatePath(`/candidates`);
-  revalidatePath(`/jobs`);
+  await revalidateInterviewPaths(supabase, interviewId, session.orgId);
 
   return { success: true };
 }
@@ -235,8 +262,7 @@ export async function markNoShow(interviewId: string) {
     return { error: "Cannot mark this interview as no-show." };
   }
 
-  revalidatePath(`/candidates`);
-  revalidatePath(`/jobs`);
+  await revalidateInterviewPaths(supabase, interviewId, session.orgId);
 
   return { success: true };
 }
@@ -263,8 +289,7 @@ export async function cancelInterview(interviewId: string) {
     return { error: "Cannot cancel this interview." };
   }
 
-  revalidatePath(`/candidates`);
-  revalidatePath(`/jobs`);
+  await revalidateInterviewPaths(supabase, interviewId, session.orgId);
 
   return { success: true };
 }

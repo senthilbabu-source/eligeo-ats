@@ -15,7 +15,8 @@
 | ✅ BUILT | Already shipped in Phase 0–2.7 |
 | 🔶 2.6 | Phase 2.6 — shipped, tag preserved for historical traceability |
 | 🔷 2.7 | Phase 2.7 — UX polish (complete — all stories ✅ BUILT) |
-| 🟢 P3 | Phase 3 — Interviews + scorecards |
+| 🟢 P3 | Phase 3 — Interviews + scorecards (core shipped P3-W1→W5) |
+| 🟢 P3 ⏳ | Phase 3 scoped but deferred — notification system or post-P4 polish |
 | 🟣 P4 | Phase 4 — Offers |
 | 🔵 P5 | Phase 5 — Billing |
 | ━━━ | **v1.0 LAUNCH BOUNDARY** |
@@ -80,9 +81,9 @@
 |---|-------|-------|------|-------|
 | C1 | Apply with LinkedIn profile or resume only — no account | ✅ BUILT | All | Career portal app form (Phase 2.5). Resume upload in 2.6 |
 | C2 | Mobile-first application under 3 minutes | ✅ BUILT | All | Current form works on mobile; polish in 2.7 |
-| C3 | Instant confirmation after applying with timeline | 🟢 P3 | All | Confirmation email via Inngest + Resend |
+| C3 | Instant confirmation after applying with timeline | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08).** Confirmation email via Inngest + Resend. Blocked on email_templates migration + Inngest notification functions. Target: Wave F. |
 | C4 | Track application status without logging in | 🟡 v1.1 | All | Magic link to status page (D09 candidate portal) |
-| C5 | Timely updates at every stage change | 🟢 P3 | All | Notification triggers on stage move (D08) |
+| C5 | Timely updates at every stage change | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08).** Notification triggers on stage move. Target: Wave F. |
 | C6 | Withdraw application or update details | 🟡 v1.1 | All | Self-service via candidate portal magic link |
 
 ---
@@ -130,12 +131,12 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| CP1 | Unified profile: interviews, recordings, AI highlights, all activity in one view | 🟢 P3 | All | Recordings require P3. Current profile shows applications + stage history |
+| CP1 | Unified profile: interviews, recordings, AI highlights, all activity in one view | ✅ BUILT | All | P3-W3: ApplicationInterviews server component per application on candidate profile. Interview cards + scorecard panel. Recordings deferred (external links only per D07 §1). |
 | CP2 | Days in current stage visible on candidate profile | ✅ BUILT | All | Calculate from application_stage_history.moved_at. Simple UI addition |
 | CP3 | AI flags candidates at closing risk | 🟡 v1.1 | Growth+ | Inngest cron: no activity 5+ days + offer-pending pattern |
 | CP4 | Referral source automatically tagged on profile | ✅ BUILT | All | candidate_sources FK already on candidates table. Surface in profile header |
 | CP5 | AI highlights aggregated across all of a candidate's interviews | ✅ BUILT | Pro+ | P3-W5: AI scorecard summarization on scorecard panel. `generateAIScorecardSummary()` aggregates all submissions per application |
-| CP6 | Dedicated debrief workflow on profile — panel aligns before hire/no-hire | 🟢 P3 | All | Panel view + decision + notes. Separate from scorecard |
+| CP6 | Dedicated debrief workflow on profile — panel aligns before hire/no-hire | 🟢 P3 ⏳ | All | **Deferred to post-P4.** Scorecard summary (P3-W5) provides aggregated panel view. Dedicated debrief workflow (separate from scorecard) is a UX enhancement, not a blocker. |
 | CP7 | Candidate pronouns displayed on profile | ✅ BUILT | All | Add pronouns field to candidates table. One migration + UI |
 | CP8 | Profile header: has portfolio, has resume, was a referral indicators | ✅ BUILT | All | Derived from files table + candidate_sources. Badge row in header |
 | CP9 | Rejection reason picker on inline reject action | 🔵 AI-Proof Wave A | All | P1 UI fix only (~2h) — no migration needed. Schema (`rejection_reason_id`, `rejection_notes`) + SA (`rejectApplication()`) already fully support this. `inline-app-actions.tsx` calls `rejectApplication(applicationId)` with no reason; fix: select dropdown from `rejection_reasons` table. Ships in Wave A because Wave B email enrichment (N1) depends on rejection reason data being captured. |
@@ -162,7 +163,7 @@
 |---|-------|-------|------|-------|
 | I1 | Candidate self-schedules from interviewer real-time availability | 🟠 v2.0 | Growth+ | Requires Nylas calendar sync — complex integration |
 | I2 | AI suggests optimal interview panel | 🟠 v2.0 | Pro+ | Requires scheduling history data |
-| I3 | Automated reminders before interviews | 🟢 P3 | All | Inngest cron job, 24h + 1h before |
+| I3 | Automated reminders before interviews | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08) + Inngest cron.** 24h + 1h before reminders. Target: Wave F. |
 | I4 | AI-generated role-specific interview questions | 🔶 2.6 | Growth+ | Command bar: "generate questions for Backend Engineer interview" |
 | I5 | Multi-stage interview pipelines with auto-progression | ✅ BUILT | All | Pipeline stages with stage_type (Phase 2). Auto-actions in v1.1 |
 | I6 | Video interviews auto-transcribed and summarized | ❌ OUT | — | Use Otter.ai/Grain. Not building transcription engine |
@@ -189,13 +190,13 @@
 |---|-------|-------|------|-------|
 | T1 | Structured feedback after interviews (scorecards) | ✅ BUILT | All | Scorecard templates + submissions (D07). P3-W1 (migration+RLS), P3-W2 (SAs+scoring), P3-W3 (scorecard panel), P3-W4 (template management settings) |
 | T2 | Consolidated panel feedback in one view | ✅ BUILT | All | Score aggregation view (D07). P3-W2 (computeScorecardSummary), P3-W3 (scorecard panel summary mode) |
-| T3 | @mention colleagues on candidate card | 🟢 P3 | All | Notes with @mentions + notification (D08) |
-| T4 | Candidate context before interview (resume, scores, prior notes) | 🟢 P3 | All | Interview prep view with all prior data |
+| T3 | @mention colleagues on candidate card | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08).** Notes table exists (Wave E). @mentions need candidate_note_mentions table or inline parsing + notification dispatch. Target: Wave F. |
+| T4 | Candidate context before interview (resume, scores, prior notes) | 🟢 P3 ⏳ | All | **Deferred to post-P4.** Partial: candidate profile already shows notes, scores, applications. Dedicated "interview prep" view (AI5 meeting brief) not yet built. |
 | T5 | AI summarizes conflicting panel feedback | ✅ BUILT | Pro+ | AI scorecard summarization (D07 §5.3). P3-W5: `summarizeScorecards()` gpt-4o-mini, `generateAIScorecardSummary()` SA feature-gated by `ai_scorecard_summarize`, "Generate Summary" button on scorecard panel |
 | T6 | Role-level access controls (interviewers see own candidates) | ✅ BUILT | All | RBAC 5 roles × 30 permissions (Phase 1) |
 | T7 | Toggle between individual scorecard view and attribute summary view | ✅ BUILT | All | P3-W3 scorecard panel: submit form mode + summary view mode (dual-mode slide-over) |
-| T8 | Each competency rated visually by every panellist (alignment heatmap) | 🟢 P3 | All | Per-panellist columns on attribute summary. Spot consensus vs. disagreement |
-| T9 | Comment counts visible per competency in summary view | 🟢 P3 | All | Count badge on each attribute row. Shows where panel had most discussion |
+| T8 | Each competency rated visually by every panellist (alignment heatmap) | 🟢 P3 ⏳ | All | **Partial — data layer ready, UI pending.** `computeScorecardSummary()` returns per-attribute ratings with submitter names. Scorecard panel shows category averages. Per-panellist column layout (heatmap) not yet rendered. Target: post-P4 polish. |
+| T9 | Comment counts visible per competency in summary view | 🟢 P3 ⏳ | All | **Partial — data layer ready, UI pending.** Ratings include notes. Count badge on attribute rows not yet rendered. Target: post-P4 polish. |
 | T10 | Sequential candidate navigation inside pipeline without returning to list | ✅ BUILT | All | Prev/next controls on candidate detail when opened from pipeline view |
 
 ---
@@ -205,14 +206,14 @@
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
 | N1 | AI drafts personalized, warm rejection emails | ✅ BUILT | Growth+ | Command bar: "draft rejection for Jane, warm tone". `EmailDraftPanel` on candidate profile — enriched with matchScore, stageName, daysInPipeline, rejectionReason via Wave B `buildEmailContextLines()`. Wave D D2. |
-| N2 | Automated email sequences on stage changes | 🟢 P3 | All | 10 critical event notifications (D08) |
+| N2 | Automated email sequences on stage changes | 🟢 P3 ⏳ | All | **Deferred — requires notification system (D08).** 10 critical event notifications. Target: Wave F. |
 | N3 | Communication via preferred channel (email/SMS/WhatsApp) | 🟠 v2.0 | Growth+ | Email only in v1.0. SMS/WhatsApp require additional providers |
 | N4 | Shared inbox for candidate replies | 🟠 v2.0 | Pro+ | Requires email receiving infra — complex |
 | N5 | AI follow-up when candidate unresponsive 3+ days | 🟡 v1.1 | Growth+ | Inngest cron checks + AI draft |
-| ET1 | Org-wide email templates with dynamic tokens ({{candidate.name}}, etc.) | 🟢 P3 | All | email_templates table (D08). Admin-managed, recruiter-accessible |
-| ET2 | Templates auto-populate candidate, job, application, and offer data | 🟢 P3 | All | Token renderer at send time. Merge fields from application context |
-| ET3 | Permission controls for template CRUD (who can create/edit/delete) | 🟢 P3 | All | RBAC gate: admin creates/edits, recruiter uses. Prevents off-brand sends |
-| ET4 | Auto-CC assigned recruiter or coordinator on templated emails | 🟢 P3 | All | CC field populated from job_openings.recruiter_id at send time |
+| ET1 | Org-wide email templates with dynamic tokens ({{candidate.name}}, etc.) | 🟢 P3 ⏳ | All | **Deferred — requires email_templates migration (D08).** No email_templates table in any migration 000–026. Target: Wave F (likely needed for P4 offer letters too). |
+| ET2 | Templates auto-populate candidate, job, application, and offer data | 🟢 P3 ⏳ | All | **Deferred — blocked on ET1.** Token renderer needs email_templates table. |
+| ET3 | Permission controls for template CRUD (who can create/edit/delete) | 🟢 P3 ⏳ | All | **Deferred — blocked on ET1.** RBAC gate on email templates. |
+| ET4 | Auto-CC assigned recruiter or coordinator on templated emails | 🟢 P3 ⏳ | All | **Deferred — blocked on ET1.** CC field from job_openings.recruiter_id. |
 
 ---
 
@@ -357,7 +358,7 @@
 |---|-------|-------|------|-------|
 | M1 | Review/score/move candidates from phone | ✅ BUILT | All | Kanban rewritten with dnd-kit, optimistic UI, DragOverlay, arrow-button fallback (Phase 2.7) |
 | M1-K | Kanban card health indicator — coloured left border by days-in-stage | 🔵 AI-Proof Wave C | All | Green (healthy) / amber (stalled vs. org avg) / red (at risk, uses `findAtRiskJobs` criteria). `days_in_stage` data already computed (CP2). Zero new queries. Makes the board intelligence, not just a list. |
-| M2 | Mobile interview feedback form | 🟢 P3 | All | Scorecard form designed mobile-first |
+| M2 | Mobile interview feedback form | ✅ BUILT | All | P3-W3: Scorecard panel is a responsive slide-over — works on mobile. Star ratings + recommendation radio + notes. |
 | M3 | Mobile application experience for candidates | ✅ BUILT | All | Career portal already works; polish spacing/touch targets |
 | M4 | Push notifications on phone | 🟠 v2.0 | Growth+ | Requires PWA or native app — significant effort |
 
@@ -385,7 +386,7 @@
 | AD4 | Data residency settings | 🔴 v3.0+ | Enterprise | data_region column exists. Deployment config needed |
 | AD5 | API access for internal tools/data warehouse | 🟠 v2.0 | Pro+ | REST API + api_keys table (D02) |
 | AD6 | Agency recruiter access and submission management | 🟠 v2.0 | Pro+ | Separate access tier. Candidate submissions routed through pipeline |
-| AD7 | Interviewer groups for panel assignment by role type | 🟢 P3 | All | Group → members table. Needed for scheduling + access control in P3 |
+| AD7 | Interviewer groups for panel assignment by role type | 🟢 P3 ⏳ | All | **Deferred to post-P4.** No interviewer_groups table in migrations 000–026. Manual interviewer selection via schedule modal. Target: v1.1 polish. |
 
 ---
 
@@ -447,6 +448,8 @@
 > **2026-03-12 delta (P3-W2→W4 — interviews + scorecards UI):** Marked ✅ BUILT: T1 (structured scorecards), T2 (consolidated panel feedback), T7 (individual/summary toggle). P3-W2: server actions + scoring utility + 13 unit tests. P3-W3: interview card, schedule modal, scorecard panel, /interviews page. P3-W4: scorecard template CRUD settings + updateScorecardTemplate SA + 10 E2E tests (settings-scorecards + interviews).
 >
 > **2026-03-12 delta (P3-W5 — AI scorecard summarization):** Marked ✅ BUILT: T5 (AI summarizes conflicting panel feedback), CP5 (AI highlights aggregated across interviews), AI5 (AI meeting brief before debrief). Phase 3 now fully complete. 816 Vitest + 62 E2E = 878 total.
+>
+> **2026-03-12 delta (P3 audit fixes):** CP1 marked ✅ BUILT (interview section on profile). M2 marked ✅ BUILT (responsive scorecard panel). 13 P3 stories marked ⏳ deferred: C3/C5/N2/I3/ET1–ET4 (notification system, Wave F), CP6/T3/T4/T8/T9/AD7 (post-P4 polish). P0-1 deployment blocker fixed (createInterview column). 826 Vitest + 62 E2E = 888 total.
 
 ---
 
@@ -464,7 +467,7 @@
 10. ~~**AR4/AR5 + T10** — Inline actions + sequential navigation~~ ✅ DONE
 11. ~~**C2/M3** — Mobile polish~~ ✅ DONE
 
-**Phase 3 in progress:** T1, T2, T7 ✅ BUILT (P3-W1→W4). Remaining: I3 (reminders), T3 (@mentions), T4 (interview prep), T5 (AI summarize), CP1 (unified profile), CP5 (AI highlights), CP6 (debrief), M2 (mobile scorecard), AI5 (AI meeting brief), AD7 (interviewer groups), and others.
+**Phase 3 ✅ COMPLETE (P3-W1→W5).** Core interviews + scorecards shipped: T1, T2, T5, T7, CP1, CP5, M2, AI5 all ✅ BUILT. 13 stories deferred (⏳): C3/C5/N2/I3/ET1–ET4 (notification system → Wave F), CP6/T3/T4/T8/T9/AD7 (post-P4 polish). See individual story notes for details.
 
 ---
 

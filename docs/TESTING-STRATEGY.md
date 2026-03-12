@@ -534,6 +534,7 @@ it('should handle Stripe webhook failure', async () => {
 | **Billing** (D03) | 80% | Webhook handlers | 2 scenarios | Per module |
 | **GDPR** (D13) | 90% | Erasure + export | 1 scenario | Per module |
 | **Analytics/Dashboard** (D17) | 80% pure util functions (`calcTimeToHire`, `aggregateSourceQuality`, `findAtRiskJobs`, `generateDailyBriefing` cache paths) | MSW for OpenAI briefing call | 3 scenarios (E2E-16–18) | Per module |
+| **Interviews/Scorecards** (D07) | 80% — scoring utility (`computeScorecardSummary`), AI prompt builder (`buildScorecardSummaryPrompt`), SA error paths (`createScorecardTemplate`, `deleteScorecardTemplate` guard) | 75 RLS tests (6 tables × 4 ops × 2 tenants). MSW for OpenAI summarization | 10 scenarios (settings-scorecards 4 + interviews 6) | Day 1 (P3-W1→W5) |
 
 ### 5.2 Global Minimums (CI Gate)
 

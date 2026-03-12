@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-03-12 — P3 Audit Fixes (P0-1, P1-1→P1-4)
+
+**Scope:** Post-Phase 3 audit — 5 bug fixes across interviews and scorecards server actions + seed data.
+
+**Gate violation:** Pre-task gates were skipped for this session. Feedback memory saved to prevent recurrence. All fixes are code-correct but shipped without a formal test plan declaration.
+
+**What shipped:**
+
+**P0-1 — createInterview column fix (deployment blocker):**
+- `src/lib/actions/interviews.ts` — `.select("id, job_id")` → `.select("id, job_opening_id")` and `job_id: app.job_id` → `job_id: app.job_opening_id`. The `applications` table column is `job_opening_id` (migration 011), not `job_id`. Supabase silently returned null → NOT NULL constraint violation on every real `createInterview` call. Seeded interviews masked this in E2E.
+
+**P1-1 — Candidate detail revalidation (7 actions):**
+- `src/lib/actions/interviews.ts` — Added `revalidateInterviewPaths()` helper that resolves candidate_id via interview → application chain. Used by `updateInterview`, `completeInterview`, `markNoShow`, `cancelInterview`. `createInterview` uses `app.candidate_id` directly (already fetched).
+- `src/lib/actions/scorecards.ts` — `submitScorecard` and `updateSubmission` now resolve candidate_id from application and call `revalidatePath(/candidates/${candidateId})`.
+
+**P1-2 — ai_scorecard_summarize seed flag:**
+- `supabase/seed.sql` — Added `"ai_scorecard_summarize": true` to TENANT_A (itecbrains) `feature_flags` JSONB. Without this, the AI summary button always returned "not available on your plan" in dev.
+
+**P1-3 — Template CRUD error propagation:**
+- `src/lib/actions/scorecards.ts` — Both `createScorecardTemplate` and `updateScorecardTemplate` now collect failed category names. If any category/attribute insert fails, return `{ error: "Template created but failed to save categories: ..." }` instead of silent `{ success: true }`.
+
+**P1-4 — deleteScorecardTemplate in-use guard:**
+- `src/lib/actions/scorecards.ts` — `deleteScorecardTemplate` now counts active interviews (not cancelled/no_show) referencing the template before allowing soft-delete. Returns descriptive error with count.
+
+**Deferred from audit (not fixed this session):**
+- P1-5: Notification cluster (C3, C5, N2, I3, ET1–ET4) — large, needs own spec wave
+- P1-6: Individual rating correction — design decision pending
+- P2-1→P2-3: Lower priority quality gaps
+
+**Unit tests (10 new — debt resolved):**
+- `src/__tests__/scorecard-actions.test.ts` — NEW. 10 tests across 3 `describe` blocks:
+  - `createScorecardTemplate error propagation (P1-3)`: 3 tests — all succeed, category fails, attribute fails
+  - `updateScorecardTemplate error propagation (P1-3)`: 3 tests — all succeed, category fails during update, attribute fails during update
+  - `deleteScorecardTemplate in-use guard (P1-4)`: 4 tests — active interviews block, singular grammar, no interviews allow, count query error blocks
+
+**Test counts:** 826 Vitest (+10) + 62 E2E = 888 total. All passing. TSC clean. P1-3/P1-4 test debt fully resolved.
+
+**Files changed:** `interviews.ts`, `scorecards.ts`, `seed.sql`, `scorecard-actions.test.ts` (4 files).
+
+`[PLAYBOOK]` Pattern: Post-phase audits catch column-name mismatches that E2E misses when seed data bypasses the code path. Always test the creation path end-to-end, not just the seeded-data read path.
+
+---
+
 ## 2026-03-12 — P3-W5: AI Scorecard Summarization
 
 **Scope:** Phase 3 Wave 5 — AI-powered scorecard feedback summarization per D07 §5.3.
