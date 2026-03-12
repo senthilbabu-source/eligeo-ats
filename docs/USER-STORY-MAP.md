@@ -187,13 +187,13 @@
 
 | # | Story | Phase | Plan | Notes |
 |---|-------|-------|------|-------|
-| T1 | Structured feedback after interviews (scorecards) | 🟢 P3 | All | Scorecard templates + submissions (D07) |
-| T2 | Consolidated panel feedback in one view | 🟢 P3 | All | Score aggregation view (D07) |
+| T1 | Structured feedback after interviews (scorecards) | ✅ BUILT | All | Scorecard templates + submissions (D07). P3-W1 (migration+RLS), P3-W2 (SAs+scoring), P3-W3 (scorecard panel), P3-W4 (template management settings) |
+| T2 | Consolidated panel feedback in one view | ✅ BUILT | All | Score aggregation view (D07). P3-W2 (computeScorecardSummary), P3-W3 (scorecard panel summary mode) |
 | T3 | @mention colleagues on candidate card | 🟢 P3 | All | Notes with @mentions + notification (D08) |
 | T4 | Candidate context before interview (resume, scores, prior notes) | 🟢 P3 | All | Interview prep view with all prior data |
 | T5 | AI summarizes conflicting panel feedback | 🟢 P3 | Pro+ | AI scorecard summarization (D07, gated by feature flag) |
 | T6 | Role-level access controls (interviewers see own candidates) | ✅ BUILT | All | RBAC 5 roles × 30 permissions (Phase 1) |
-| T7 | Toggle between individual scorecard view and attribute summary view | 🟢 P3 | All | Two-tab layout on scorecards page |
+| T7 | Toggle between individual scorecard view and attribute summary view | ✅ BUILT | All | P3-W3 scorecard panel: submit form mode + summary view mode (dual-mode slide-over) |
 | T8 | Each competency rated visually by every panellist (alignment heatmap) | 🟢 P3 | All | Per-panellist columns on attribute summary. Spot consensus vs. disagreement |
 | T9 | Comment counts visible per competency in summary view | 🟢 P3 | All | Count badge on each attribute row. Shows where panel had most discussion |
 | T10 | Sequential candidate navigation inside pipeline without returning to list | ✅ BUILT | All | Prev/next controls on candidate detail when opened from pipeline view |
@@ -443,6 +443,8 @@
 > **2026-03-12 delta (Wave E — pre-Phase 3 completeness):** 10 gaps fixed. Migrations 023–025. Candidate embedding auto-generation (Inngest pipeline), resume_text persistence, bias check banner rendering, slug collision fix, candidate edit panel, candidate_notes table + 16 RLS tests, moveStage revalidation, atomic reorder_pipeline_stages RPC, email context enrichment wiring, batch embedding backfill SA. No new user stories — all fixes to existing built stories. Phase 3 unblocked.
 >
 > **2026-03-12 delta (P3-W1 — database foundation):** Migration 026 applied: 6 tables (interviews, scorecard_templates, scorecard_categories, scorecard_attributes, scorecard_submissions, scorecard_ratings). Seed data + golden-tenant fixtures. 75 RLS tests across 6 files. Blind review via SECURITY DEFINER helper. No user stories marked BUILT yet — database + RLS only, no UI.
+>
+> **2026-03-12 delta (P3-W2→W4 — interviews + scorecards UI):** Marked ✅ BUILT: T1 (structured scorecards), T2 (consolidated panel feedback), T7 (individual/summary toggle). P3-W2: server actions + scoring utility + 13 unit tests. P3-W3: interview card, schedule modal, scorecard panel, /interviews page. P3-W4: scorecard template CRUD settings + updateScorecardTemplate SA + 10 E2E tests (settings-scorecards + interviews).
 
 ---
 
@@ -460,7 +462,7 @@
 10. ~~**AR4/AR5 + T10** — Inline actions + sequential navigation~~ ✅ DONE
 11. ~~**C2/M3** — Mobile polish~~ ✅ DONE
 
-**Phase 3 is next:** Interviews + scorecard templates + AI interview summarization.
+**Phase 3 in progress:** T1, T2, T7 ✅ BUILT (P3-W1→W4). Remaining: I3 (reminders), T3 (@mentions), T4 (interview prep), T5 (AI summarize), CP1 (unified profile), CP5 (AI highlights), CP6 (debrief), M2 (mobile scorecard), AI5 (AI meeting brief), AD7 (interviewer groups), and others.
 
 ---
 

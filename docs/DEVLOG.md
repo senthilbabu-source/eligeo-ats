@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-03-12 — P3-W4: Scorecard Template Management UI + E2E Tests
+
+**Scope:** Phase 3 Wave 4 — scorecard template CRUD in Settings + E2E tests for interview/scorecard flow.
+
+**What shipped:**
+
+**Settings > Scorecard Templates (full CRUD):**
+- `src/app/(app)/settings/scorecards/page.tsx` — NEW. List page showing templates with category count, default badge, edit/delete actions. Follows pipelines settings pattern.
+- `src/app/(app)/settings/scorecards/scorecard-template-form.tsx` — NEW. Shared client component for create/edit. Nested category + attribute builder with add/remove, weight editing, descriptions. Client-side validation.
+- `src/app/(app)/settings/scorecards/new/page.tsx` — NEW. Create template page, redirects to edit page on success.
+- `src/app/(app)/settings/scorecards/[id]/page.tsx` — NEW. Edit page (server component wrapper, fetches template detail).
+- `src/app/(app)/settings/scorecards/[id]/edit-template.tsx` — NEW. Edit client component with save confirmation banner.
+- `src/app/(app)/settings/scorecards/delete-template-button.tsx` — NEW. Delete with confirm dialog.
+- `src/app/(app)/settings/layout.tsx` — Modified. Added "Scorecards" nav item.
+
+**Server action:**
+- `src/lib/actions/scorecards.ts` — Added `updateScorecardTemplate()`. Per D07 §3.3 snapshot-on-assign: soft-deletes old categories/attributes, creates new ones (append-only pattern preserves historical scorecard submissions).
+
+**E2E tests (10 new):**
+- `src/__tests__/e2e/settings-scorecards.spec.ts` — NEW. 4 tests: nav to settings, seeded template display, editor with categories, new template form.
+- `src/__tests__/e2e/interviews.spec.ts` — NEW. 6 tests: schedule page nav, seeded interviews display, mine/all toggle, candidate detail interview section, scorecard button visibility, scorecard panel open.
+
+**Test counts:** 806 Vitest (no change) + 62 E2E (+10) = 868 total. TSC clean.
+
+---
+
 ## 2026-03-12 — P3-W3: Interview UI (Schedule + List + Scorecard + Schedule Page)
 
 **Scope:** Phase 3 Wave 3 — full interview UI layer on candidate detail page + dedicated interviewer schedule page.

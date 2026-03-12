@@ -1,0 +1,108 @@
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth";
+import { can } from "@/lib/constants/roles";
+import { DeleteScorecardTemplateButton } from "./delete-template-button";
+
+export default async function ScorecardsSettingsPage() {
+  const session = await requireAuth();
+  const supabase = await createClient();
+  const canManage = can(session.orgRole, "interviews:create");
+
+  const { data: templates } = await supabase
+    .from("scorecard_templates")
+    .select(
+      `
+      id, name, description, is_default, created_at,
+      scorecard_categories (id)
+    `,
+    )
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Scorecard Templates</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Define evaluation criteria for interviews.
+          </p>
+        </div>
+        {canManage && (
+          <Link
+            href="/settings/scorecards/new"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            New Template
+          </Link>
+        )}
+      </div>
+
+      <div className="mt-6 space-y-3">
+        {templates && templates.length > 0 ? (
+          templates.map((tpl) => {
+            const categoryCount = Array.isArray(tpl.scorecard_categories)
+              ? tpl.scorecard_categories.length
+              : 0;
+            return (
+              <div
+                key={tpl.id}
+                className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/settings/scorecards/${tpl.id}`}
+                      className="text-sm font-medium hover:text-primary"
+                    >
+                      {tpl.name}
+                    </Link>
+                    {tpl.is_default && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {categoryCount} categor{categoryCount !== 1 ? "ies" : "y"}
+                    {tpl.description ? ` · ${tpl.description}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/settings/scorecards/${tpl.id}`}
+                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    Edit
+                  </Link>
+                  {canManage && (
+                    <DeleteScorecardTemplateButton
+                      templateId={tpl.id}
+                      templateName={tpl.name}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="rounded-lg border border-dashed border-border py-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              No scorecard templates yet.
+            </p>
+            {canManage && (
+              <Link
+                href="/settings/scorecards/new"
+                className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+              >
+                Create your first template
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -466,6 +466,118 @@ export async function getScorecardTemplateDetail(templateId: string) {
   };
 }
 
+export async function updateScorecardTemplate(input: {
+  templateId: string;
+  name: string;
+  description?: string;
+  isDefault?: boolean;
+  categories: Array<{
+    name: string;
+    position: number;
+    weight?: number;
+    attributes: Array<{
+      name: string;
+      description?: string;
+      position: number;
+    }>;
+  }>;
+}) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "interviews:create");
+
+  const parsed = createTemplateSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Invalid template data." };
+  }
+
+  const data = parsed.data;
+  const supabase = await createClient();
+
+  // Update template metadata
+  const { error: tErr } = await supabase
+    .from("scorecard_templates")
+    .update({
+      name: data.name,
+      description: data.description,
+      is_default: data.isDefault,
+    })
+    .eq("id", input.templateId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null);
+
+  if (tErr) {
+    logger.error({ error: tErr }, "Failed to update scorecard template");
+    Sentry.captureException(tErr);
+    return { error: "Failed to update template." };
+  }
+
+  // Per D07 §3.3: "Editing" = soft-delete old categories/attributes + create new ones
+  const { data: oldCats } = await supabase
+    .from("scorecard_categories")
+    .select("id")
+    .eq("template_id", input.templateId)
+    .is("deleted_at", null);
+
+  const now = new Date().toISOString();
+
+  if (oldCats && oldCats.length > 0) {
+    const oldCatIds = oldCats.map((c) => c.id);
+    await supabase
+      .from("scorecard_attributes")
+      .update({ deleted_at: now })
+      .in("category_id", oldCatIds)
+      .is("deleted_at", null);
+
+    await supabase
+      .from("scorecard_categories")
+      .update({ deleted_at: now })
+      .eq("template_id", input.templateId)
+      .is("deleted_at", null);
+  }
+
+  // Insert new categories + attributes
+  for (const cat of data.categories) {
+    const { data: catRow, error: catErr } = await supabase
+      .from("scorecard_categories")
+      .insert({
+        template_id: input.templateId,
+        organization_id: session.orgId,
+        name: cat.name,
+        position: cat.position,
+        weight: cat.weight,
+      })
+      .select("id")
+      .single();
+
+    if (catErr || !catRow) {
+      logger.error({ error: catErr }, "Failed to create scorecard category");
+      continue;
+    }
+
+    if (cat.attributes.length > 0) {
+      const attrRows = cat.attributes.map((attr) => ({
+        category_id: catRow.id,
+        organization_id: session.orgId,
+        name: attr.name,
+        description: attr.description,
+        position: attr.position,
+      }));
+
+      const { error: attrErr } = await supabase
+        .from("scorecard_attributes")
+        .insert(attrRows);
+
+      if (attrErr) {
+        logger.error({ error: attrErr }, "Failed to create scorecard attributes");
+      }
+    }
+  }
+
+  revalidatePath(`/settings`);
+
+  return { success: true, id: input.templateId };
+}
+
 export async function deleteScorecardTemplate(templateId: string) {
   const session = await requireAuth();
   assertCan(session.orgRole, "interviews:create");
