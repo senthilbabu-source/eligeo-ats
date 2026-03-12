@@ -4,6 +4,48 @@
 
 ---
 
+## 2026-03-11 — AI-Proof Wave A — Migration 022 + RLS tests + rejection reason picker (CP9)
+
+**Phase:** AI-Proof Wave A (pre-Phase 3 correctness pass)
+**Stories closed:** AF1 (score feedback schema), AF2 (embedding staleness column), CP9 (rejection reason UI)
+**Test count:** 658 → 675 Vitest (+17 RLS cases for ai_score_feedback). Typecheck clean. Lint clean.
+
+### Migration 022 (`00022_ai_proof_wave_a.sql`)
+Two additions:
+
+1. **`job_openings.embedding_updated_at TIMESTAMPTZ`** — tracks when `job_embedding` was last regenerated. NULL = stale / never re-embedded. Inngest Wave A function will use this to gate re-embed work and surface "Scores may be outdated" nudge (AF2).
+
+2. **`ai_score_feedback` table** — captures recruiter thumbs-up/thumbs-down on AI match scores per application. Full schema:
+   - `signal CHECK (IN ('thumbs_up', 'thumbs_down'))` — ADR-008 compliant (no PG ENUM)
+   - `match_score_at_time NUMERIC(5,2)` — score at time of feedback (informational)
+   - `given_by UUID REFERENCES user_profiles(id)` — self-insert enforced via RLS
+   - `deleted_at TIMESTAMPTZ` — ADR-006 soft delete
+   - Audit trigger — ADR-007 compliant
+   - RLS policies:
+     - SELECT: `is_org_member(organization_id) AND deleted_at IS NULL`
+     - INSERT: `is_org_member + current_user_org_id + given_by = auth.uid()` (self-insert only)
+     - UPDATE: DENIED (no policy — signals are immutable)
+     - DELETE: submitter OR owner/admin
+
+### RLS tests (`ai-score-feedback.rls.test.ts`) — 17 cases
+All 4 operations × 2-tenant isolation. Key cases:
+- Recruiter can INSERT their own signal; denied if `given_by ≠ auth.uid()` (impersonation blocked)
+- TENANT_B cannot SELECT or mutate TENANT_A feedback
+- UPDATE denied for all roles (immutability enforced at policy layer)
+- Admin can DELETE any feedback in org; recruiter can only delete their own
+
+### CP9 — Rejection reason picker (inline-app-actions.tsx)
+Replaced the direct-reject button with an inline picker panel:
+- `InlineAppActions` now accepts `rejectionReasons: { id: string; name: string }[]` prop
+- When reasons are configured: clicking Reject opens an inline panel with radio list + optional notes textarea
+- On confirm: calls `rejectApplication(applicationId, selectedReasonId?, notes?)` — both args already accepted by the SA since Migration 011
+- Fallback: if org has no rejection reasons configured, Reject fires immediately (original behaviour)
+- `page.tsx` fetches `rejection_reasons` server-side and passes to component
+
+[PLAYBOOK] P-24 pattern: "Immutable audit signals — design INSERT-only tables from day 1. When a feedback signal should never be edited (thumbs up/down on AI scores, approval votes), enforce immutability via RLS (no UPDATE policy), not application logic. Soft-delete via service role for retraction. Application code trying to UPDATE gets silently rejected — zero blast radius."
+
+---
+
 ## 2026-03-11 — [Meta] AI-First Audit — gap analysis + pre-build doc sync
 
 **Phase:** Pre-Phase 3 audit — verify AI completeness before starting interviews module

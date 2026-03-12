@@ -188,6 +188,14 @@ export default async function CandidateDetailPage({
     }
   }
 
+  // CP9 — fetch rejection reasons for inline reject picker
+  const { data: rejectionReasons } = await supabase
+    .from("rejection_reasons")
+    .select("id, name")
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .order("name");
+
   // Stable timestamp for days-in-stage calculation (avoids impure Date.now in JSX)
   const nowMs = new Date().getTime();
 
@@ -413,6 +421,7 @@ export default async function CandidateDetailPage({
                       applicationId={app.id}
                       nextStageId={nextStageByApplication[app.id] ?? null}
                       isActive={app.status === "active"}
+                      rejectionReasons={rejectionReasons ?? []}
                     />
                   )}
                 </div>
