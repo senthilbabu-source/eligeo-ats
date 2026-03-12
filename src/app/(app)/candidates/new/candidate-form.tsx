@@ -2,8 +2,9 @@
 
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { createCandidate } from "@/lib/actions/candidates";
+import { aiParseResume } from "@/lib/actions/ai";
 
 interface Source {
   id: string;
@@ -105,11 +106,53 @@ export function CandidateForm({ sources }: { sources: Source[] }) {
   const [skills, setSkills] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
 
+  // AR3 — controlled field state enables AI pre-fill from resume parse
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
+  const [currentTitle, setCurrentTitle] = useState("");
+  const [currentCompany, setCurrentCompany] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+
+  // AR3 — resume paste section state
+  const [showResumePaste, setShowResumePaste] = useState(false);
+  const [resumeText, setResumeText] = useState("");
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [isParsing, startParsing] = useTransition();
+
   useEffect(() => {
     if (state && "id" in state && state.id) {
       router.push(`/candidates/${state.id}`);
     }
   }, [state, router]);
+
+  function handleParseResume() {
+    if (!resumeText.trim()) return;
+    setParseError(null);
+    startParsing(async () => {
+      const fd = new FormData();
+      fd.set("resumeText", resumeText);
+      const result = await aiParseResume(null, fd);
+      if ("error" in result) {
+        setParseError(result.error ?? "Failed to parse resume");
+        return;
+      }
+      if ("data" in result && result.data) {
+        const d = result.data;
+        if (d.full_name) setFullName(d.full_name);
+        if (d.email) setEmail(d.email);
+        if (d.phone) setPhone(d.phone);
+        if (d.location) setLocation(d.location);
+        if (d.current_title) setCurrentTitle(d.current_title);
+        if (d.current_company) setCurrentCompany(d.current_company);
+        if (d.linkedin_url) setLinkedinUrl(d.linkedin_url);
+        if (d.skills?.length) setSkills(d.skills);
+        setShowResumePaste(false);
+        setResumeText("");
+      }
+    });
+  }
 
   return (
     <form action={formAction} className="space-y-6">
@@ -119,42 +162,123 @@ export function CandidateForm({ sources }: { sources: Source[] }) {
         </div>
       )}
 
+      {/* AR3 — collapsible resume paste + AI parse section */}
+      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4">
+        <button
+          type="button"
+          onClick={() => setShowResumePaste((v) => !v)}
+          className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80"
+        >
+          <span>{showResumePaste ? "▼" : "▶"}</span>
+          Paste resume to auto-fill with AI
+        </button>
+        {showResumePaste && (
+          <div className="mt-3 space-y-3">
+            <textarea
+              value={resumeText}
+              onChange={(e) => setResumeText(e.target.value)}
+              placeholder="Paste the candidate's resume text here..."
+              rows={6}
+              className="block w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            {parseError && (
+              <p className="text-sm text-destructive">{parseError}</p>
+            )}
+            <button
+              type="button"
+              onClick={handleParseResume}
+              disabled={isParsing || !resumeText.trim()}
+              className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {isParsing ? "Extracting..." : "Extract with AI"}
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="fullName">Full Name *</Label>
-          <Input id="fullName" name="fullName" required placeholder="Jane Doe" />
+          <Input
+            id="fullName"
+            name="fullName"
+            required
+            placeholder="Jane Doe"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
         </div>
         <div>
           <Label htmlFor="email">Email *</Label>
-          <Input id="email" name="email" type="email" required placeholder="jane@example.com" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            required
+            placeholder="jane@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" name="phone" type="tel" placeholder="+1 (555) 123-4567" />
+          <Input
+            id="phone"
+            name="phone"
+            type="tel"
+            placeholder="+1 (555) 123-4567"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
         </div>
         <div>
           <Label htmlFor="location">Location</Label>
-          <Input id="location" name="location" placeholder="San Francisco, CA" />
+          <Input
+            id="location"
+            name="location"
+            placeholder="San Francisco, CA"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="currentTitle">Current Title</Label>
-          <Input id="currentTitle" name="currentTitle" placeholder="Software Engineer" />
+          <Input
+            id="currentTitle"
+            name="currentTitle"
+            placeholder="Software Engineer"
+            value={currentTitle}
+            onChange={(e) => setCurrentTitle(e.target.value)}
+          />
         </div>
         <div>
           <Label htmlFor="currentCompany">Current Company</Label>
-          <Input id="currentCompany" name="currentCompany" placeholder="Acme Corp" />
+          <Input
+            id="currentCompany"
+            name="currentCompany"
+            placeholder="Acme Corp"
+            value={currentCompany}
+            onChange={(e) => setCurrentCompany(e.target.value)}
+          />
         </div>
       </div>
 
       <div>
         <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
-        <Input id="linkedinUrl" name="linkedinUrl" type="url" placeholder="https://linkedin.com/in/janedoe" />
+        <Input
+          id="linkedinUrl"
+          name="linkedinUrl"
+          type="url"
+          placeholder="https://linkedin.com/in/janedoe"
+          value={linkedinUrl}
+          onChange={(e) => setLinkedinUrl(e.target.value)}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

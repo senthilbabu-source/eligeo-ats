@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-03-11 — Wave D / D5: AR3 — Resume Paste + AI Parse on CandidateForm
+
+**Scope:** Surface `aiParseResume()` SA (built Phase 2.6, previously unreachable) on the `/candidates/new` form. Collapsible section — paste resume text → "Extract with AI" → form fields auto-fill.
+
+**What shipped:**
+- `src/app/(app)/candidates/new/candidate-form.tsx` — inputs converted to controlled (useState per field). Collapsible "Paste resume to auto-fill with AI" section with textarea + "Extract with AI" button via `useTransition`. On parse success: fields pre-filled, skills array updated, section collapses. `createCandidate` SA still receives values via controlled inputs — form submit behavior unchanged.
+
+**ADR-004:** No new pure functions. `aiParseResume` covered by existing `ai-resume-parser.test.ts`.
+
+**Test count:** 698 Vitest + 52 E2E = 750 total (unchanged).
+
+---
+
 ## 2026-03-11 — Wave D / D4: A6 — Skill Gap Explanation per Match Row
 
 **Scope:** Show "✓ React, Node · Missing: Kubernetes" inline on each match card in `AiMatchPanel`. Computes from `job_required_skills` vs candidate's skills array (case-insensitive).
