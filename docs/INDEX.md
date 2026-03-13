@@ -131,6 +131,17 @@ Tests: 1049 → 1203 Vitest. 68 E2E unchanged. **1271 total.** No new migration.
 
 ---
 
+## Phase Gate Documents
+
+Mandatory governance artifacts produced at phase boundaries per AI-RULES §13 and §21.
+
+| Document | Path | Gate | Status | Summary |
+|----------|------|------|--------|---------|
+| Phase 5 Pre-Start Gate | `docs/PHASE5-PRE-GATE.md` | §21 G1–G6 | ✅ PASSED 2026-03-12 | All 6 gates passed. Critical finding: V-3 `createUsageRecord()` deprecated → resolved to `stripe.billing.meterEvents.create()`. ~193 tests planned across 5 categories. |
+| Post-Phase-5 Audit | `docs/POST-PHASE5-AUDIT.md` | §13 A1–A7 | ✅ PASSED 2026-03-12 | 0 critical failures, 9 warnings. W-03 resolved (subscription_status column confirmed in M002). D01/D03 synced. GAPS.md updated. Phase 6 unblocked. |
+
+---
+
 ## Tracking Documents (Meta)
 
 | Document | Path | Description |

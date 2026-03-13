@@ -169,19 +169,22 @@ Each plan tier has two Prices (monthly + annual) plus a metered extra-seat Price
 
 **State mapping in ATS:**
 
-The ATS does NOT store subscription status in a separate table. Instead, `organizations.plan` reflects the active plan, and the Stripe subscription status is queried on-demand when needed. Two columns on `organizations` handle billing state:
+The ATS stores subscription lifecycle state directly on the `organizations` table (not in a separate billing table). All billing columns are updated **exclusively by Stripe webhook handlers** — never by user-facing API routes. Eight columns handle billing state:
 
 ```sql
 -- These columns are updated by Stripe webhook handlers only
--- (already defined in D01 organizations table)
--- organizations.plan              → current active plan tier
--- organizations.stripe_customer_id → links to Stripe Customer
--- organizations.billing_email     → invoice recipient
--- organizations.ai_credits_used   → current period usage
--- organizations.ai_credits_limit  → current period cap
+-- (defined in D01 organizations table — 01-core-tenancy.md)
+-- organizations.plan                  → current active plan tier ('starter'|'growth'|'pro'|'enterprise')
+-- organizations.subscription_status   → Stripe subscription status ('trialing'|'active'|'past_due'|'canceled'|'unpaid')
+-- organizations.stripe_customer_id    → links to Stripe Customer object
+-- organizations.stripe_subscription_id → links to active Stripe Subscription object
+-- organizations.billing_email         → invoice recipient (may differ from owner email)
+-- organizations.ai_credits_used       → current billing period usage counter
+-- organizations.ai_credits_limit      → current billing period cap (set by plan tier)
+-- organizations.trial_ends_at         → trial expiry timestamp; NULL after conversion to paid
 ```
 
-Additional billing state lives in Stripe; the ATS reads it via API when rendering billing UI.
+`subscription_status` is the authoritative dunning signal: `PaymentFailedBanner` reads it for `past_due`/`unpaid` states; plan enforcement gates read it to allow/deny access. Stripe remains source of truth — the ATS syncs on every relevant webhook event.
 
 ### 4.4 Checkout Flow
 

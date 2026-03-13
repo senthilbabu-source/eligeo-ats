@@ -4,6 +4,75 @@
 
 ---
 
+## 2026-03-12 — Pre-Phase 6 ADR-011 Compliance Audit + AI Hardening Spec
+
+**Scope:** Full audit of all Phase 0–5 UI surfaces against ADR-011 (AI-first build pivot). Output: `docs/PRE-PHASE6-AI-HARDENING.md` — the mandatory hardening spec before Phase 6 begins.
+
+### Audit Findings Summary
+
+Read all 33 page routes + key components (command-bar, pipeline-board, next-best-action, job-form, offer-form, all dashboard sub-components).
+
+**✅ AI-FIRST surfaces (no action needed):**
+- Dashboard — DailyBriefingCard (Win/Blocker/Action), at-risk job detection, source quality with hire rates
+- Job New — streaming JD generation (`useCompletion` via `/api/ai/generate-description`)
+- Job Detail — AiMatchPanel, RewritePanel, BiasCheckBanner, TitleSuggestionBadge, SkillsDeltaPanel, JdQualityPanel, CloneChecklist
+- Command Bar — 13 NL intents with OpenAI fallback
+
+**⚠️ PARTIAL surfaces (hardening required):**
+- Candidate Profile — NBA strip + EmailDraftPanel exist, BUT NBA rules 1–3 and 6 are dead code (match score, interview, scorecard, offer data never fetched). Match score card missing. Duplicate warning not wired despite H1-3 building `findPossibleDuplicates()`.
+
+**❌ LEGACY surfaces (AI path missing):**
+- Candidates List — plain HTML table, ILIKE search only, no fit scores
+- Pipeline Board (kanban) — pure drag-and-drop, zero AI signals on cards
+- Offers Form — placeholder says "use AI to generate" but NO button; `suggestOfferCompensation()` + `checkSalaryBand()` unwired
+- Offers Detail — static read-only view, no AI signals
+- Interviews List — plain list, no prep notes, no scorecard AI summary
+- Talent Pools — ILIKE search, no AI matching or ranking
+
+### Critical Find: NBA Dead Code
+`computeNextBestAction()` has 6 rules. Only 2 fire (stalled, no_applications). Rules 3–6 (high match + no interview, scorecard complete, offer ready, at risk) are unreachable because the Supabase query in `NextBestAction` doesn't fetch match scores, interview data, scorecard data, or offer data.
+
+### Output: PRE-PHASE6-AI-HARDENING.md
+6 hardening items defined (H6-1 through H6-6):
+- H6-1: Pipeline board — add AI match score badge + duplicate indicator to kanban cards
+- H6-2: Candidates list — AI fit column (when job-filtered) + semantic search toggle
+- H6-3: NBA — wire all 6 rules (fetch match score, interview, scorecard, offer data)
+- H6-4: Candidate profile — match score card, embedding freshness badge, duplicate warning
+- H6-5: Offers form — wire `suggestOfferCompensation()`, `checkSalaryBand()`, terms AI generate
+- H6-6: Command bar — add 5 missing intents: merge_candidates, add_to_pool, parse_resume, narrate_status, trigger_screening
+
+**~37 new tests required. 0 new migrations (all tables exist).**
+
+**Also created:** `docs/PHASE6-SPEC-PROMPT.md` — prompt for VS Code Claude Code session to write D30 (Phase 6 spec doc covering 4 waves: Resume extraction, Status Portal + Merge UI, Dropbox Sign, Conversational AI Screening v1).
+
+---
+
+## 2026-03-12 — Post-Phase-5 Housekeeping: Phase 5 Fully Closed ✅
+
+**Scope:** Post-audit W-03 resolution — confirmed `subscription_status` column in M002, synced D01/D03 documentation, GAPS.md and INDEX.md housekeeping.
+
+### W-03 Resolution (HIGH — subscription_status documentation gap)
+- **Verified:** `subscription_status TEXT NOT NULL DEFAULT 'trialing' CHECK (subscription_status IN ('trialing', 'active', 'past_due', 'canceled', 'unpaid'))` is present in `supabase/migrations/00002_core_tenancy_tables.sql` (line 14–15). No Migration 030 needed.
+- **D01 sync** (`docs/schema/01-core-tenancy.md`): Added 3 missing columns to `organizations` DDL — `subscription_status`, `stripe_subscription_id`, `trial_ends_at`. Fixed index name `idx_orgs_stripe` → `idx_orgs_stripe_customer`. Added missing `idx_orgs_stripe_subscription` index.
+- **D03 sync** (`docs/modules/BILLING.md` §4.3): Corrected false statement "The ATS does NOT store subscription status in a separate table." Replaced with accurate documentation of all 8 billing columns on `organizations` including `subscription_status` (dunning signal), `stripe_subscription_id`, and `trial_ends_at`.
+
+### GAPS.md Housekeeping
+- Marked **V-001–V-004** (Stripe API shape verifications) as RESOLVED — verified in Phase 5 pre-gate 2026-03-12.
+- Marked **V-013** (Resend) and **V-014** (OpenAI embeddings) as RESOLVED — actively used in shipped production code.
+- Updated **G-028** (credit consolidation gap) with Phase 6 target assignment.
+- Updated `Last updated` date to 2026-03-12.
+
+### INDEX.md Housekeeping
+- Added **"Phase Gate Documents"** section registering `PHASE5-PRE-GATE.md` and `POST-PHASE5-AUDIT.md`.
+
+### POST-PHASE5-AUDIT.md
+- Marked 6 warnings RESOLVED (W-03, W-05, W-06, W-07, W-08, W-09). 3 items deferred to Phase 6 pre-gate (W-01, W-02, W-04).
+- Updated checklist: Phase 5 is **100% complete**.
+
+**No new migrations. No test changes. Docs-only pass.**
+
+---
+
 ## 2026-03-12 — Phase 5 (Billing) ✅ COMPLETE `[PLAYBOOK]`
 
 **Scope:** Full billing infrastructure — 6 waves (B5-1 through B5-6). Stripe integration, plan enforcement, billing UI, offer send re-activation, and H-04 carry-forward closure.

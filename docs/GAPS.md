@@ -1,7 +1,7 @@
 # Cross-Document Gap Tracker
 
 > **Purpose:** Running backlog of gaps, enhancements, and forward-looking notes discovered while writing specs.
-> **Last updated:** 2026-03-10
+> **Last updated:** 2026-03-12
 > **Rule:** Every gap gets recorded at the moment of discovery. Resolved when the target doc is written or upstream is fixed.
 
 ---
@@ -50,7 +50,7 @@
 | G-025 | D07 | D12 (Workflow) | Auto-advance from interview stage: when all scheduled interviews for an application reach `completed` and all scorecards are submitted, workflow engine should optionally auto-advance to next pipeline stage. | P2 | RESOLVED |
 | G-026 | D08 | D09 (Candidate Portal) | Candidate-facing email delivery (application_received, interview_scheduled/cancelled, offer_sent, rejection) — defined in D08 §4.3 but delivery must be implemented in D09's candidate auth context (magic link, no ATS login). | P1 | RESOLVED |
 | G-027 | D08 | D11 (Real-Time) | Supabase Realtime channel naming convention for notification broadcast: org-scoped + user-filtered channels. D11 must define the channel schema and subscription pattern. | P2 | RESOLVED |
-| G-028 | D10 | D03 (Billing) | D03 uses inline `ai_credits_used + 1` SQL. D10 introduces `consume_ai_credits(p_org_id, p_amount)` function with variable weights. D03 should adopt function at code time. Non-blocking. | P3 | OPEN |
+| G-028 | D10 | D03 (Billing) | D03 uses inline `ai_credits_used + 1` SQL. D10 introduces `consume_ai_credits(p_org_id, p_amount)` function with variable weights. D03 should adopt function at code time. Non-blocking. | P3 | OPEN — Phase 6 backlog |
 | G-029 | D10 | D09 (Candidate Portal) | Public career page job search requires Typesense scoped API key per organization. D09 must define key generation, rotation, and client-side embedding. | P2 | RESOLVED |
 | G-030 | D11 | D09 (Candidate Portal) | Candidate-side real-time: candidates don't have persistent WebSocket connections. Application status updates should use polling (not Realtime). D09 must define polling interval + endpoints. | P2 | RESOLVED |
 
@@ -58,10 +58,10 @@
 
 | # | Doc | Claim | Status |
 |---|-----|-------|--------|
-| V-001 | D03 | `stripe.checkout.sessions.create()` — subscription mode with metadata on subscription_data | OPEN |
-| V-002 | D03 | `stripe.billingPortal.sessions.create()` — Customer Portal session creation API | OPEN |
-| V-003 | D03 | `stripe.subscriptionItems.createUsageRecord()` — metered billing usage reporting | OPEN |
-| V-004 | D03 | `stripe.subscriptionItems.update()` — quantity update with proration_behavior | OPEN |
+| V-001 | D03 | `stripe.checkout.sessions.create()` — subscription mode with metadata on subscription_data | RESOLVED 2026-03-12 |
+| V-002 | D03 | `stripe.billingPortal.sessions.create()` — Customer Portal session creation API | RESOLVED 2026-03-12 |
+| V-003 | D03 | `stripe.subscriptionItems.createUsageRecord()` — deprecated; replaced with `stripe.billing.meterEvents.create()` in D03 §6.3 | RESOLVED 2026-03-12 |
+| V-004 | D03 | `stripe.subscriptionItems.update()` — quantity update with proration_behavior | RESOLVED 2026-03-12 |
 | V-005 | D02 | `@upstash/ratelimit` — sliding window algorithm with plan-tier configuration | OPEN |
 | V-006 | D02 | `@asteasolutions/zod-to-openapi` — Zod schema to OpenAPI 3.1 generation | OPEN |
 | V-007 | D02 | Merge.dev webhook signature verification method | OPEN |
@@ -70,8 +70,8 @@
 | V-010 | D05 | Motion (Framer Motion) v11+ — drag-and-drop API for kanban | OPEN |
 | V-011 | D07 | Nylas `events.create()` — event creation with participants, conferencing, and when.startTime/endTime shape | OPEN |
 | V-012 | D07 | Nylas `calendars.getFreeBusy()` — free/busy query with email-based lookup and time range | OPEN |
-| V-013 | D08 | Resend `resend.emails.send()` — transactional email delivery API with React Email template support | OPEN |
-| V-014 | D10 | OpenAI `text-embedding-3-small` — 1536-dimension embedding model, `openai.embeddings.create()` API shape | OPEN |
+| V-013 | D08 | Resend `resend.emails.send()` — transactional email delivery API with React Email template support | RESOLVED 2026-03-12 |
+| V-014 | D10 | OpenAI `text-embedding-3-small` — 1536-dimension embedding model, `openai.embeddings.create()` API shape | RESOLVED 2026-03-12 |
 | V-015 | D10 | Typesense collection schema API — `CollectionSchema`, `documents().upsert()`, `documents().search()` | OPEN |
 
 ---
@@ -103,6 +103,12 @@
 | G-029 | 2026-03-10 | (this commit) | D09 §8: Typesense scoped API key per org, 90-day expiry, daily Inngest cron for rotation, client-side InstantSearch adapter. Fallback to PostgreSQL ILIKE if Typesense unavailable. |
 | G-030 | 2026-03-10 | (this commit) | D09 §6.3: Adaptive polling — 30s default, exponential backoff to 60s on no change, reset on change. Lightweight endpoint (~200 bytes). No WebSocket. |
 | G-019 | 2026-03-10 | (this commit) | D13 §6.3: DEI aggregation with minimum cohort size of 5, max 2 cross-tabulation dimensions, suppression cascade, 3-month minimum rolling window. EEO-1 export on Pro+. |
+| V-001 | 2026-03-12 | Phase 5 pre-gate | `stripe.checkout.sessions.create()` — confirmed valid in Stripe SDK 20.4.1 TypeScript definitions. D03 §4.4 code correct. |
+| V-002 | 2026-03-12 | Phase 5 pre-gate | `stripe.billingPortal.sessions.create()` — confirmed valid in Stripe SDK 20.4.1. D03 §5.3 code correct. |
+| V-003 | 2026-03-12 | Phase 5 pre-gate | `stripe.subscriptionItems.createUsageRecord()` deprecated in Stripe API 2025-03-31.basil. D03 §6.3 updated to use `stripe.billing.meterEvents.create({ event_name: 'ai_credit_overage', payload: { stripe_customer_id, value } })`. |
+| V-004 | 2026-03-12 | Phase 5 pre-gate | `stripe.subscriptionItems.update()` with `proration_behavior` — confirmed valid. D03 §4.5 seat update flow correct. |
+| V-013 | 2026-03-12 | Post-Phase-5 audit | Resend `resend.emails.send()` — actively used in production. `send-email.ts` Inngest function ships email. API shape confirmed by shipped code. |
+| V-014 | 2026-03-12 | Post-Phase-5 audit | OpenAI `text-embedding-3-small` — actively used. `generate.ts` calls `openai.embeddings.create({ model: 'text-embedding-3-small', input, dimensions: 1536 })`. Shape confirmed. |
 
 ---
 

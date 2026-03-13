@@ -15,6 +15,9 @@ CREATE TABLE organizations (
                                CHECK (slug ~ '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$'),
   plan             TEXT        NOT NULL DEFAULT 'starter'
                                CHECK (plan IN ('starter', 'growth', 'pro', 'enterprise')),
+  subscription_status TEXT     NOT NULL DEFAULT 'trialing'
+                               CHECK (subscription_status IN ('trialing', 'active', 'past_due', 'canceled', 'unpaid')),
+  -- ^ Synced from Stripe via webhooks. Stripe is source of truth (D03 §4.3).
   custom_domain    TEXT        UNIQUE,
   branding_config  JSONB       NOT NULL DEFAULT '{}',  -- see BrandingConfig interface
   feature_flags    JSONB       NOT NULL DEFAULT '{}',  -- see FeatureFlags interface
@@ -23,7 +26,9 @@ CREATE TABLE organizations (
   ai_credits_limit INTEGER     NOT NULL DEFAULT 0,  -- plan setup sets real value; 0 = no credits until plan assigned
   data_region      TEXT        NOT NULL DEFAULT 'us-east-1',
   billing_email    TEXT,
-  stripe_customer_id TEXT      UNIQUE,
+  stripe_customer_id    TEXT   UNIQUE,
+  stripe_subscription_id TEXT  UNIQUE,  -- links to active Stripe Subscription; set on checkout.session.completed
+  trial_ends_at    TIMESTAMPTZ,          -- set on org create; NULL after trial converts to paid
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at       TIMESTAMPTZ
@@ -41,8 +46,12 @@ CREATE INDEX idx_orgs_domain ON organizations(custom_domain)
   WHERE custom_domain IS NOT NULL AND deleted_at IS NULL;
 
 -- Stripe customer lookup for webhook handling
-CREATE UNIQUE INDEX idx_orgs_stripe ON organizations(stripe_customer_id)
+CREATE UNIQUE INDEX idx_orgs_stripe_customer ON organizations(stripe_customer_id)
   WHERE stripe_customer_id IS NOT NULL;
+
+-- Stripe subscription lookup for webhook handling
+CREATE UNIQUE INDEX idx_orgs_stripe_subscription ON organizations(stripe_subscription_id)
+  WHERE stripe_subscription_id IS NOT NULL;
 ```
 
 ### RLS
