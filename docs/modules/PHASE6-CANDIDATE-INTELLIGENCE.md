@@ -18,15 +18,16 @@ Phase 6 is the **Candidate Intelligence Layer** — every candidate-facing and c
 
 ### 1.1 Scope
 
-**IN Phase 6 (all 5 items ship):**
+**IN Phase 6 (all 6 items ship):**
 
 | # | Item | Wave | AI-First Angle |
 |---|------|------|----------------|
 | 1 | Resume PDF extraction pipeline | P6-1 | AI data foundation — match quality depends on clean parsed data |
 | 2 | Candidate Status Portal | P6-2a | AI-narrated status messages, not stage labels |
 | 3 | Candidate Merge UI | P6-2b | AI confidence scoring on duplicate resolution |
-| 4 | Dropbox Sign full integration | P6-3 | AI offer letter generation before send |
-| 5 | Conversational AI Screening v1 | P6-4 | AI-orchestrated structured screening — headline differentiator |
+| 4 | AI Batch Shortlisting Report | P6-5 | 5-dimension scoring, tier classification, EEOC compliance |
+| 5 | Dropbox Sign full integration | P6-3 | AI offer letter generation before send |
+| 6 | Conversational AI Screening v1 | P6-4 | AI-orchestrated structured screening — headline differentiator |
 
 **OUT of Phase 6:**
 
@@ -39,11 +40,12 @@ Phase 6 is the **Candidate Intelligence Layer** — every candidate-facing and c
 ### 1.2 Migration Scope
 
 - **Migration 00030** — `supabase/migrations/00030_phase6_foundation.sql` (Waves P6-1 + P6-2)
-- **Migration 00031** — `supabase/migrations/00031_phase6_screening.sql` (Wave P6-4)
+- **Migration 00031** — `supabase/migrations/00031_ai_shortlist_reports.sql` (Wave P6-5)
+- **Migration 00032** — `supabase/migrations/00032_phase6_screening.sql` (Wave P6-4)
 
 ### 1.3 Estimated Delivery
 
-4 waves, sequential. Each wave builds on the previous. Total: ~134 new tests.
+5 waves, sequential. Each wave builds on the previous. Total: ~166 new tests.
 
 ---
 
@@ -979,7 +981,98 @@ Phase 6 screening falls under **high-risk AI** (employment context, Article 6):
 
 ---
 
-## 16. Open Questions
+## 17. Wave P6-5 — AI Batch Shortlisting Report
+
+> **Added:** 2026-03-13 (post-build addendum). Wave inserted after P6-2b per revised build order: P6-2b → P6-5 → P6-3 → P6-4.
+
+### 17.1 Overview
+
+Every open job with applicants gets a single-click "AI Shortlist" action. The system scores all active applications against the job requirements using a 5-dimension model, classifies each into Shortlist / Hold / Reject tiers, and generates an executive summary. Recruiters can override any AI tier.
+
+### 17.2 Scoring Model
+
+| Dimension | Weight | Description |
+|-----------|--------|-------------|
+| Skills | 35% | Match between candidate skills and job required skills |
+| Experience | 25% | Years of experience relevance |
+| Education | 15% | Degree and field alignment |
+| Domain | 15% | Industry and domain knowledge fit |
+| Trajectory | 10% | Career growth trajectory and potential |
+
+**Composite score** = weighted sum of all 5 dimensions (0.00–1.00).
+
+### 17.3 Tier Classification
+
+| Tier | Criteria | Badge Color |
+|------|----------|-------------|
+| Shortlist | composite >= 0.72 AND skills >= 0.60 | Green |
+| Hold | composite >= 0.45 (and not shortlist) | Amber |
+| Reject | composite < 0.45 OR mandatory skill missing | Red |
+| Insufficient Data | Resume data too sparse to score reliably | Gray |
+
+**EEOC compliance:** Employment gaps MUST NOT auto-reject. Flagged as "clarification recommended" only. All AI tiers labeled "AI Recommendation."
+
+### 17.4 Data Model (Migration 031)
+
+**`ai_shortlist_reports`** — one per job per run:
+- `job_opening_id`, `triggered_by`, `status` (pending/processing/complete/failed)
+- `total_scored`, `shortlisted_count`, `hold_count`, `rejected_count`
+- `executive_summary` (text), `hiring_manager_note` (text)
+- RLS: org-scoped SELECT/INSERT/UPDATE, no DELETE (ADR-006)
+
+**`ai_shortlist_candidates`** — one per application per report:
+- `report_id`, `application_id`, `candidate_id`
+- 5 dimension scores + `composite_score`
+- `ai_tier`, `recruiter_tier` (nullable override), `tier_overridden_at`, `tier_overridden_by`
+- `strengths[]`, `gaps[]`, `eeoc_flags[]`
+- RLS: org-scoped SELECT/INSERT/UPDATE, no DELETE (ADR-006)
+
+### 17.5 API Routes
+
+| Method | Route | Purpose |
+|--------|-------|---------|
+| POST | `/api/jobs/[id]/shortlist` | Trigger batch shortlist (24h dedup, in-progress guard) |
+| GET | `/api/jobs/[id]/shortlist/latest` | Poll latest report status |
+| POST | `/api/jobs/[id]/shortlist/override` | Override AI tier classification |
+
+### 17.6 Inngest Function
+
+**`jobs/batch-shortlist`** — 9-step function:
+1. Mark report as processing
+2. Fetch job + required skills
+3. Fetch active applications with candidate data
+4. Fetch domain scores (existing embeddings)
+5–7. Score batches of 10 applications (GPT-4o, 3 credits each)
+8. Write candidate rows + generate executive summary (GPT-4o-mini, 1 credit)
+9. Complete report + notify recruiter
+
+Concurrency: max 3 per org.
+
+### 17.7 Command Bar Integration
+
+Intent `shortlist_candidates` added. Quick patterns: "shortlist", "screen all", "rank applicants", "who should I interview". Returns list of open jobs for user to select.
+
+### 17.8 UI Components
+
+- **ShortlistTriggerButton** — on job detail page, polls for completion, shows last run info
+- **Report page** — executive summary, EEOC disclosure, stat cards (total/shortlisted/hold/rejected)
+- **CandidateScoreCard** — 5-dimension horizontal bars, tier badge, strengths/gaps chips, override controls
+
+### 17.9 Credit Costs
+
+| Operation | Model | Credits |
+|-----------|-------|---------|
+| `shortlist_score` | GPT-4o | 3 |
+| `shortlist_summary` | GPT-4o-mini | 1 |
+
+### 17.10 Test Coverage (32 tests)
+
+- **Unit (18):** tier classification (7), composite score (3), data sufficiency (3), AI function mocks (5)
+- **RLS (14):** ai_shortlist_reports (8), ai_shortlist_candidates (6) — 4 ops × 2 tenants each
+
+---
+
+## 18. Open Questions
 
 | # | Question | Owner | Impact | Resolution |
 |---|----------|-------|--------|------------|

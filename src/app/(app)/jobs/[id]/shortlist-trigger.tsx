@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 /**
@@ -28,7 +28,6 @@ export function ShortlistTriggerButton({
   const router = useRouter();
   const [triggering, setTriggering] = useState(false);
   const [polling, setPolling] = useState(false);
-  const [activeReportId, setActiveReportId] = useState<string | null>(null);
 
   const poll = useCallback(async (reportId: string) => {
     setPolling(true);
@@ -43,7 +42,7 @@ export function ShortlistTriggerButton({
         } else if (data.report?.status === "failed") {
           clearInterval(interval);
           setPolling(false);
-          setActiveReportId(null);
+          // Report failed — stop polling
         }
       } catch {
         clearInterval(interval);
@@ -63,7 +62,6 @@ export function ShortlistTriggerButton({
         if (data.existing && data.status !== "pending" && data.status !== "processing") {
           router.push(`/jobs/${jobId}/shortlist-report/${data.reportId}`);
         } else {
-          setActiveReportId(data.reportId);
           poll(data.reportId);
         }
       }
