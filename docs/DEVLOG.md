@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-03-13 — Phantom Column Bug Fix + Dev Environment Hardening ✅
+
+**Scope:** Candidates list and detail pages showed 0 results due to selecting `human_review_requested` — a column that doesn't exist on the `candidates` table (it's on `applications` and `screening_sessions`). Supabase returned error 42703 silently. Also hardened dev environment tooling.
+
+### Bug Fixes
+- **`src/app/(app)/candidates/page.tsx`** — Removed `human_review_requested` from select. Page now loads all candidates.
+- **`src/app/(app)/candidates/[id]/page.tsx`** — Same phantom column on detail page. Moved `human_review_requested` to the `applications` sub-query (where the column actually exists). Duplicate warning banner now derives from any application with `human_review_requested = true`.
+
+### Dev Environment
+- **`src/inngest/functions/notifications/send-email.ts`** — Resend client now uses placeholder key when `RESEND_API_KEY` is unset, preventing module-level crash that broke `/api/inngest` route in dev.
+- **`package.json`** — All `db:*` scripts now use `npx supabase` (bare `supabase` wasn't in PATH). `db:demo` uses docker exec for psql with 5s sleep after reset.
+
+### Doc Sync
+- **D01 (DATABASE-SCHEMA.md)** — Fixed phantom `applications.human_review_requested` reference in comment. Column is on `applications` + `screening_sessions`, not `candidates`.
+- **D28 (ENVIRONMENT-VARIABLES.md)** — Documented Resend dev fallback behavior.
+- **D24 (TESTING-STRATEGY.md)** — Offer fixtures corrected: UUIDs (0001→4000-a000 format), status (draft→pending_approval), Bob offer + 3 approvals added.
+- **golden-tenant.ts** — Synced with seed.sql: `aliceDraft` status → `pending_approval`, `bobPendingApproval` + `aliceApprovalOwner` + `bobApprovalOwner` added.
+
+### Lesson
+Supabase `select()` with a non-existent column returns `{ data: null, count: null, error: { code: "42703" } }` — no crash, no TypeScript error, just silent empty results. Always verify column names against the actual schema, not docs or memory.
+
+---
+
 ## 2026-03-13 — Interviews Page Filter Fix + seed-demo.sql Idempotency ✅
 
 **Scope:** Two bugs causing empty screens for owner/admin logins after loading demo data.

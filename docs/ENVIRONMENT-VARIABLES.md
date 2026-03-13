@@ -69,6 +69,8 @@ Complete manifest of every environment variable the application requires. All se
 |----------|-----------|---------|----------|
 | `RESEND_API_KEY` | Secret | Transactional email API key | Yes |
 
+> **Dev fallback:** When `RESEND_API_KEY` is unset in local development, the send-email Inngest function uses a placeholder key to prevent module-level crashes. Emails will not be sent — Inngest logs the failure.
+
 ---
 
 ## Nylas (Calendar) — v2.0+

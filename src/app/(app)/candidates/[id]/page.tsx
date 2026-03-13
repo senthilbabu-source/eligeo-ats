@@ -51,7 +51,7 @@ export default async function CandidateDetailPage({
       id, full_name, email, phone, current_title, current_company,
       location, linkedin_url, github_url, portfolio_url, resume_url,
       skills, tags, source, source_id, pronouns, created_at,
-      embedding_updated_at, human_review_requested, resume_parsed_at,
+      embedding_updated_at, resume_parsed_at,
       candidate_sources:source_id (name)
     `,
     )
@@ -67,7 +67,7 @@ export default async function CandidateDetailPage({
     .from("applications")
     .select(
       `
-      id, status, applied_at,
+      id, status, applied_at, human_review_requested,
       job_opening_id,
       job_openings:job_opening_id (title, slug),
       pipeline_stages:current_stage_id (name, stage_type, stage_order, pipeline_template_id)
@@ -238,7 +238,7 @@ export default async function CandidateDetailPage({
   }
 
   // H6-4: Embedding freshness
-  const cand = candidate as { embedding_updated_at?: string | null; human_review_requested?: boolean | null; resume_parsed_at?: string | null };
+  const cand = candidate as { embedding_updated_at?: string | null; resume_parsed_at?: string | null };
   const embeddingAge = cand.embedding_updated_at
     ? Math.floor((nowMs - new Date(cand.embedding_updated_at).getTime()) / (1000 * 60 * 60 * 24))
     : null;
@@ -246,7 +246,9 @@ export default async function CandidateDetailPage({
     embeddingAge === null ? "none" :
     embeddingAge <= 7 ? "fresh" :
     "stale";
-  const hasDuplicateWarning = cand.human_review_requested === true;
+  const hasDuplicateWarning = (applications ?? []).some(
+    (a: { human_review_requested?: boolean | null }) => a.human_review_requested === true,
+  );
 
   // CP8: profile header badges
   const hasResume = Boolean(candidate.resume_url);
