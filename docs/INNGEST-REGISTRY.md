@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **68 functions across 15 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, data migration, screening, and portal.
+This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **69 functions across 15 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, data migration, screening, and portal.
 
 Every background job in the system runs through Inngest. There are no Supabase Edge Functions (ADR-002). Cron jobs are Inngest cron triggers, not Next.js Route Handlers — Inngest manages scheduling, retries, and observability.
 
@@ -116,7 +116,7 @@ Functions only override these defaults when documented in the registry table bel
 | 37 | `search/full-reindex` | `ats/search.reindex-requested` | 0 | — | No (v2.0) |
 | 38 | `search/sync-health-check` | Cron: `*/5 * * * *` (every 5 min) | default (3) | — | No (v2.0) |
 
-### 4.8 Analytics (4 functions) — v1.0 (briefing + job embedding) + v1.1+ (views/export)
+### 4.8 Analytics (5 functions) — v1.0 (briefing + job embedding + snapshots) + v1.1+ (views/export)
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
@@ -124,6 +124,7 @@ Functions only override these defaults when documented in the registry table bel
 | 40 | `analytics/export` | `ats/analytics.export-requested` | default (3) | — | No (v1.1) |
 | 41 | `analytics/generate-briefing` | `ats/analytics.briefing-requested` (on-demand per org) | 2 | 1 per org | Yes (Wave 3) |
 | 42 | `analytics/refresh-job-embedding` | `ats/analytics.job-skills-changed` (fired when `job_required_skills` INSERT/UPDATE/DELETE or JD updated) | 3 | 1 per job | Yes (**✅ Shipped** — Phase 5 B5-6, H-04 carry-forward) |
+| 42b | `analytics/compute-snapshots` | Cron: `0 1 * * *` (daily 1AM UTC) + `ats/analytics.snapshots-requested` | default (3) | 1 | Yes (**✅ Shipped** — Phase 7 Wave A1) |
 
 **`analytics/generate-briefing` details:**
 - **Cache-first:** checks `org_daily_briefings WHERE org_id = $1 AND date = CURRENT_DATE`. If row exists, returns cached content — no OpenAI call.
@@ -188,7 +189,7 @@ Functions only override these defaults when documented in the registry table bel
 |---|-------------|---------|---------|-------------|------|
 | 61 | `portal/resume-parse` | `portal/application-submitted` | 3 | 1 per candidate | Yes (**✅ Shipped** — P6-1) |
 
-> **Note:** 68 registered function IDs across 15 modules. Phase 6 adds 4 new functions (3 screening + 1 portal) + 1 new `jobs/batch-shortlist` (P6-5) + upgrades 3 existing stubs to real implementations (P6-3: offers/send-esign → real Dropbox Sign, offers/esign-webhook → `processEsignWebhook` real event processing, offers/withdraw → real Dropbox Sign cancel). P6-4: 3 screening functions shipped (invite-candidate, generate-summary, send-reminder). `screening/process-response` was merged into the answer API endpoint (no separate Inngest function needed). (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
+> **Note:** 69 registered function IDs across 15 modules. Phase 7 Wave A1 adds `analytics/compute-snapshots` (nightly cron + on-demand). Phase 6 adds 4 new functions (3 screening + 1 portal) + 1 new `jobs/batch-shortlist` (P6-5) + upgrades 3 existing stubs to real implementations (P6-3: offers/send-esign → real Dropbox Sign, offers/esign-webhook → `processEsignWebhook` real event processing, offers/withdraw → real Dropbox Sign cancel). P6-4: 3 screening functions shipped (invite-candidate, generate-summary, send-reminder). `screening/process-response` was merged into the answer API endpoint (no separate Inngest function needed). (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
 
 ## 5. Cron Schedule Summary
 
@@ -200,10 +201,11 @@ Functions only override these defaults when documented in the registry table bel
 | `0 9 * * *` (daily 9AM UTC) | `interview/feedback-reminder` | Nudge interviewers who have not submitted scorecards |
 | `0 8 * * *` (daily 8AM UTC) | `notification/digest` | Send daily digest emails to users who opted in |
 | `*/5 * * * *` (every 5 min) | `search/sync-health-check` | Verify Typesense sync lag stays under threshold (v2.0) |
+| `0 1 * * *` (daily 1AM UTC) | `analytics/compute-snapshots` | Compute daily analytics snapshots for all orgs (Phase 7) |
 | `0 2 * * *` (daily 2AM UTC) | `analytics/refresh-views` | Refresh materialized views for dashboard metrics (v1.1) |
 | `0 3 * * 0` (weekly Sunday 3AM UTC) | `compliance/retention-cron` | Soft-delete candidates past retention period |
 
-> 8 cron entries for 9 logical schedules — `offers/check-expiry` and `interview/self-schedule-expire` share the hourly slot but run as independent Inngest functions.
+> 9 cron entries for 10 logical schedules — `offers/check-expiry` and `interview/self-schedule-expire` share the hourly slot but run as independent Inngest functions.
 
 ## 6. Event Naming Convention
 

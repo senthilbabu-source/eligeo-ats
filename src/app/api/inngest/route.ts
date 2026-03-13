@@ -26,6 +26,7 @@ import { batchShortlist } from "@/inngest/functions/jobs/batch-shortlist";
 import { screeningInviteCandidate } from "@/inngest/functions/screening/invite-candidate";
 import { screeningGenerateSummary } from "@/inngest/functions/screening/generate-summary";
 import { screeningSendReminder } from "@/inngest/functions/screening/send-reminder";
+import { computeAnalyticsSnapshots } from "@/inngest/functions/analytics/compute-snapshots";
 
 /**
  * Inngest endpoint — serves all registered background functions.
@@ -59,5 +60,6 @@ export const { GET, POST, PUT } = serve({
     screeningInviteCandidate,
     screeningGenerateSummary,
     screeningSendReminder,
+    computeAnalyticsSnapshots,
   ],
 });

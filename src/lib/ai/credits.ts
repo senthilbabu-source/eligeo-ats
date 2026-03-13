@@ -25,6 +25,7 @@ const CREDIT_WEIGHTS: Record<string, number> = {
   shortlist_summary: 1,
   screening_batch: 1,
   screening_summary: 5,
+  analytics_narrative: 1,
 };
 
 export type AiAction = keyof typeof CREDIT_WEIGHTS;

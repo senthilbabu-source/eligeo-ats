@@ -1199,3 +1199,203 @@ export async function scoreMergeCandidates(params: {
     return { confidence: 0, reasoning: "", signals: [], error: message };
   }
 }
+
+// ── Phase 7 Wave A1: Analytics Narrative ──────────────────────
+
+const analyticsNarrativeSchema = z.object({
+  headline: z.string().describe("One sentence: the most important insight"),
+  narrative: z.string().describe("2-3 sentences: what the data shows and why it matters"),
+  topAction: z.string().describe("One specific recommended action"),
+  anomalies: z.array(z.string()).describe("0-3 flagged anomalies (statistically unusual patterns)"),
+});
+
+/**
+ * Generate an AI narrative for an analytics view.
+ * Model: gpt-4o-mini (narrative task, not complex reasoning).
+ * D33 §5 — every analytics view answers "so what?" automatically (ADR-011).
+ */
+export async function generateAnalyticsNarrative(params: {
+  view: "funnel" | "velocity" | "source" | "team" | "jobs";
+  currentPeriod: object;
+  previousPeriod: object | null;
+  orgContext: {
+    totalOpenJobs: number;
+    teamSize: number;
+    avgTimeToHire: number;
+  };
+  organizationId: string;
+  userId?: string;
+}): Promise<{
+  headline: string | null;
+  narrative: string | null;
+  topAction: string | null;
+  anomalies: string[];
+  error?: string;
+}> {
+  const { view, currentPeriod, previousPeriod, orgContext, organizationId, userId } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "analytics_narrative");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "analytics_narrative",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { headline: null, narrative: null, topAction: null, anomalies: [], error: "Insufficient AI credits" };
+  }
+
+  const prompt = [
+    `Analyze this ${view} analytics data for a recruiting team.`,
+    "",
+    "Current period data:",
+    JSON.stringify(currentPeriod, null, 2).slice(0, 2000),
+    "",
+    previousPeriod ? `Previous period data (for comparison):\n${JSON.stringify(previousPeriod, null, 2).slice(0, 2000)}` : "No previous period data available.",
+    "",
+    `Org context: ${orgContext.totalOpenJobs} open jobs, ${orgContext.teamSize} team members, avg time-to-hire: ${orgContext.avgTimeToHire} days.`,
+    "",
+    "Flag any anomalies where a metric changed by >20% compared to the previous period.",
+  ].join("\n");
+
+  try {
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: analyticsNarrativeSchema,
+      system:
+        "You are a recruiting analytics expert. Analyze hiring data and provide clear, actionable insights. " +
+        "Focus on what changed and what the recruiter should do. Be specific, not generic. " +
+        "Avoid hollow phrases like 'it is important to...' or 'you should consider...'. Give direct recommendations.",
+      prompt,
+      maxOutputTokens: 500,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "analytics_narrative",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+      metadata: { view },
+    });
+
+    return {
+      headline: object.headline,
+      narrative: object.narrative,
+      topAction: object.topAction,
+      anomalies: object.anomalies ?? [],
+    };
+  } catch (err) {
+    Sentry.captureException(err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "analytics_narrative",
+      latencyMs: Date.now() - startTime,
+      status: "error",
+      errorMessage: message,
+    });
+    return { headline: null, narrative: null, topAction: null, anomalies: [], error: message };
+  }
+}
+
+const pipelineHealthNarrativeSchema = z.object({
+  summary: z.string().describe("One sentence health assessment"),
+  primaryRisk: z.string().nullable().describe("Main risk factor, or null if healthy"),
+  recommendation: z.string().describe("One specific action to improve pipeline health"),
+});
+
+/**
+ * Generate an AI health narrative for a specific job's pipeline.
+ * D33 §5 — per-job health assessment.
+ */
+export async function generatePipelineHealthNarrative(params: {
+  jobTitle: string;
+  healthScore: number;
+  daysOpen: number;
+  applicationCount: number;
+  bottleneckStage: string | null;
+  predictedFillDays: number | null;
+  organizationId: string;
+  userId?: string;
+}): Promise<{
+  summary: string | null;
+  primaryRisk: string | null;
+  recommendation: string | null;
+  error?: string;
+}> {
+  const {
+    jobTitle, healthScore, daysOpen, applicationCount,
+    bottleneckStage, predictedFillDays, organizationId, userId,
+  } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "analytics_narrative");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "analytics_narrative",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return { summary: null, primaryRisk: null, recommendation: null, error: "Insufficient AI credits" };
+  }
+
+  const prompt = [
+    `Assess the pipeline health for the "${jobTitle}" role.`,
+    `Health score: ${(healthScore * 100).toFixed(0)}%`,
+    `Days open: ${daysOpen}`,
+    `Total applications: ${applicationCount}`,
+    bottleneckStage ? `Bottleneck stage: ${bottleneckStage}` : "No bottleneck detected.",
+    predictedFillDays !== null ? `Predicted fill: ${predictedFillDays} days` : "Fill prediction unavailable.",
+  ].join("\n");
+
+  try {
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: pipelineHealthNarrativeSchema,
+      system:
+        "You are a recruiting analytics expert. Provide a brief, direct health assessment for a job pipeline. " +
+        "If the health score is below 50%, identify the primary risk. Always give one specific recommendation.",
+      prompt,
+      maxOutputTokens: 300,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "analytics_narrative",
+      entityType: "job_opening",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+    });
+
+    return {
+      summary: object.summary,
+      primaryRisk: object.primaryRisk,
+      recommendation: object.recommendation,
+    };
+  } catch (err) {
+    Sentry.captureException(err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "analytics_narrative",
+      latencyMs: Date.now() - startTime,
+      status: "error",
+      errorMessage: message,
+    });
+    return { summary: null, primaryRisk: null, recommendation: null, error: message };
+  }
+}

@@ -485,5 +485,23 @@ export async function executeCommand(
     };
   }
 
+  // Phase 7: Analytics view — navigate to analytics sub-page
+  if (intent.action === "analytics_view") {
+    const dashboard = intent.params.dashboard ?? "overview";
+    const subPaths: Record<string, string> = {
+      overview: "/analytics",
+      funnel: "/analytics/funnel",
+      velocity: "/analytics/velocity",
+      sources: "/analytics/sources",
+      team: "/analytics/team",
+      jobs: "/analytics/jobs",
+    };
+    const href = subPaths[dashboard] ?? "/analytics";
+    return {
+      intent,
+      results: [{ id: "analytics", title: intent.display, subtitle: "Analytics", href }],
+    };
+  }
+
   return { intent };
 }

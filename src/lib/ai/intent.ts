@@ -30,6 +30,7 @@ export interface ParsedIntent {
     | "view_screening"
     | "shortlist_candidates"
     | "send_offer"
+    | "analytics_view"
     | "unknown";
   params: Record<string, string>;
   confidence: number;
@@ -57,6 +58,7 @@ const intentActions = [
   "view_screening",
   "shortlist_candidates",
   "send_offer",
+  "analytics_view",
   "unknown",
 ] as const;
 
@@ -90,6 +92,7 @@ Available actions:
 - view_screening: View screening results for a candidate. Params: candidate (name)
 - shortlist_candidates: AI shortlist/screen all applicants for a job. Params: job (title, optional)
 - send_offer: Send an offer for e-signature. Params: candidate (name)
+- analytics_view: View analytics dashboard. Params: dashboard (funnel/velocity/sources/team/jobs, optional — defaults to overview)
 - navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines/offers/approvals/talent-pools)
 - unknown: Cannot determine intent`;
 
@@ -391,6 +394,29 @@ function matchQuickPatterns(input: string): ParsedIntent | null {
       confidence: 0.85,
       display: "AI shortlist: who should you interview",
     };
+  }
+
+  // Phase 7: Analytics navigation
+  if (/^(go to |open |show )?(analytics|analytics dashboard|reports?)$/i.test(lower)) {
+    return { action: "analytics_view", params: { dashboard: "overview" }, confidence: 1, display: "Navigate to Analytics" };
+  }
+  if (/^(show |open )?(funnel|conversion rates?|pipeline funnel)$/i.test(lower)) {
+    return { action: "analytics_view", params: { dashboard: "funnel" }, confidence: 1, display: "View Pipeline Funnel" };
+  }
+  if (/^(show |what('?s| is) )?(time to hire|hiring velocity|velocity)$/i.test(lower)) {
+    return { action: "analytics_view", params: { dashboard: "velocity" }, confidence: 0.95, display: "View Hiring Velocity" };
+  }
+  if (/^(show |open )?(source quality|source analytics|source roi)$/i.test(lower)) {
+    return { action: "analytics_view", params: { dashboard: "sources" }, confidence: 0.95, display: "View Source Quality" };
+  }
+  if (/^(show |open )?(team performance|team analytics|team report)$/i.test(lower)) {
+    return { action: "analytics_view", params: { dashboard: "team" }, confidence: 0.95, display: "View Team Performance" };
+  }
+  if (/^(show |open )?(job health|job performance|job analytics)$/i.test(lower)) {
+    return { action: "analytics_view", params: { dashboard: "jobs" }, confidence: 0.95, display: "View Job Health" };
+  }
+  if (/^(how are we doing|show me the numbers|pipeline report)$/i.test(lower)) {
+    return { action: "analytics_view", params: { dashboard: "overview" }, confidence: 0.85, display: "Navigate to Analytics" };
   }
 
   return null; // No quick match — fall through to AI

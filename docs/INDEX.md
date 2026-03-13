@@ -84,7 +84,7 @@
 | D26 | **Error Taxonomy & Recovery Patterns** | `docs/ERROR-TAXONOMY.md` | P2 | ✅ Complete (Review) | D02, D14 | ATS-XXXX error code scheme (12 categories, 60+ codes), RFC 9457 response format with `code` extension, Server Action error pattern, graceful degradation matrix (7 services), circuit breaker pattern, retry strategies (6 failure types), React error boundary design (4 placement levels), user-facing message guidelines. |
 | D27 | **Product Roadmap & Release Strategy** | `docs/PRODUCT-ROADMAP.md` | P0 | ✅ Complete (Review) | D00, D03, D25, all modules | 5 release versions (v1.0–v3.0). v1.0: 26 features, 6 build phases over 12 weeks, 10 notification events, launch criteria checklist. Feature-to-plan mapping. Revenue projections ($540 MRR launch → $125K MRR at v3.0). Risk mitigation. Decision log (12 scope decisions). Determines ALL build order. |
 | D28 | **Environment Variables** | `docs/ENVIRONMENT-VARIABLES.md` | P0 | ✅ Complete (Review) | D01, D02, D03, D14, D15 | 33 env vars across 11 services. Public/secret classification, v1.0 vs v2.0+ required, `.env.example` template, security rules. P6-3: +3 Dropbox Sign vars. |
-| D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 68 Inngest functions across 15 modules. v1.0 scope: 48 functions. **27 shipped** (all active). P6-1: +1 portal/resume-parse. P6-4: +3 screening (invite-candidate, generate-summary, send-reminder). P6-3: 3 stub→real upgrades. P6-5: +1 batchShortlist. 15 modules. 8 cron schedules. |
+| D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 69 Inngest functions across 15 modules. v1.0 scope: 49 functions. **28 shipped** (all active). Phase 7: +1 analytics/compute-snapshots. P6-1: +1 portal/resume-parse. P6-4: +3 screening. P6-3: 3 stub→real. P6-5: +1 batchShortlist. 9 cron schedules. |
 | D30 | **User Story Map** | `docs/USER-STORY-MAP.md` | P1 | ✅ Complete | D27, ADR-011 | 184 user stories across 28 sections. Phase 2.7 all ✅ BUILT. Dashboard Waves 1–3 ✅. AI-Proof A/B/C ✅. Wave F ✅. **Phase 4 offers: O1, O2, O5, O6 ✅ BUILT. O3 ✅ BUILT (P6-3 real Dropbox Sign). O4 partial (signed/declined tracked, opened/viewed v2.0).** |
 | D31 | **Brand Guide** | `docs/BRAND.md` | P3 | ✅ Complete | ADR-012 | Logo narrative (3-candidate selection metaphor), brand voice guidelines, marketing copy for `/about` page, technical logo specs, animated variant plan. |
 | MKT-01 | **Marketing Intelligence** | `docs/MARKETING-INTELLIGENCE.md` | P1 | ✅ Complete (Living) | D00, D27, D31 | Competitive differentiators, taglines, feature copy, segment messaging, objection handling, proof points, comparison tables. **Must be updated at every phase boundary** — see `docs/MARKETING-UPDATE-CHECKLIST.md`. Last updated: Phase 6 (2026-03-13). |
@@ -137,7 +137,7 @@ Documents intentionally excluded from pre-code phase. Each has a specific trigge
 | B5-6 | Offer send re-activation + refresh-job-embedding (H-04 closed) | 8 | ✅ Complete |
 | **Total** | | **154** | **All passing** |
 
-Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening) → 1339 Vitest (P6-2a/P6-2b/P6-5/P6-3) → 1399 Vitest (P6-4). 68 E2E unchanged. **1467 total.** Migrations: 032 (P6-4 screening). 27 Inngest functions active.
+Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening) → 1339 Vitest (P6-2a/P6-2b/P6-5/P6-3) → 1399 Vitest (P6-4) → 1437 Vitest (Phase 7 A1). 68 → 71 E2E (+3 analytics). **1508 total.** Migrations: 033 (Phase 7 analytics_snapshots). 28 Inngest functions active.
 
 ---
 
@@ -146,6 +146,22 @@ Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening) → 1339 Vi
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
 | D32 | **Phase 6: Candidate Intelligence Layer** | `docs/modules/PHASE6-CANDIDATE-INTELLIGENCE.md` | P0 | ✅ Complete (Review) | D01, D03, D06, D08, D09, D10, D24, D29 | 6 waves — all complete: **P6-1 ✅ Resume Extraction** (hybrid pdf-parse + GPT-4o, Inngest portal/resume-parse), P6-2a ✅ Candidate status portal, P6-2b ✅ Merge UI, P6-3 ✅ Dropbox Sign full integration, P6-5 ✅ AI Batch Shortlisting, **P6-4 ✅ Conversational AI Screening** (4 AI funcs, 3 Inngest, 6 API, recruiter config + candidate portal + results UI). 5 new tables (`candidate_merges`, `ai_shortlist_reports`, `ai_shortlist_candidates`, `screening_configs`, `screening_sessions`), 8 new Inngest functions + 3 stub replacements, 19+ API endpoints. Migrations 030–032. |
+
+---
+
+## Phase 7 — Analytics & Reporting
+
+| # | Document | Path | Priority | Status | Depends On | Description |
+|---|----------|------|----------|--------|------------|-------------|
+| D33 | **Analytics Module** | `docs/modules/ANALYTICS-MODULE.md` | P1 | ✅ Complete (Review) | D01, D17, D24, D29 | 5 analytics views (funnel, velocity, sources, team, jobs) with AI-generated narratives (ADR-011). Pure compute library, Inngest nightly cron, 6 API routes, CSS-only charts, command bar `analytics_view` intent. Migration 033 (`analytics_snapshots`). `reports:view` permission for team analytics (owner/admin only). 38 tests (33 unit + 5 RLS) + 3 E2E. |
+
+---
+
+## Phase 8 — Contingent Hiring Pipeline
+
+| # | Document | Path | Priority | Status | Depends On | Description |
+|---|----------|------|----------|--------|------------|-------------|
+| D34 | **Phase 8: Contingent Hiring Pipeline** | `docs/modules/PHASE8-CONTINGENT-HIRING.md` | P1 | ⬜ Spec (Ready for Build) | D01, D02, D03, D05, D06, D08, D09, D10, D12, D17, D24, D25, D27, D29, ADR-001→012 | 5 waves — Contractor/contingent role type (Side A ATS intake only, no VMS). 3 new tables (`vendors`, `vendor_submissions`, `candidate_contract_profiles`), rate intelligence cache, `role_type` CHECK on `job_openings`, 7 Inngest functions, 12 new API endpoints, contractor fit score (availability + rate + skills + contract type + clearance), AI rate band suggestion, AI vendor submission ranking, AI rate check assist, AI engagement summary PDF, 8 command bar intents. Migrations 00034–00036. ~197 new tests. Plan gate: Growth+. |
 
 ---
 

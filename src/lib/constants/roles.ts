@@ -72,6 +72,8 @@ export const PERMISSIONS = [
   "audit:view",
   "api_keys:manage",
   "analytics:view",
+  // Analytics — team performance (owner/admin only)
+  "reports:view",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

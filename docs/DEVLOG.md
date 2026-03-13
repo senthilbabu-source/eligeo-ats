@@ -4,6 +4,58 @@
 
 ---
 
+## 2026-03-13 — Phase 7 Wave A1: Analytics Module ✅
+
+**Scope:** Full analytics module with 5 views (funnel, velocity, sources, team, jobs), AI-generated narratives, Inngest nightly cron, and command bar integration.
+
+### Migration
+- **M033 (`analytics_snapshots`)** — Pre-computed daily analytics. One row per (org, date, type). RLS: org members SELECT only, service role INSERT/UPDATE (no user write policies). Audit trigger. Unique partial index on `(org_id, date, type) WHERE deleted_at IS NULL`.
+
+### Compute Library
+- **`src/lib/analytics/compute.ts`** — 7 pure functions: `computeFunnelAnalytics`, `computeVelocityAnalytics`, `computeSourceAnalytics`, `computeTeamAnalytics`, `computeJobAnalytics`, `computeJobHealthScore`, `predictTimeToFill`. All exported with typed inputs/outputs for unit testing.
+
+### AI Functions
+- **`generateAnalyticsNarrative`** — Generates headline, narrative, topAction, anomalies per view via gpt-4o-mini.
+- **`generatePipelineHealthNarrative`** — Generates summary, primaryRisk, recommendation for a specific job.
+
+### Inngest
+- **`analytics/compute-snapshots`** — Nightly cron (1 AM UTC) + on-demand event trigger. Processes all orgs in batches of 10, computes 5 snapshot types each. Idempotent upsert.
+
+### API Routes (6)
+- `GET /api/analytics/funnel` — `analytics:view` permission
+- `GET /api/analytics/velocity` — `analytics:view` permission
+- `GET /api/analytics/sources` — `analytics:view` permission
+- `GET /api/analytics/team` — `reports:view` permission (owner/admin only)
+- `GET /api/analytics/jobs` — `analytics:view` permission
+- `POST /api/analytics/narrative` — AI narrative generation
+
+### UI
+- Analytics home (`/analytics`) with summary stats + 5 view cards
+- 5 sub-pages: funnel, velocity, sources, team, jobs — each with client component + date range selector
+- AI narrative card (non-blocking) on each view
+- CSS-only bar charts (no chart library)
+- Nav link added between "Pools" and "Settings"
+
+### RBAC
+- Added `reports:view` permission to `roles.ts` — owner + admin only. Team analytics view gated.
+
+### Command Bar
+- Added `analytics_view` intent with 8 quick-pattern regex matches
+- Maps dashboard param to sub-path href (funnel, velocity, sources, team, jobs)
+
+### Tests (+38)
+- 33 unit tests: compute-funnel (5), compute-velocity (5), compute-source (4), compute-team (4), compute-job-health (8), intent (7)
+- 5 RLS tests: analytics_snapshots (SELECT own ✓, SELECT cross-tenant ✗, INSERT user ✗, INSERT service ✓, DELETE blocked ✓)
+- 3 E2E specs: analytics home loads, funnel view loads, team view accessible
+
+### Doc Updates
+- D33 (`docs/modules/ANALYTICS-MODULE.md`) — Full spec doc registered in INDEX.md
+- D29 (INNGEST-REGISTRY.md) — Added `analytics/compute-snapshots` (#42b), total: 69 functions, 28 shipped
+
+**Test counts:** 1399 → 1437 Vitest (+38) + 71 E2E (+3) = 1508 total. All passing.
+
+---
+
 ## 2026-03-13 — Phantom Column Bug Fix + Dev Environment Hardening ✅
 
 **Scope:** Candidates list and detail pages showed 0 results due to selecting `human_review_requested` — a column that doesn't exist on the `candidates` table (it's on `applications` and `screening_sessions`). Supabase returned error 42703 silently. Also hardened dev environment tooling.
