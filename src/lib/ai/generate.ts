@@ -1069,3 +1069,133 @@ export async function generateMatchExplanation(params: {
     return { explanation: null, keyMatches: [], keyGaps: [], error: message };
   }
 }
+
+// ── P6-2b: Merge Confidence Scoring ──────────────────────
+
+const mergeConfidenceSchema = z.object({
+  confidence: z.number().min(0).max(1),
+  reasoning: z.string(),
+  signals: z.array(z.string()),
+});
+
+const MERGE_PROMPT = `You are a duplicate detection expert for an ATS (Applicant Tracking System).
+Compare two candidate records and assess the likelihood they are the same person.
+
+Rules:
+- Return a confidence score from 0.00 (definitely different people) to 1.00 (definitely same person).
+- List specific signals that support your conclusion (e.g., "Matching phone number", "Same LinkedIn URL", "Similar name spelling").
+- Consider: exact matches on phone/email/LinkedIn are very strong signals. Name similarity alone is weak.
+- If key identifiers differ (different emails AND different phones AND different LinkedIn), confidence should be low.
+- Be conservative — false merges are worse than missed duplicates.`;
+
+/**
+ * D32 §5.5 — AI merge confidence scoring for candidate deduplication.
+ * Model: gpt-4o-mini. Credit cost: 1 (merge_score).
+ * Plan gating: Growth+ only (caller responsible for checking).
+ */
+export async function scoreMergeCandidates(params: {
+  candidateA: {
+    full_name: string;
+    email?: string;
+    phone?: string;
+    linkedin_url?: string;
+    skills?: string[];
+    current_company?: string;
+  };
+  candidateB: {
+    full_name: string;
+    email?: string;
+    phone?: string;
+    linkedin_url?: string;
+    skills?: string[];
+    current_company?: string;
+  };
+  organizationId: string;
+  userId?: string;
+}): Promise<{
+  confidence: number;
+  reasoning: string;
+  signals: string[];
+  error?: string;
+}> {
+  const { candidateA, candidateB, organizationId, userId } = params;
+  const startTime = Date.now();
+
+  const credited = await consumeAiCredits(organizationId, "merge_score");
+  if (!credited) {
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "merge_score",
+      entityType: "candidate",
+      status: "skipped",
+      errorMessage: "Insufficient AI credits",
+    });
+    return {
+      confidence: 0,
+      reasoning: "",
+      signals: [],
+      error: "Insufficient AI credits",
+    };
+  }
+
+  try {
+    const prompt = [
+      "Candidate A:",
+      `  Name: ${candidateA.full_name}`,
+      candidateA.email ? `  Email: ${candidateA.email}` : null,
+      candidateA.phone ? `  Phone: ${candidateA.phone}` : null,
+      candidateA.linkedin_url ? `  LinkedIn: ${candidateA.linkedin_url}` : null,
+      candidateA.current_company ? `  Company: ${candidateA.current_company}` : null,
+      candidateA.skills?.length ? `  Skills: ${candidateA.skills.join(", ")}` : null,
+      "",
+      "Candidate B:",
+      `  Name: ${candidateB.full_name}`,
+      candidateB.email ? `  Email: ${candidateB.email}` : null,
+      candidateB.phone ? `  Phone: ${candidateB.phone}` : null,
+      candidateB.linkedin_url ? `  LinkedIn: ${candidateB.linkedin_url}` : null,
+      candidateB.current_company ? `  Company: ${candidateB.current_company}` : null,
+      candidateB.skills?.length ? `  Skills: ${candidateB.skills.join(", ")}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const { object, usage } = await generateObject({
+      model: chatModel,
+      schema: mergeConfidenceSchema,
+      system: MERGE_PROMPT,
+      prompt,
+    });
+
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "merge_score",
+      entityType: "candidate",
+      model: AI_MODELS.fast,
+      tokensInput: usage?.inputTokens,
+      tokensOutput: usage?.outputTokens,
+      latencyMs: Date.now() - startTime,
+      status: "success",
+    });
+
+    return {
+      confidence: object.confidence,
+      reasoning: object.reasoning,
+      signals: object.signals,
+    };
+  } catch (err) {
+    Sentry.captureException(err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await logAiUsage({
+      organizationId,
+      userId,
+      action: "merge_score",
+      entityType: "candidate",
+      latencyMs: Date.now() - startTime,
+      status: "error",
+      errorMessage: message,
+    });
+    return { confidence: 0, reasoning: "", signals: [], error: message };
+  }
+}

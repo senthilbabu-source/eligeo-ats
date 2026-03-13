@@ -33,11 +33,11 @@ ALTER TABLE candidate_merges ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY candidate_merges_select
   ON candidate_merges FOR SELECT
-  USING (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid);
+  USING (organization_id = current_user_org_id());
 
 CREATE POLICY candidate_merges_insert
   ON candidate_merges FOR INSERT
-  WITH CHECK (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid);
+  WITH CHECK (organization_id = current_user_org_id());
 
 -- No UPDATE or DELETE policies — immutable audit record
 

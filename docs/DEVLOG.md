@@ -4,6 +4,56 @@
 
 ---
 
+## 2026-03-12 — Phase 6 Wave P6-2b: Candidate Merge UI ✅
+
+**Scope:** Interactive duplicate merge flow with AI confidence scoring.
+
+### New Files
+- `src/lib/ai/generate.ts` — `scoreMergeCandidates()` function (gpt-4o-mini, 1 credit, structured output: confidence/reasoning/signals)
+- `src/components/candidates/merge-modal.tsx` — Side-by-side comparison modal, AI confidence badge (Growth+), signal chips, primary/duplicate selector
+- `src/components/candidates/duplicate-warning-banner.tsx` — Interactive replacement for static H6-4 banner, "Review" button opens MergeModal
+- `src/__tests__/merge-candidates.test.ts` — 5 unit tests for AI merge scorer
+- `src/__tests__/rls/candidate-merges.rls.test.ts` — 8 RLS tests (3 SELECT, 2 tenant isolation, 1 INSERT, 1 UPDATE blocked, 1 DELETE blocked)
+
+### Modified Files
+- `src/lib/actions/candidates.ts` — `mergeCandidate()` + `getDuplicateCandidates()` server actions
+- `src/lib/actions/ai.ts` — `aiScoreMergeCandidates()` server action wrapper (client components can't call server-only AI code)
+- `src/lib/ai/credits.ts` — Added `merge_score: 1` credit weight
+- `src/app/(app)/candidates/[id]/page.tsx` — Wired `<DuplicateWarningBanner>` with Growth+ plan gating
+
+### Bug Fixes
+- **Migration 030 RLS policies:** Used `auth.jwt() -> 'app_metadata' ->> 'org_id'` but JWT hook injects `org_id` at top-level claims. Fixed to `current_user_org_id()` (consistent with all other tables).
+- **Migration 029 function return type:** PostgreSQL doesn't allow `CREATE OR REPLACE` when OUT params change. Added `DROP FUNCTION IF EXISTS` before CREATE.
+- **PostgREST immutable table behavior:** No UPDATE/DELETE policies = silent no-op (null error, 0 rows), not explicit denial. RLS tests assert empty data, not error.
+
+### Tests: +13 new (1276 → 1289 Vitest). All passing. TypeScript clean.
+
+---
+
+## 2026-03-12 — Phase 6 Wave P6-2a: Candidate Status Portal ✅
+
+**Scope:** Public-facing status portal with HMAC-signed tokens and AI-narrated status messages.
+
+### New Files
+- `src/lib/utils/candidate-token.ts` — HMAC-signed 30-day status tokens (base64url, encodes applicationId+candidateId+orgId+scope+expiry)
+- `src/lib/ai/status-narration.ts` — `generateCandidateStatusNarration()` (gpt-4o-mini, 1 credit, Growth+ gated, cached in application metadata)
+- `src/lib/actions/portal-status.ts` — `getApplicationStatus()` + `withdrawApplication()` server actions
+- `src/app/(public)/careers/[slug]/status/page.tsx` — Status portal page (validates token, shows summary/AI narration/pipeline/timeline/withdrawal)
+- `src/components/portal/pipeline-progress.tsx` — Horizontal stage progress indicator
+- `src/components/portal/status-timeline.tsx` — Chronological event timeline
+- `src/components/portal/withdraw-button.tsx` — Client component with confirmation dialog
+- `src/__tests__/candidate-token.test.ts` — 8 unit tests (create, verify, tamper, expiry, window)
+- `src/__tests__/status-narration.test.ts` — 4 unit tests
+- `src/__tests__/portal-status.test.ts` — 4 unit tests
+
+### Modified Files
+- `src/lib/actions/public-apply.ts` — Generates status token + status URL in confirmation emails
+- `src/lib/ai/credits.ts` — Added `status_narration: 1` credit weight
+
+### Tests: +16 new (1260 → 1276 Vitest). All passing. TypeScript clean.
+
+---
+
 ## 2026-03-12 — Phase 6 Wave P6-1: Resume Extraction Pipeline ✅
 
 **Scope:** Build the hybrid resume extraction pipeline — PDF/DOCX text extraction + AI structured parsing.

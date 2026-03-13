@@ -12,6 +12,7 @@ import { EmailDraftPanel } from "./email-draft-panel";
 import { EditCandidatePanel } from "./edit-candidate-panel";
 import { CandidateNotes } from "./candidate-notes";
 import { ApplicationInterviews } from "./application-interviews";
+import { DuplicateWarningBanner } from "@/components/candidates/duplicate-warning-banner";
 
 export async function generateMetadata({
   params,
@@ -351,12 +352,13 @@ export default async function CandidateDetailPage({
         </p>
       </div>
 
-      {/* H6-4: Duplicate warning banner */}
+      {/* P6-2b: Interactive duplicate warning banner with merge modal */}
       {hasDuplicateWarning && (
-        <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-          <span className="mt-0.5 shrink-0 font-medium">{"\u26A0"}</span>
-          <p>Possible duplicate detected — review before proceeding.</p>
-        </div>
+        <DuplicateWarningBanner
+          candidateId={candidate.id}
+          organizationId={session.orgId}
+          isGrowthPlus={["growth", "pro", "enterprise"].includes(session.plan)}
+        />
       )}
 
       {/* H6-4: AI Match Scores per application */}

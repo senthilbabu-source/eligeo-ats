@@ -472,6 +472,112 @@ export async function triggerResumeParse(candidateId: string) {
   return { success: true };
 }
 
+// ── P6-2b: Merge Candidates ─────────────────────────────
+
+/**
+ * D32 §5.4–§5.6 — Merge two candidate records.
+ * Calls the atomic merge_candidates() RPC which:
+ *   1. Repoints applications (dedupes same-job)
+ *   2. Merges skills (skip duplicates)
+ *   3. Repoints notes + files
+ *   4. Creates candidate_merges audit record
+ *   5. Soft-deletes secondary candidate
+ * Post-merge: fires embedding refresh for the primary candidate.
+ */
+export async function mergeCandidate(
+  primaryId: string,
+  secondaryId: string,
+  aiConfidence?: number,
+  mergeReason?: string,
+) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "candidates:edit");
+
+  if (primaryId === secondaryId) {
+    return { error: "Cannot merge a candidate with itself" };
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("merge_candidates", {
+    p_primary_id: primaryId,
+    p_secondary_id: secondaryId,
+    p_org_id: session.orgId,
+    p_merged_by: session.userId,
+    p_ai_confidence: aiConfidence ?? null,
+    p_merge_reason: mergeReason ?? null,
+  });
+
+  if (error) {
+    logger.error({ error, primaryId, secondaryId }, "Failed to merge candidates");
+    Sentry.captureException(error);
+    return { error: error.message ?? "Failed to merge candidates" };
+  }
+
+  // Post-merge: refresh embedding for primary candidate
+  await inngest.send({
+    name: "ats/candidate.skills_updated",
+    data: {
+      candidateId: primaryId,
+      organizationId: session.orgId,
+    },
+  });
+
+  revalidatePath("/candidates");
+  revalidatePath(`/candidates/${primaryId}`);
+
+  return { success: true, primaryId: data };
+}
+
+/**
+ * D32 §5.5 — Fetch duplicate candidates for the merge modal.
+ * Returns candidates matching by phone or LinkedIn URL.
+ */
+export async function getDuplicateCandidates(candidateId: string) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "candidates:view");
+
+  const supabase = await createClient();
+
+  // Fetch the target candidate's identifying info
+  const { data: candidate } = await supabase
+    .from("candidates")
+    .select("id, full_name, email, phone, linkedin_url, current_company, current_title")
+    .eq("id", candidateId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!candidate) {
+    return { error: "Candidate not found", duplicates: [] };
+  }
+
+  // Find possible duplicates via fuzzy dedup
+  const duplicates = await findPossibleDuplicates(
+    supabase,
+    session.orgId,
+    candidateId,
+    candidate.full_name,
+    candidate.phone ?? undefined,
+    candidate.linkedin_url ?? undefined,
+  );
+
+  // Enrich with full details for merge comparison
+  if (duplicates.length === 0) {
+    return { candidate, duplicates: [] };
+  }
+
+  const dupeIds = duplicates.map((d) => d.id);
+  const { data: enriched } = await supabase
+    .from("candidates")
+    .select("id, full_name, email, phone, linkedin_url, current_company, current_title")
+    .in("id", dupeIds)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null);
+
+  return { candidate, duplicates: enriched ?? [] };
+}
+
 export async function deleteCandidateNote(noteId: string, candidateId: string) {
   const session = await requireAuth();
   assertCan(session.orgRole, "candidates:view");

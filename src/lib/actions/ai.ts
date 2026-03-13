@@ -11,7 +11,7 @@ import {
   buildCandidateEmbeddingText,
   buildJobEmbeddingText,
 } from "@/lib/ai/embeddings";
-import { generateMatchExplanation } from "@/lib/ai/generate";
+import { generateMatchExplanation, scoreMergeCandidates } from "@/lib/ai/generate";
 import { getRemainingCredits } from "@/lib/ai/credits";
 import { inngest } from "@/inngest/client";
 import { CONFIG } from "@/lib/constants/config";
@@ -521,4 +521,34 @@ export async function aiGetMatchExplanation(input: {
     keyMatches: result.keyMatches,
     keyGaps: result.keyGaps,
   };
+}
+
+// ── P6-2b: AI Merge Confidence Scoring ──────────────────
+
+export async function aiScoreMergeCandidates(params: {
+  candidateA: {
+    full_name: string;
+    email?: string;
+    phone?: string;
+    linkedin_url?: string;
+    skills?: string[];
+    current_company?: string;
+  };
+  candidateB: {
+    full_name: string;
+    email?: string;
+    phone?: string;
+    linkedin_url?: string;
+    skills?: string[];
+    current_company?: string;
+  };
+}) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "candidates:view");
+
+  return scoreMergeCandidates({
+    ...params,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
 }

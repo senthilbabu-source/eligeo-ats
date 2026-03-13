@@ -266,7 +266,11 @@ ALTER TABLE applications
 -- ═══════════════════════════════════════════════════════════
 -- H2-2: Modified match_candidates_for_job() — adds embedding_stale flag
 -- Replaces the version from migration 00015.
+-- Must DROP first because return type is changing (PG doesn't allow
+-- CREATE OR REPLACE when the OUT parameter list differs).
 -- ═══════════════════════════════════════════════════════════
+
+DROP FUNCTION IF EXISTS match_candidates_for_job(UUID, UUID, FLOAT, INTEGER);
 
 CREATE OR REPLACE FUNCTION match_candidates_for_job(
   p_job_id UUID,

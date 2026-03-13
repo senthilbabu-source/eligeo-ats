@@ -20,6 +20,7 @@ const CREDIT_WEIGHTS: Record<string, number> = {
   offer_salary_check: 1,
   match_explanation: 1,
   status_narration: 1,
+  merge_score: 1,
 };
 
 export type AiAction = keyof typeof CREDIT_WEIGHTS;
