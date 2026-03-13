@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-03-13 — Phase 6 Wave P6-5: AI Batch Shortlisting Report ✅
+
+**Scope:** 5-dimension AI scoring of all applicants for a job, with tier classification (Shortlist/Hold/Reject), EEOC compliance, and recruiter override.
+
+### Migration 031 (`00031_ai_shortlist_reports.sql`)
+- `ai_shortlist_reports` — report metadata, status, counts, executive summary
+- `ai_shortlist_candidates` — per-candidate scores (5 dimensions), tier, strengths, gaps, EEOC flags, recruiter override
+- RLS: org-scoped SELECT/INSERT/UPDATE, no DELETE (soft delete, ADR-006)
+- Audit triggers on both tables (ADR-007)
+
+### New Files
+- `src/lib/ai/shortlist.ts` — `scoreResumeAgainstJob()` (GPT-4o, 3 credits), `buildShortlistReportSummary()` (GPT-4o-mini, 1 credit), pure functions: `computeCompositeScore()`, `classifyTier()`, `isDataSufficient()`
+- `src/inngest/functions/jobs/batch-shortlist.ts` — 9-step Inngest function (fetch → score batches → write candidates → summary → notify)
+- `src/app/api/jobs/[id]/shortlist/route.ts` — POST trigger (24h dedup, in-progress check)
+- `src/app/api/jobs/[id]/shortlist/latest/route.ts` — GET latest report status
+- `src/app/api/jobs/[id]/shortlist/override/route.ts` — POST tier override
+- `src/app/(app)/jobs/[id]/shortlist-trigger.tsx` — Client component: trigger button + polling
+- `src/app/(app)/jobs/[id]/shortlist-report/[reportId]/page.tsx` — Report page (summary, stats, EEOC notice)
+- `src/app/(app)/jobs/[id]/shortlist-report/[reportId]/report-client.tsx` — Client wrapper for tier override
+- `src/app/(app)/jobs/[id]/shortlist-report/[reportId]/candidate-score-card.tsx` — 5-dimension bars, strengths/gaps, override
+
+### Modified Files
+- `src/lib/ai/credits.ts` — Added `shortlist_score: 3`, `shortlist_summary: 1`
+- `src/lib/ai/intent.ts` — Added `shortlist_candidates` intent + quick patterns (shortlist, screen all, rank applicants, who should I interview)
+- `src/lib/actions/command-bar.ts` — Shortlist intent handler (lists open jobs for selection)
+- `src/app/(app)/jobs/[id]/page.tsx` — Wired `<ShortlistTriggerButton>` + fetch latest report
+- `src/app/api/inngest/route.ts` — Registered `batchShortlist` (22 active functions)
+
+### Tests: +32 new (1289 → 1321 Vitest). All passing. TypeScript clean.
+- Unit: 13 (tier classification 7, composite 3, data sufficiency 3) + 5 (AI function mocks)
+- RLS: 14 (ai_shortlist_reports 8, ai_shortlist_candidates 6)
+
+---
+
 ## 2026-03-12 — Phase 6 Wave P6-2b: Candidate Merge UI ✅
 
 **Scope:** Interactive duplicate merge flow with AI confidence scoring.

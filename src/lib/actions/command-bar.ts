@@ -323,5 +323,52 @@ export async function executeCommand(
     };
   }
 
+  // P6-5: Shortlist candidates — list open jobs for user to select
+  if (intent.action === "shortlist_candidates") {
+    const jobTitle = intent.params.job ?? "";
+    const supabase = await createClient();
+
+    if (jobTitle) {
+      const escaped = escapeLikeQuery(jobTitle);
+      const { data } = await supabase
+        .from("job_openings")
+        .select("id, title, status")
+        .eq("organization_id", session.orgId)
+        .ilike("title", `%${escaped}%`)
+        .is("deleted_at", null)
+        .limit(5);
+
+      return {
+        intent,
+        results: (data ?? []).map((j) => ({
+          id: j.id,
+          title: j.title,
+          subtitle: `AI Shortlist → ${j.status}`,
+          href: `/jobs/${j.id}`,
+        })),
+      };
+    }
+
+    // No job specified — show all open jobs
+    const { data } = await supabase
+      .from("job_openings")
+      .select("id, title, status")
+      .eq("organization_id", session.orgId)
+      .in("status", ["published", "open", "draft"])
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    return {
+      intent,
+      results: (data ?? []).map((j) => ({
+        id: j.id,
+        title: j.title,
+        subtitle: `AI Shortlist → ${j.status}`,
+        href: `/jobs/${j.id}`,
+      })),
+    };
+  }
+
   return { intent };
 }

@@ -27,6 +27,7 @@ export interface ParsedIntent {
     | "parse_resume"
     | "narrate_status"
     | "trigger_screening"
+    | "shortlist_candidates"
     | "unknown";
   params: Record<string, string>;
   confidence: number;
@@ -51,6 +52,7 @@ const intentActions = [
   "parse_resume",
   "narrate_status",
   "trigger_screening",
+  "shortlist_candidates",
   "unknown",
 ] as const;
 
@@ -81,6 +83,7 @@ Available actions:
 - parse_resume: Parse or re-parse a candidate's resume. Params: candidate (name)
 - narrate_status: Explain a candidate's current application status in natural language. Params: candidate (name)
 - trigger_screening: Start AI screening for a candidate. Params: candidate (name), job (title, optional)
+- shortlist_candidates: AI shortlist/screen all applicants for a job. Params: job (title, optional)
 - navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines/offers/approvals/talent-pools)
 - unknown: Cannot determine intent`;
 
@@ -324,6 +327,26 @@ function matchQuickPatterns(input: string): ParsedIntent | null {
       params: { title, reason: "repost" },
       confidence: 0.95,
       display: `Repost "${title}"`,
+    };
+  }
+
+  // P6-5: Shortlist candidates
+  const shortlistMatch = /^(?:shortlist|screen all|ai screen|rank applicants|score resumes?|best candidates)\s*(?:for\s+)?(.*)$/i.exec(lower);
+  if (shortlistMatch) {
+    const job = (shortlistMatch[1] ?? "").trim();
+    return {
+      action: "shortlist_candidates",
+      params: job ? { job } : {},
+      confidence: 0.9,
+      display: job ? `AI shortlist candidates for "${job}"` : "AI shortlist candidates",
+    };
+  }
+  if (/who should i interview/i.test(lower)) {
+    return {
+      action: "shortlist_candidates",
+      params: {},
+      confidence: 0.85,
+      display: "AI shortlist: who should you interview",
     };
   }
 

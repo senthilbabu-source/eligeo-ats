@@ -21,6 +21,7 @@ import { billingPaymentFailed } from "@/inngest/functions/billing/payment-failed
 import { billingTrialEnding } from "@/inngest/functions/billing/trial-ending";
 import { billingReportOverage } from "@/inngest/functions/billing/report-overage";
 import { portalResumeParse } from "@/inngest/functions/portal/resume-parse";
+import { batchShortlist } from "@/inngest/functions/jobs/batch-shortlist";
 
 /**
  * Inngest endpoint — serves all registered background functions.
@@ -49,5 +50,6 @@ export const { GET, POST, PUT } = serve({
     billingTrialEnding,
     billingReportOverage,
     portalResumeParse,
+    batchShortlist,
   ],
 });

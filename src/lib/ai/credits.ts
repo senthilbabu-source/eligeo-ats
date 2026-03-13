@@ -21,6 +21,8 @@ const CREDIT_WEIGHTS: Record<string, number> = {
   match_explanation: 1,
   status_narration: 1,
   merge_score: 1,
+  shortlist_score: 3,
+  shortlist_summary: 1,
 };
 
 export type AiAction = keyof typeof CREDIT_WEIGHTS;

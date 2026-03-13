@@ -13,6 +13,7 @@ import { CloneChecklist } from "./clone-checklist";
 import { JdQualityPanel } from "./jd-quality-panel";
 import { BiasCheckBanner } from "./bias-check-banner";
 import type { JobMetadata } from "@/lib/types/ground-truth";
+import { ShortlistTriggerButton } from "./shortlist-trigger";
 
 export async function generateMetadata({
   params,
@@ -115,6 +116,17 @@ export default async function JobDetailPage({
   }
   const stageBreakdown = Object.values(stageCounts).sort((a, b) => a.order - b.order);
 
+  // Fetch latest shortlist report (P6-5)
+  const { data: lastReport } = await supabase
+    .from("ai_shortlist_reports")
+    .select("id, status, completed_at, shortlist_count")
+    .eq("job_opening_id", id)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
       <Link
@@ -177,13 +189,22 @@ export default async function JobDetailPage({
         )}
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex items-center gap-3">
         <Link
           href={`/jobs/${job.id}/pipeline`}
           className="inline-flex h-9 items-center rounded-md bg-primary/10 px-4 text-sm font-medium text-primary hover:bg-primary/20"
         >
           View Pipeline Board
         </Link>
+        <ShortlistTriggerButton
+          jobId={job.id}
+          hasApplications={(applicationCount ?? 0) > 0}
+          lastReportId={lastReport?.id ?? null}
+          lastReportStatus={lastReport?.status ?? null}
+          lastReportCompletedAt={lastReport?.completed_at ?? null}
+          lastReportShortlistCount={lastReport?.shortlist_count ?? null}
+          canEdit={can(session.orgRole, "jobs:edit")}
+        />
       </div>
 
       <div className="mt-8 grid gap-6 md:grid-cols-3">
