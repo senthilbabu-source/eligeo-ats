@@ -268,6 +268,24 @@ export const TENANT_A = {
       channel: "email" as const,
     },
   },
+  screening: {
+    config: {
+      id: "11111111-b001-4000-a000-000000000001",
+      job_opening_id: "11111111-3001-4000-a000-000000000001", // Senior Engineer
+    },
+    session: {
+      id: "11111111-b002-4000-a000-000000000001",
+      application_id: "11111111-5001-4000-a000-000000000001", // Alice for Engineer
+      candidate_id: "11111111-4001-4000-a000-000000000001", // Alice
+      status: "completed" as const,
+    },
+    sessionPending: {
+      id: "11111111-b002-4000-a000-000000000002",
+      application_id: "11111111-5001-4000-a000-000000000002", // Bob for Engineer
+      candidate_id: "11111111-4001-4000-a000-000000000002", // Bob
+      status: "pending" as const,
+    },
+  },
   notes: {
     onAlice: {
       id: "11111111-9001-4000-a000-000000000001",
@@ -362,6 +380,18 @@ export const TENANT_B = {
       id: "22222222-8001-4000-a000-000000000001",
       status: "draft" as const,
       compensation: { base_salary: 95000, currency: "USD", period: "annual" as const },
+    },
+  },
+  screening: {
+    config: {
+      id: "22222222-b001-4000-a000-000000000001",
+      job_opening_id: "22222222-3001-4000-a000-000000000001", // Python Developer
+    },
+    session: {
+      id: "22222222-b002-4000-a000-000000000001",
+      application_id: "22222222-5001-4000-a000-000000000001", // Dave for Python
+      candidate_id: "22222222-4001-4000-a000-000000000001", // Dave
+      status: "pending" as const,
     },
   },
   emailTemplates: {

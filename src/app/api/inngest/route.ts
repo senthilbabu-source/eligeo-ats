@@ -23,6 +23,9 @@ import { billingReportOverage } from "@/inngest/functions/billing/report-overage
 import { portalResumeParse } from "@/inngest/functions/portal/resume-parse";
 import { processEsignWebhook } from "@/inngest/functions/offers/process-esign-webhook";
 import { batchShortlist } from "@/inngest/functions/jobs/batch-shortlist";
+import { screeningInviteCandidate } from "@/inngest/functions/screening/invite-candidate";
+import { screeningGenerateSummary } from "@/inngest/functions/screening/generate-summary";
+import { screeningSendReminder } from "@/inngest/functions/screening/send-reminder";
 
 /**
  * Inngest endpoint — serves all registered background functions.
@@ -53,5 +56,8 @@ export const { GET, POST, PUT } = serve({
     billingReportOverage,
     portalResumeParse,
     batchShortlist,
+    screeningInviteCandidate,
+    screeningGenerateSummary,
+    screeningSendReminder,
   ],
 });

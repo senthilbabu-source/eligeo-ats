@@ -291,6 +291,41 @@ export type OfferApprovalStatus = "pending" | "approved" | "rejected";
 /** E-sign provider enum values (CHECK constraint in migration 028) */
 export type EsignProvider = "dropbox_sign" | "docusign";
 
+// ── Phase 6: Screening Types ──────────────────────────────────
+
+/** Screening question stored in screening_configs.questions JSONB */
+export interface ScreeningQuestion {
+  id: string;          // UUID
+  order: number;
+  topic: string;       // e.g., "Technical background"
+  raw_question: string;
+  is_required: boolean;
+  scoring_criteria?: string;
+}
+
+/** Screening session turn stored in screening_sessions.turns JSONB */
+export interface ScreeningTurn {
+  id: string;
+  question_id: string;
+  ai_question_text: string;
+  candidate_answer: string;
+  ai_follow_up?: string;
+  candidate_follow_up_answer?: string;
+  turn_score?: number; // 0–1
+  timestamp: string;   // ISO 8601
+}
+
+/** Score breakdown stored in screening_sessions.score_breakdown JSONB */
+export type ScoreBreakdown = Record<string, number>; // question_id → score (0–1)
+
+/** Screening session status (CHECK constraint in migration 032) */
+export type ScreeningSessionStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "abandoned"
+  | "skipped";
+
 /** Template variables available for email rendering (D08 §3.3) */
 export interface TemplateVariables {
   candidate: { name: string; email: string };

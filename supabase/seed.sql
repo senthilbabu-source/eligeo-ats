@@ -764,5 +764,84 @@ INSERT INTO offer_approvals (id, organization_id, offer_id, approver_id, sequenc
   );
 
 -- ============================================================
+-- Phase 6: Screening Configs + Sessions (Wave P6-4)
+-- ============================================================
+
+-- ─── Screening Config (itecbrains — Senior Engineer job) ────
+
+INSERT INTO screening_configs (id, organization_id, job_opening_id, questions, instructions, max_duration_min, is_active, created_by) VALUES
+  (
+    '11111111-b001-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-3001-4000-a000-000000000001',
+    '[
+      {"id": "q1", "order": 1, "topic": "Technical background", "raw_question": "Describe your experience with TypeScript and React.", "is_required": true, "scoring_criteria": "Depth of experience, specific projects mentioned"},
+      {"id": "q2", "order": 2, "topic": "System design", "raw_question": "How would you design a real-time notification system?", "is_required": true, "scoring_criteria": "Architecture thinking, scalability awareness"},
+      {"id": "q3", "order": 3, "topic": "Collaboration", "raw_question": "Tell us about a time you resolved a conflict in a code review.", "is_required": false, "scoring_criteria": "Communication skills, empathy, resolution approach"}
+    ]'::jsonb,
+    'Be conversational and encouraging. Focus on depth over breadth.',
+    15,
+    TRUE,
+    '11111111-1001-4000-a000-000000000003'  -- Roshelle (recruiter)
+  );
+
+-- Globex screening config (cross-tenant RLS test)
+INSERT INTO screening_configs (id, organization_id, job_opening_id, questions, instructions, is_active, created_by) VALUES
+  (
+    '22222222-b001-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    '22222222-3001-4000-a000-000000000001',
+    '[{"id": "q1", "order": 1, "topic": "Python experience", "raw_question": "Describe your Python experience.", "is_required": true}]'::jsonb,
+    NULL,
+    TRUE,
+    '22222222-1001-4000-a000-000000000001'  -- Morgan (Globex owner)
+  );
+
+-- ─── Screening Sessions ─────────────────────────────────────
+
+-- Alice's completed screening (itecbrains)
+INSERT INTO screening_sessions (id, organization_id, application_id, candidate_id, config_id, status, turns, ai_summary, ai_score, score_breakdown, started_at, completed_at) VALUES
+  (
+    '11111111-b002-4000-a000-000000000001',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000001',
+    '11111111-4001-4000-a000-000000000001',
+    '11111111-b001-4000-a000-000000000001',
+    'completed',
+    '[
+      {"id": "t1", "question_id": "q1", "ai_question_text": "Could you walk me through your experience with TypeScript and React? What kinds of projects have you worked on?", "candidate_answer": "I have 5 years of experience with React and 3 years with TypeScript. I built a real-time dashboard for a fintech startup and led the migration of a legacy jQuery app to React.", "turn_score": 0.85, "timestamp": "2026-03-10T10:00:00Z"},
+      {"id": "t2", "question_id": "q2", "ai_question_text": "If you were tasked with designing a real-time notification system, how would you approach the architecture?", "candidate_answer": "I would use WebSockets with a Redis pub/sub backend for real-time delivery, with a PostgreSQL table for persistence and a queue for email fallback. The system would support channels (in-app, email, SMS) with user preferences.", "ai_follow_up": "Great approach! How would you handle scaling if the system needed to support millions of concurrent connections?", "candidate_follow_up_answer": "I would add a load balancer with sticky sessions for WebSocket connections, shard the Redis pub/sub by user ID range, and use horizontal scaling with Kubernetes.", "turn_score": 0.92, "timestamp": "2026-03-10T10:05:00Z"},
+      {"id": "t3", "question_id": "q3", "ai_question_text": "Can you share a time when you had a disagreement during a code review? How did you handle it?", "candidate_answer": "A colleague wanted to use a complex design pattern that I felt was over-engineered. I set up a quick pair programming session where we both prototyped our approaches. We ended up finding a middle ground that was simpler than both original proposals.", "turn_score": 0.88, "timestamp": "2026-03-10T10:10:00Z"}
+    ]'::jsonb,
+    'Strong technical candidate with deep React/TypeScript experience. Excellent system design thinking with practical scalability awareness. Good collaboration skills demonstrated through constructive conflict resolution.',
+    0.88,
+    '{"q1": 0.85, "q2": 0.92, "q3": 0.88}'::jsonb,
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '3 days' + INTERVAL '12 minutes'
+  );
+
+-- Bob's pending screening (itecbrains)
+INSERT INTO screening_sessions (id, organization_id, application_id, candidate_id, config_id, status) VALUES
+  (
+    '11111111-b002-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000002',
+    '11111111-4001-4000-a000-000000000002',
+    '11111111-b001-4000-a000-000000000001',
+    'pending'
+  );
+
+-- Dave's pending screening (Globex — cross-tenant RLS test)
+INSERT INTO screening_sessions (id, organization_id, application_id, candidate_id, config_id, status) VALUES
+  (
+    '22222222-b002-4000-a000-000000000001',
+    '22222222-2001-4000-a000-000000000001',
+    '22222222-5001-4000-a000-000000000001',
+    '22222222-4001-4000-a000-000000000001',
+    '22222222-b001-4000-a000-000000000001',
+    'pending'
+  );
+
+-- ============================================================
 -- End of seed data
 -- ============================================================

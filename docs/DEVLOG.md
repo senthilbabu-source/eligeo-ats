@@ -4,6 +4,68 @@
 
 ---
 
+## 2026-03-13 — Phase 6 Wave P6-4: Conversational AI Screening v1 ✅
+
+**Scope:** Full conversational AI screening system. Recruiters configure screening questions per job, candidates answer at their own pace via magic link, AI generates follow-ups and summaries. D32 §7.
+
+### New Files — Migration + Types
+- `supabase/migrations/00032_phase6_screening.sql` — screening_configs + screening_sessions tables, RLS (4 policies × 2 tables), audit triggers, indexes
+- Ground-truth types: ScreeningQuestion, ScreeningTurn, ScoreBreakdown, ScreeningSessionStatus in `lib/types/ground-truth.ts`
+- Credit weights: screening_batch (1), screening_summary (5) in `lib/ai/credits.ts`
+
+### New Files — AI Functions
+- `src/lib/ai/screening.ts` — 4 AI functions:
+  - generateScreeningQuestionBatch (gpt-4o-mini, 1 credit) — batch rephrase raw questions
+  - evaluateCandidateAnswer (gpt-4o-mini, 0 credits) — decide follow-up needed
+  - generateScreeningSummary (gpt-4o, 5 credits) — final summary + score + key signals
+  - generateScreeningQuestion (gpt-4o-mini, 0 credits) — single rephrase fallback
+
+### New Files — Server Actions + API
+- `src/lib/actions/screening.ts` — upsertScreeningConfig, getScreeningConfig, toggleScreeningActive, getScreeningResults, requestHumanReview
+- `src/app/api/jobs/[id]/screening-config/route.ts` — GET/PUT screening config (recruiter+)
+- `src/app/api/portal/screening/[sessionId]/route.ts` — GET session data (token auth)
+- `src/app/api/portal/screening/[sessionId]/answer/route.ts` — POST submit answer (token auth)
+- `src/app/api/portal/screening/[sessionId]/complete/route.ts` — POST mark complete → fire Inngest
+- `src/app/api/candidates/[id]/screening-results/route.ts` — GET recruiter view
+
+### New Files — Inngest (3 functions, now 26 active)
+- `src/inngest/functions/screening/invite-candidate.ts` — On stage-entered, create session + send magic link + schedule 48h reminder
+- `src/inngest/functions/screening/generate-summary.ts` — On all-answered, AI summary + score → update session → notify recruiter
+- `src/inngest/functions/screening/send-reminder.ts` — 48h delayed, sends reminder if still pending
+
+### New Files — UI
+- `src/app/(app)/jobs/[id]/settings/screening/page.tsx` — Server component for config page
+- `src/app/(app)/jobs/[id]/settings/screening/screening-config-builder.tsx` — Question CRUD, reorder, tone, duration, active toggle
+- `src/app/(public)/careers/[slug]/screen/[sessionId]/page.tsx` — Candidate screening portal (token auth)
+- `src/app/(public)/careers/[slug]/screen/[sessionId]/screening-portal.tsx` — Sequential Q&A, progress bar, follow-ups, completion
+- `src/components/candidates/screening-results.tsx` — Score badge, AI summary, per-question breakdown
+- `src/components/candidates/screening-transcript.tsx` — Expandable transcript with Q&A pairs
+
+### Modified Files
+- `src/lib/utils/candidate-token.ts` — Added createScreeningToken/verifyScreeningToken (7-part HMAC, scope: "screening")
+- `src/lib/ai/intent.ts` — Added trigger_screening + view_screening intents + quick patterns
+- `src/lib/actions/command-bar.ts` — trigger_screening + view_screening handlers
+- `src/app/api/inngest/route.ts` — Registered 3 screening functions (23 → 26 active)
+- `src/__fixtures__/golden-tenant.ts` — TENANT_A/B screening fixtures (config, sessions)
+- `supabase/seed.sql` — Screening seed data (configs + sessions with turns/scores)
+
+### Tests: +60 new (1339 → 1399 Vitest). All passing. TypeScript clean.
+- RLS: screening_configs (8), screening_sessions (8) — full D24 §6.2 matrix
+- Unit: screening tokens (10), AI functions (17), intent patterns (9)
+- Integration: Inngest functions (8) — invite/summary/reminder
+
+### EU AI Act Compliance (D32 §14)
+- Transparency disclosure banners on config builder + screening portal
+- human_review_requested flag on screening_sessions
+- All turns stored immutably for audit trail
+- Anti-discrimination instruction in all AI prompts
+
+### Plan Gating
+- Starter: Static form (raw questions, no AI rephrasing/follow-ups/scoring)
+- Growth+: Full AI (batch rephrase, follow-ups, scoring, summary)
+
+---
+
 ## 2026-03-13 — Post-P6-3/P6-5 Documentation Consistency Audit ✅
 
 **Scope:** Sync 5 docs + INDEX + MEMORY after P6-3 (Dropbox Sign) and P6-5 (AI Shortlist) builds completed.

@@ -364,6 +364,80 @@ export async function executeCommand(
     return { intent };
   }
 
+  // P6-4: Trigger screening — search candidates to navigate to screening config
+  if (intent.action === "trigger_screening") {
+    const candidateName = intent.params.candidate ?? "";
+    if (candidateName) {
+      const supabase = await createClient();
+      const escaped = escapeLikeQuery(candidateName);
+      const { data: candidates } = await supabase
+        .from("candidates")
+        .select("id, full_name, email")
+        .eq("organization_id", session.orgId)
+        .ilike("full_name", `%${escaped}%`)
+        .is("deleted_at", null)
+        .limit(5);
+
+      if (candidates?.length) {
+        // Find their active applications to link to job screening config
+        const candidateIds = candidates.map((c) => c.id);
+        const { data: apps } = await supabase
+          .from("applications")
+          .select("id, candidate_id, job_opening_id")
+          .eq("organization_id", session.orgId)
+          .in("candidate_id", candidateIds)
+          .eq("status", "active")
+          .is("deleted_at", null)
+          .limit(10);
+
+        const jobIds = [...new Set((apps ?? []).map((a) => a.job_opening_id))];
+        const { data: jobs } = jobIds.length
+          ? await supabase.from("job_openings").select("id, title").in("id", jobIds)
+          : { data: [] };
+        const jobMap = Object.fromEntries((jobs ?? []).map((j) => [j.id, j.title]));
+        const nameMap = Object.fromEntries(candidates.map((c) => [c.id, c.full_name]));
+
+        return {
+          intent,
+          results: (apps ?? []).map((a) => ({
+            id: a.id,
+            title: nameMap[a.candidate_id] ?? "Unknown",
+            subtitle: `Screen for ${jobMap[a.job_opening_id] ?? "Unknown Job"}`,
+            href: `/jobs/${a.job_opening_id}/settings/screening`,
+          })),
+        };
+      }
+    }
+    return { intent };
+  }
+
+  // P6-4: View screening results — search candidates
+  if (intent.action === "view_screening") {
+    const candidateName = intent.params.candidate ?? "";
+    if (candidateName) {
+      const supabase = await createClient();
+      const escaped = escapeLikeQuery(candidateName);
+      const { data: candidates } = await supabase
+        .from("candidates")
+        .select("id, full_name, email")
+        .eq("organization_id", session.orgId)
+        .ilike("full_name", `%${escaped}%`)
+        .is("deleted_at", null)
+        .limit(5);
+
+      return {
+        intent,
+        results: (candidates ?? []).map((c) => ({
+          id: c.id,
+          title: c.full_name,
+          subtitle: "View screening results",
+          href: `/candidates/${c.id}?tab=screening`,
+        })),
+      };
+    }
+    return { intent };
+  }
+
   // P6-5: Shortlist candidates — list open jobs for user to select
   if (intent.action === "shortlist_candidates") {
     const jobTitle = intent.params.job ?? "";

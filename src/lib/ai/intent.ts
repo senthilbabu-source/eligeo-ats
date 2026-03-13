@@ -27,6 +27,7 @@ export interface ParsedIntent {
     | "parse_resume"
     | "narrate_status"
     | "trigger_screening"
+    | "view_screening"
     | "shortlist_candidates"
     | "send_offer"
     | "unknown";
@@ -53,6 +54,7 @@ const intentActions = [
   "parse_resume",
   "narrate_status",
   "trigger_screening",
+  "view_screening",
   "shortlist_candidates",
   "send_offer",
   "unknown",
@@ -85,6 +87,7 @@ Available actions:
 - parse_resume: Parse or re-parse a candidate's resume. Params: candidate (name)
 - narrate_status: Explain a candidate's current application status in natural language. Params: candidate (name)
 - trigger_screening: Start AI screening for a candidate. Params: candidate (name), job (title, optional)
+- view_screening: View screening results for a candidate. Params: candidate (name)
 - shortlist_candidates: AI shortlist/screen all applicants for a job. Params: job (title, optional)
 - send_offer: Send an offer for e-signature. Params: candidate (name)
 - navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines/offers/approvals/talent-pools)
@@ -342,6 +345,31 @@ function matchQuickPatterns(input: string): ParsedIntent | null {
       params: { candidate },
       confidence: 0.95,
       display: `Send offer for e-sign to ${candidate}`,
+    };
+  }
+
+  // P6-4: Screen candidate
+  const screenMatch = /^(?:screen|screening)\s+(?:for\s+)?(.+?)(?:\s+for\s+(.+))?$/i.exec(lower);
+  if (screenMatch) {
+    const candidate = (screenMatch[1] ?? "").trim();
+    const job = (screenMatch[2] ?? "").trim();
+    return {
+      action: "trigger_screening",
+      params: { candidate, ...(job ? { job } : {}) },
+      confidence: 0.9,
+      display: job ? `Screen ${candidate} for ${job}` : `Screen ${candidate}`,
+    };
+  }
+
+  // P6-4: View screening results
+  const viewScreeningMatch = /^(?:view|show|check)\s+screening\s+(?:for\s+|results?\s+(?:for\s+)?)?(.+)$/i.exec(lower);
+  if (viewScreeningMatch) {
+    const candidate = (viewScreeningMatch[1] ?? "").trim();
+    return {
+      action: "view_screening",
+      params: { candidate },
+      confidence: 0.9,
+      display: `View screening results for ${candidate}`,
     };
   }
 

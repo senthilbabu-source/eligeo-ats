@@ -23,6 +23,8 @@ const CREDIT_WEIGHTS: Record<string, number> = {
   merge_score: 1,
   shortlist_score: 3,
   shortlist_summary: 1,
+  screening_batch: 1,
+  screening_summary: 5,
 };
 
 export type AiAction = keyof typeof CREDIT_WEIGHTS;
