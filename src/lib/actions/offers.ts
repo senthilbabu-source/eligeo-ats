@@ -737,3 +737,103 @@ export async function getOffer(offerId: string) {
 
   return { success: true, data: { ...offer, approvals: approvals ?? [] } };
 }
+
+// ── H6-5: AI Compensation Suggestion ───────────────────────
+
+export async function aiSuggestCompensation(params: {
+  jobTitle: string;
+  department?: string;
+  location?: string;
+}) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "offers:create");
+
+  const { suggestOfferCompensation } = await import("@/lib/ai/generate");
+
+  const result = await suggestOfferCompensation({
+    jobTitle: params.jobTitle,
+    department: params.department,
+    location: params.location,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
+
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  return { success: true, suggestion: result.suggestion };
+}
+
+// ── H6-5: AI Salary Band Check ────────────────────────────
+
+export async function aiCheckSalaryBand(params: {
+  jobTitle: string;
+  proposedBaseSalary: number;
+  currency: string;
+  period: string;
+  location?: string;
+}) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "offers:create");
+
+  const { checkSalaryBand } = await import("@/lib/ai/generate");
+
+  const result = await checkSalaryBand({
+    jobTitle: params.jobTitle,
+    proposedBaseSalary: params.proposedBaseSalary,
+    currency: params.currency,
+    period: params.period,
+    location: params.location,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
+
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  return { success: true, result: result.result };
+}
+
+// ── H6-5: AI Offer Terms Generation ───────────────────────
+
+export async function aiGenerateOfferTerms(params: {
+  candidateName: string;
+  jobTitle: string;
+  department?: string;
+  compensation: {
+    base_salary: number;
+    currency: string;
+    period: "annual" | "monthly" | "hourly";
+    bonus_pct?: number;
+    equity_shares?: number;
+    equity_type?: "options" | "rsu" | "phantom";
+    equity_vesting?: string;
+    sign_on_bonus?: number;
+  };
+  startDate?: string;
+  organizationName: string;
+}) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "offers:create");
+
+  const { generateOfferLetterDraft } = await import("@/lib/ai/generate");
+
+  const result = await generateOfferLetterDraft({
+    candidateName: params.candidateName,
+    jobTitle: params.jobTitle,
+    department: params.department,
+    compensation: params.compensation,
+    startDate: params.startDate,
+    organizationName: params.organizationName,
+    organizationId: session.orgId,
+    userId: session.userId,
+  });
+
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  return { success: true, text: result.text };
+}

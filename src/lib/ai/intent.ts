@@ -22,6 +22,11 @@ export interface ParsedIntent {
     | "create_offer"
     | "check_offer"
     | "navigate"
+    | "merge_candidates"
+    | "add_to_pool"
+    | "parse_resume"
+    | "narrate_status"
+    | "trigger_screening"
     | "unknown";
   params: Record<string, string>;
   confidence: number;
@@ -41,6 +46,11 @@ const intentActions = [
   "create_offer",
   "check_offer",
   "navigate",
+  "merge_candidates",
+  "add_to_pool",
+  "parse_resume",
+  "narrate_status",
+  "trigger_screening",
   "unknown",
 ] as const;
 
@@ -66,7 +76,12 @@ Available actions:
 - clone_job: Clone a job with intent. Params: title (job title to clone), reason (new_location/new_level/repost/different_team), location (new location if applicable), level (new level if applicable)
 - create_offer: Create an offer for a candidate. Params: candidate (name), job (title, optional)
 - check_offer: Check offer status or list offers. Params: candidate (name, optional), status (draft/pending_approval/approved/sent/signed/declined/expired/withdrawn, optional)
-- navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines/offers/approvals)
+- merge_candidates: Merge duplicate candidates. Params: candidate (name to search for duplicates)
+- add_to_pool: Add a candidate to a talent pool. Params: candidate (name), pool (pool name, optional)
+- parse_resume: Parse or re-parse a candidate's resume. Params: candidate (name)
+- narrate_status: Explain a candidate's current application status in natural language. Params: candidate (name)
+- trigger_screening: Start AI screening for a candidate. Params: candidate (name), job (title, optional)
+- navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines/offers/approvals/talent-pools)
 - unknown: Cannot determine intent`;
 
 /**
@@ -244,6 +259,33 @@ function matchQuickPatterns(input: string): ParsedIntent | null {
       confidence: 0.9,
       display: rest ? `Check offer status for ${rest}` : "Check offer statuses",
     };
+  }
+
+  // H6-6: Merge candidates
+  const mergeMatch = /^(?:merge|combine|dedupe?|dedup)\s+(?:candidates?\s+)?(.+)$/i.exec(lower);
+  if (mergeMatch) {
+    const candidate = (mergeMatch[1] ?? "").trim();
+    return { action: "merge_candidates", params: { candidate }, confidence: 0.9, display: `Merge candidates: ${candidate}` };
+  }
+
+  // H6-6: Add to pool
+  const poolMatch = /^(?:add|move)\s+(.+?)\s+(?:to\s+)?(?:pool|talent pool|nurture)\s*(.*)$/i.exec(lower);
+  if (poolMatch) {
+    const candidate = (poolMatch[1] ?? "").trim();
+    const pool = (poolMatch[2] ?? "").trim();
+    return { action: "add_to_pool", params: { candidate, ...(pool ? { pool } : {}) }, confidence: 0.9, display: `Add ${candidate} to ${pool || "talent pool"}` };
+  }
+
+  // H6-6: Parse resume
+  const parseMatch = /^(?:parse|extract|process)\s+(?:resume\s+(?:for\s+)?)?(.+?)(?:\s+resume)?$/i.exec(lower);
+  if (parseMatch && /resume/i.test(lower)) {
+    const candidate = (parseMatch[1] ?? "").trim();
+    return { action: "parse_resume", params: { candidate }, confidence: 0.9, display: `Parse resume for ${candidate}` };
+  }
+
+  // H6-6: Navigate to talent pools
+  if (/^(go to |open |show )?(talent pools?|pools?)$/i.test(lower)) {
+    return { action: "navigate", params: { page: "talent-pools" }, confidence: 1, display: "Navigate to Talent Pools" };
   }
 
   // Clone job intent patterns (E2) — most-specific first

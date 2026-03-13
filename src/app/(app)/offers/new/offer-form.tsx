@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createOffer } from "@/lib/actions/offers";
+import { createOffer, aiSuggestCompensation, aiCheckSalaryBand, aiGenerateOfferTerms } from "@/lib/actions/offers";
 import { SUPPORTED_CURRENCIES } from "@/lib/types/ground-truth";
 
 interface ApproverOption {
@@ -13,11 +13,12 @@ interface ApproverOption {
 
 export function OfferForm({
   applicationId,
-  candidateName: _candidateName,
-  jobTitle: _jobTitle,
-  department: _department,
+  candidateName,
+  jobTitle,
+  department,
   defaultCurrency,
   approverOptions,
+  organizationName,
 }: {
   applicationId: string;
   candidateName: string;
@@ -25,10 +26,16 @@ export function OfferForm({
   department?: string;
   defaultCurrency: string;
   approverOptions: ApproverOption[];
+  organizationName?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // H6-5: AI state
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [salaryBandResult, setSalaryBandResult] = useState<{ assessment: string; reasoning: string } | null>(null);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   // Compensation
   const [baseSalary, setBaseSalary] = useState("");
@@ -52,6 +59,89 @@ export function OfferForm({
     setSelectedApprovers((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id],
     );
+  }
+
+  // H6-5: AI Suggest Compensation
+  async function handleAiSuggest() {
+    if (!jobTitle) return;
+    setAiSuggesting(true);
+    setError(null);
+    try {
+      const result = await aiSuggestCompensation({ jobTitle, department });
+      if (result.error) {
+        setError(result.error);
+      } else if (result.suggestion) {
+        const s = result.suggestion;
+        if (s.base_salary) setBaseSalary(String(s.base_salary));
+        if (s.bonus_pct) setBonusPct(String(s.bonus_pct));
+        if (s.equity_shares) setEquityShares(String(s.equity_shares));
+        if (s.sign_on_bonus) setSignOnBonus(String(s.sign_on_bonus));
+      }
+    } catch {
+      setError("Failed to get AI suggestion.");
+    } finally {
+      setAiSuggesting(false);
+    }
+  }
+
+  // H6-5: Salary Band Check (on blur)
+  async function handleSalaryBandCheck() {
+    const salary = parseFloat(baseSalary);
+    if (!salary || salary <= 0 || !jobTitle) {
+      setSalaryBandResult(null);
+      return;
+    }
+    try {
+      const result = await aiCheckSalaryBand({
+        jobTitle,
+        proposedBaseSalary: salary,
+        currency,
+        period,
+      });
+      if (result.result) {
+        setSalaryBandResult({ assessment: result.result.assessment, reasoning: result.result.reasoning });
+      }
+    } catch {
+      // Non-blocking — salary band check is informational
+    }
+  }
+
+  // H6-5: AI Generate Offer Terms
+  async function handleAiGenerateTerms() {
+    const salary = parseFloat(baseSalary);
+    if (!salary || salary <= 0) {
+      setError("Enter base salary before generating terms.");
+      return;
+    }
+    setAiGenerating(true);
+    setError(null);
+    try {
+      const result = await aiGenerateOfferTerms({
+        candidateName,
+        jobTitle,
+        department,
+        compensation: {
+          base_salary: salary,
+          currency,
+          period,
+          ...(bonusPct ? { bonus_pct: parseFloat(bonusPct) } : {}),
+          ...(equityShares ? { equity_shares: parseInt(equityShares, 10), equity_type: equityType } : {}),
+          ...(equityVesting ? { equity_vesting: equityVesting } : {}),
+          ...(signOnBonus ? { sign_on_bonus: parseFloat(signOnBonus) } : {}),
+        },
+        startDate: startDate || undefined,
+        organizationName: organizationName ?? "the company",
+      });
+      if (result.error) {
+        setError(result.error);
+      } else if (result.text) {
+        setTerms(result.text);
+      }
+    } catch {
+      setError("Failed to generate offer terms.");
+    } finally {
+      setAiGenerating(false);
+    }
   }
 
   function handleSubmit() {
@@ -106,7 +196,17 @@ export function OfferForm({
 
       {/* Compensation */}
       <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-lg font-medium">Compensation</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium">Compensation</h2>
+          <button
+            type="button"
+            onClick={handleAiSuggest}
+            disabled={aiSuggesting || !jobTitle}
+            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+          >
+            {aiSuggesting ? "Suggesting..." : "AI Suggest"}
+          </button>
+        </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="sm:col-span-1">
             <label className="mb-1 block text-sm font-medium">
@@ -115,10 +215,20 @@ export function OfferForm({
             <input
               type="number"
               value={baseSalary}
-              onChange={(e) => setBaseSalary(e.target.value)}
+              onChange={(e) => { setBaseSalary(e.target.value); setSalaryBandResult(null); }}
+              onBlur={handleSalaryBandCheck}
               placeholder="120000"
               className="h-9 w-full rounded-md border border-border px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
+            {salaryBandResult && (
+              <p className={`mt-1 text-xs ${
+                salaryBandResult.assessment === "competitive" ? "text-green-600" :
+                "text-amber-600"
+              }`}>
+                {salaryBandResult.assessment === "competitive" ? "\u2713 " : "\u26A0 "}
+                {salaryBandResult.reasoning}
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Currency</label>
@@ -229,7 +339,17 @@ export function OfferForm({
           </div>
         </div>
         <div className="mt-4">
-          <label className="mb-1 block text-sm font-medium">Terms &amp; Conditions</label>
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-sm font-medium">Terms &amp; Conditions</label>
+            <button
+              type="button"
+              onClick={handleAiGenerateTerms}
+              disabled={aiGenerating}
+              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+            >
+              {aiGenerating ? "Generating..." : "AI Generate Terms"}
+            </button>
+          </div>
           <textarea
             value={terms}
             onChange={(e) => setTerms(e.target.value)}

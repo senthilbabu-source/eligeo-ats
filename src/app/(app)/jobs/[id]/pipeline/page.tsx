@@ -82,6 +82,20 @@ export default async function PipelinePage({
       }
     }
   }
+
+  // H6-1: Fetch AI match scores for pipeline cards
+  const matchScoreByApp: Record<string, number> = {};
+  if (appIds.length > 0) {
+    const { data: matches } = await supabase
+      .from("ai_match_explanations")
+      .select("application_id, match_score")
+      .in("application_id", appIds)
+      .eq("organization_id", session.orgId);
+    for (const m of matches ?? []) {
+      if (m.match_score != null) matchScoreByApp[m.application_id] = m.match_score;
+    }
+  }
+
   const nowMs = new Date().getTime();
 
   // Group applications by stage
@@ -93,6 +107,7 @@ export default async function PipelinePage({
       current_stage_id: string;
       applied_at: string;
       days_in_stage: number | null;
+      match_score: number | null;
       candidate: { id: string; full_name: string; current_title: string | null; current_company: string | null } | null;
     }>
   > = {};
@@ -121,6 +136,7 @@ export default async function PipelinePage({
         ...app,
         candidate,
         days_in_stage,
+        match_score: matchScoreByApp[app.id] ?? null,
       });
     }
   }

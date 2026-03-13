@@ -4,6 +4,52 @@
 
 ---
 
+## 2026-03-12 — Pre-Phase 6 AI Hardening: H6-1 through H6-6 Implementation ✅
+
+**Scope:** Implement all 6 ADR-011 compliance hardening items from `PRE-PHASE6-AI-HARDENING.md`. Zero new migrations — all tables already exist.
+
+### H6-3: NBA Wire All 6 Rules
+- Extended `NextBestAction` server component to fetch 4 additional data sources: `ai_match_explanations` (match scores), `interviews` (scheduled/confirmed/completed), `scorecard_submissions` (via completed interviews), `offers` (approved/sent status)
+- All 6 NBA rules now fire: offer_ready (P1), scorecard_complete (P2), high_match_no_interview (P3), stalled (P4), no_applications (P5), at_risk (P6)
+
+### H6-5: Offers Form AI Buttons
+- 3 new server actions in `offers.ts`: `aiSuggestCompensation()`, `aiCheckSalaryBand()`, `aiGenerateOfferTerms()`
+- "AI Suggest" button pre-fills compensation fields from AI
+- Salary band check fires on blur — shows competitive (green ✓) or below/above market (amber ⚠)
+- "AI Generate Terms" button generates offer letter text from compensation + candidate details
+- Passed `organizationName` from page to form component
+
+### H6-1: Pipeline Board AI Match Score
+- Fetch `ai_match_explanations` match scores in pipeline page data layer
+- Added match score badge to kanban cards (green ≥75%, amber ≥50%, red <50%)
+- Carried `match_score` through optimistic DnD updates
+
+### H6-4: Candidate Profile Match Card + Duplicate Warning + Embedding Badge
+- Extended candidate detail page to fetch `ai_match_explanations`, `embedding_updated_at`, `human_review_requested`
+- Displays match score cards per active application
+- Embedding freshness badge (fresh ≤7d, stale >7d, none)
+- Duplicate warning banner when `human_review_requested` is set
+
+### H6-2: Candidates List AI Fit Column
+- When job filter is active, fetches match scores from `ai_match_explanations` via applications
+- Conditionally renders "AI Fit" column with color-coded percentage badge
+- Added duplicate warning icon (⚠) next to candidate names
+
+### H6-6: Command Bar — 5 New Intents
+- Added to `ParsedIntent.action`: `merge_candidates`, `add_to_pool`, `parse_resume`, `narrate_status`, `trigger_screening`
+- Quick patterns: merge/combine/dedupe → merge_candidates, add to pool/nurture → add_to_pool, parse/extract resume → parse_resume, talent pools nav
+- Updated INTENT_PROMPT with all 5 new action descriptions for AI fallback
+
+### Tests: +39 new (1203 → 1242)
+- `h6-hardening.test.ts`: 21 tests — offer AI actions (9), match score badge logic (4), embedding freshness (5), salary band display (3)
+- `intent-patterns.test.ts`: +18 tests — merge_candidates (4), add_to_pool (3), parse_resume (4), talent pools nav (5), plus H6-6 patterns added to local matchQuickPatterns mirror
+
+### TypeScript: clean (`tsc --noEmit` — 0 errors)
+
+**Files changed:** `next-best-action.tsx`, `offers.ts`, `offer-form.tsx`, `offers/new/page.tsx`, `pipeline/page.tsx`, `pipeline-board.tsx`, `candidates/[id]/page.tsx`, `candidates/page.tsx`, `intent.ts`, plus 2 test files.
+
+---
+
 ## 2026-03-12 — Pre-Phase 6 ADR-011 Compliance Audit + AI Hardening Spec
 
 **Scope:** Full audit of all Phase 0–5 UI surfaces against ADR-011 (AI-first build pivot). Output: `docs/PRE-PHASE6-AI-HARDENING.md` — the mandatory hardening spec before Phase 6 begins.

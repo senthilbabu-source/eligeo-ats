@@ -32,6 +32,7 @@ interface Application {
   current_stage_id: string;
   applied_at: string;
   days_in_stage: number | null;
+  match_score: number | null;
   candidate: {
     id: string;
     full_name: string;
@@ -119,6 +120,18 @@ function DraggableCard({
           {app.candidate.current_title}
           {app.candidate.current_company && ` at ${app.candidate.current_company}`}
         </p>
+      )}
+      {/* H6-1: AI match score badge */}
+      {app.match_score != null && (
+        <div className="mt-1.5">
+          <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+            app.match_score >= 0.75 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+            app.match_score >= 0.5 ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+            "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+          }`}>
+            {(app.match_score * 100).toFixed(0)}% match
+          </span>
+        </div>
       )}
       <div className="mt-2 flex items-center justify-between">
         <span className="text-[11px] text-muted-foreground">
@@ -296,7 +309,7 @@ export function PipelineBoard({
         if (!app) return prev;
 
         next[fromStageId] = (next[fromStageId] ?? []).filter((a) => a.id !== applicationId);
-        next[toStageId] = [...(next[toStageId] ?? []), { ...app, current_stage_id: toStageId, days_in_stage: 0 }];
+        next[toStageId] = [...(next[toStageId] ?? []), { ...app, current_stage_id: toStageId, days_in_stage: 0, match_score: app.match_score }];
         return next;
       });
 

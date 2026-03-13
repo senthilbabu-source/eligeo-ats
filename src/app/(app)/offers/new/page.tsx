@@ -61,7 +61,7 @@ export default async function NewOfferPage({
       .is("deleted_at", null),
     supabase
       .from("organizations")
-      .select("default_currency")
+      .select("name, default_currency")
       .eq("id", session.orgId)
       .single(),
   ]);
@@ -101,6 +101,7 @@ export default async function NewOfferPage({
         department={job.department ?? undefined}
         defaultCurrency={org?.default_currency ?? "USD"}
         approverOptions={approverOptions}
+        organizationName={org?.name ?? undefined}
       />
     </div>
   );

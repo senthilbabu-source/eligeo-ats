@@ -65,6 +65,61 @@ function matchQuickPatterns(input: string) {
     return { action: "create_candidate", params: {}, confidence: 1, display: "Add a new candidate" };
   }
 
+  // Navigation — offers/approvals
+  if (/^(go to |open |show )?(offers?|offer list)$/i.test(lower)) {
+    return { action: "navigate", params: { page: "offers" }, confidence: 1, display: "Navigate to Offers" };
+  }
+  if (/^(go to |open |show )?(approvals?|approval inbox|my approvals?)$/i.test(lower)) {
+    return { action: "navigate", params: { page: "approvals" }, confidence: 1, display: "Navigate to Approvals" };
+  }
+
+  // New job / new candidate (already above in search block)
+
+  // Create offer
+  const createOfferMatch = /^(?:create|new|make|draft)\s+offer\s+(?:for\s+)?(.+)$/i.exec(lower);
+  if (createOfferMatch) {
+    const candidate = (createOfferMatch[1] ?? "").trim();
+    return { action: "create_offer", params: { candidate }, confidence: 0.95, display: `Create offer for ${candidate}` };
+  }
+
+  // Check offer
+  const checkOfferMatch = /^(?:check|show|view|list)\s+offers?\s*(?:for\s+)?(.*)$/i.exec(lower);
+  if (checkOfferMatch) {
+    const candidate = (checkOfferMatch[1] ?? "").trim();
+    return { action: "check_offer", params: candidate ? { candidate } : {}, confidence: 0.9, display: candidate ? `Check offers for ${candidate}` : "Check all offers" };
+  }
+  if (/^offer status/i.test(lower)) {
+    const rest = lower.replace(/^offer status\s*/i, "").trim();
+    return { action: "check_offer", params: rest ? { candidate: rest } : {}, confidence: 0.9, display: rest ? `Check offer status for ${rest}` : "Check offer statuses" };
+  }
+
+  // H6-6: Merge candidates
+  const mergeMatch = /^(?:merge|combine|dedupe?|dedup)\s+(?:candidates?\s+)?(.+)$/i.exec(lower);
+  if (mergeMatch) {
+    const candidate = (mergeMatch[1] ?? "").trim();
+    return { action: "merge_candidates", params: { candidate }, confidence: 0.9, display: `Merge candidates: ${candidate}` };
+  }
+
+  // H6-6: Add to pool
+  const poolMatch = /^(?:add|move)\s+(.+?)\s+(?:to\s+)?(?:pool|talent pool|nurture)\s*(.*)$/i.exec(lower);
+  if (poolMatch) {
+    const candidate = (poolMatch[1] ?? "").trim();
+    const pool = (poolMatch[2] ?? "").trim();
+    return { action: "add_to_pool", params: { candidate, ...(pool ? { pool } : {}) }, confidence: 0.9, display: `Add ${candidate} to ${pool || "talent pool"}` };
+  }
+
+  // H6-6: Parse resume
+  const parseMatch = /^(?:parse|extract|process)\s+(?:resume\s+(?:for\s+)?)?(.+?)(?:\s+resume)?$/i.exec(lower);
+  if (parseMatch && /resume/i.test(lower)) {
+    const candidate = (parseMatch[1] ?? "").trim();
+    return { action: "parse_resume", params: { candidate }, confidence: 0.9, display: `Parse resume for ${candidate}` };
+  }
+
+  // H6-6: Navigate to talent pools
+  if (/^(go to |open |show )?(talent pools?|pools?)$/i.test(lower)) {
+    return { action: "navigate", params: { page: "talent-pools" }, confidence: 1, display: "Navigate to Talent Pools" };
+  }
+
   // Clone job intent patterns (E2) — most-specific first
   // "clone [title] for [level] level" → new_level (must match before generic location pattern)
   const cloneForLevel = /^clone\s+(.+?)\s+(?:for|as)\s+(.+?)\s+level$/i.exec(lower);
@@ -220,6 +275,94 @@ describe("Intent Quick Pattern Matching", () => {
     it("returns null for empty input", () => {
       expect(matchQuickPatterns("")).toBeNull();
       expect(matchQuickPatterns("   ")).toBeNull();
+    });
+  });
+
+  // ── H6-6: New command bar intents ──────────────────────────
+
+  describe("merge_candidates intents (H6-6)", () => {
+    it.each([
+      "merge Alice Smith",
+      "combine candidates John",
+      "dedupe Bob Jones",
+      "dedup candidate Jane",
+    ])("'%s' maps to merge_candidates", (input) => {
+      const result = matchQuickPatterns(input);
+      expect(result?.action).toBe("merge_candidates");
+      expect(result?.confidence).toBe(0.9);
+    });
+
+    it("extracts candidate name from 'merge Alice Smith'", () => {
+      const result = matchQuickPatterns("merge Alice Smith");
+      expect(result?.params.candidate).toBe("alice smith");
+    });
+
+    it("extracts candidate name from 'dedupe candidates Bob'", () => {
+      const result = matchQuickPatterns("dedupe candidates Bob");
+      expect(result?.params.candidate).toBe("bob");
+    });
+  });
+
+  describe("add_to_pool intents (H6-6)", () => {
+    it("'add Alice to pool' maps to add_to_pool", () => {
+      const result = matchQuickPatterns("add Alice to pool");
+      expect(result?.action).toBe("add_to_pool");
+      expect(result?.params.candidate).toBe("alice");
+      expect(result?.confidence).toBe(0.9);
+    });
+
+    it("'add Bob to talent pool Engineering' extracts pool name", () => {
+      const result = matchQuickPatterns("add Bob to talent pool Engineering");
+      expect(result?.action).toBe("add_to_pool");
+      expect(result?.params.candidate).toBe("bob");
+      expect((result?.params as Record<string, string>).pool).toBe("engineering");
+    });
+
+    it("'move Jane to nurture' maps to add_to_pool", () => {
+      const result = matchQuickPatterns("move Jane to nurture");
+      expect(result?.action).toBe("add_to_pool");
+      expect(result?.params.candidate).toBe("jane");
+    });
+  });
+
+  describe("parse_resume intents (H6-6)", () => {
+    it("'parse resume for Alice' maps to parse_resume", () => {
+      const result = matchQuickPatterns("parse resume for Alice");
+      expect(result?.action).toBe("parse_resume");
+      expect(result?.params.candidate).toBe("alice");
+      expect(result?.confidence).toBe(0.9);
+    });
+
+    it("'extract resume Bob' maps to parse_resume", () => {
+      const result = matchQuickPatterns("extract resume Bob");
+      expect(result?.action).toBe("parse_resume");
+      expect(result?.params.candidate).toBe("bob");
+    });
+
+    it("'process Alice resume' maps to parse_resume", () => {
+      const result = matchQuickPatterns("process Alice resume");
+      expect(result?.action).toBe("parse_resume");
+      expect(result?.params.candidate).toBe("alice");
+    });
+
+    it("should not match 'parse data report' (no 'resume' keyword)", () => {
+      const result = matchQuickPatterns("parse data report");
+      expect(result?.action).not.toBe("parse_resume");
+    });
+  });
+
+  describe("talent pools navigation (H6-6)", () => {
+    it.each([
+      "talent pools",
+      "pools",
+      "go to talent pools",
+      "open pools",
+      "show talent pool",
+    ])("'%s' navigates to talent-pools", (input) => {
+      const result = matchQuickPatterns(input);
+      expect(result?.action).toBe("navigate");
+      expect(result?.params.page).toBe("talent-pools");
+      expect(result?.confidence).toBe(1);
     });
   });
 

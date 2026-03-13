@@ -47,14 +47,34 @@ export default async function CandidatesPage({
 
   // CL2 — job filter: pre-fetch candidate IDs that applied to this job
   let jobCandidateIds: string[] | null = null;
+  // H6-2: When job filter active, also fetch match scores
+  const matchScoreByCandidate: Record<string, number> = {};
   if (jobId) {
     const { data: apps } = await supabase
       .from("applications")
-      .select("candidate_id")
+      .select("candidate_id, id")
       .eq("organization_id", session.orgId)
       .eq("job_opening_id", jobId)
       .is("deleted_at", null);
     jobCandidateIds = (apps ?? []).map((a: { candidate_id: string }) => a.candidate_id);
+
+    // Fetch match scores for these applications
+    if (apps && apps.length > 0) {
+      const appIds = apps.map((a: { id: string }) => a.id);
+      const { data: matches } = await supabase
+        .from("ai_match_explanations")
+        .select("application_id, match_score")
+        .in("application_id", appIds)
+        .eq("organization_id", session.orgId);
+      // Map application match score back to candidate
+      const appToCand: Record<string, string> = {};
+      for (const a of apps) appToCand[a.id] = a.candidate_id;
+      for (const m of matches ?? []) {
+        if (m.match_score != null) {
+          matchScoreByCandidate[appToCand[m.application_id]!] = m.match_score;
+        }
+      }
+    }
   }
 
   // R11 (Wave 1) — stage filter: pre-fetch candidate IDs currently in this stage
@@ -74,7 +94,7 @@ export default async function CandidatesPage({
   let q = supabase
     .from("candidates")
     .select(
-      "id, full_name, email, current_title, current_company, location, source, source_id, skills, tags, created_at",
+      "id, full_name, email, current_title, current_company, location, source, source_id, skills, tags, created_at, human_review_requested",
       { count: "exact" },
     )
     .eq("organization_id", session.orgId)
@@ -101,6 +121,7 @@ export default async function CandidatesPage({
           stageId={stageId}
           candidates={[]}
           meta={emptyMeta}
+          matchScores={matchScoreByCandidate}
         />
       );
     }
@@ -121,6 +142,7 @@ export default async function CandidatesPage({
           stageId={stageId}
           candidates={[]}
           meta={emptyMeta}
+          matchScores={matchScoreByCandidate}
         />
       );
     }
@@ -144,6 +166,7 @@ export default async function CandidatesPage({
       stageId={stageId}
       candidates={candidates ?? []}
       meta={meta}
+      matchScores={matchScoreByCandidate}
     />
   );
 }
@@ -162,6 +185,7 @@ type CandidateRow = {
   skills: unknown;
   tags: unknown;
   created_at: string;
+  human_review_requested: boolean | null;
 };
 
 function CandidatesLayout({
@@ -174,6 +198,7 @@ function CandidatesLayout({
   stageId,
   candidates,
   meta,
+  matchScores,
 }: {
   session: { orgRole: OrgRole };
   sources: Array<{ id: string; name: string }>;
@@ -184,7 +209,9 @@ function CandidatesLayout({
   stageId: string;
   candidates: CandidateRow[];
   meta: ReturnType<typeof buildPaginationMeta>;
+  matchScores: Record<string, number>;
 }) {
+  const hasMatchScores = Object.keys(matchScores).length > 0;
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="flex items-center justify-between">
@@ -219,6 +246,7 @@ function CandidatesLayout({
           <thead>
             <tr className="border-b border-border text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <th className="pb-3 pr-4">Name</th>
+              {hasMatchScores && <th className="pb-3 pr-4">AI Fit</th>}
               <th className="pb-3 pr-4">Title</th>
               <th className="pb-3 pr-4">Location</th>
               <th className="pb-3 pr-4">Source</th>
@@ -229,14 +257,34 @@ function CandidatesLayout({
             {candidates.map((c) => (
               <tr key={c.id} className="hover:bg-muted/30">
                 <td className="py-3 pr-4">
-                  <Link
-                    href={`/candidates/${c.id}`}
-                    className="font-medium text-foreground hover:text-primary"
-                  >
-                    {c.full_name}
-                  </Link>
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      href={`/candidates/${c.id}`}
+                      className="font-medium text-foreground hover:text-primary"
+                    >
+                      {c.full_name}
+                    </Link>
+                    {c.human_review_requested && (
+                      <span className="text-amber-500" title="Possible duplicate">{"\u26A0"}</span>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">{c.email}</p>
                 </td>
+                {hasMatchScores && (
+                  <td className="py-3 pr-4">
+                    {matchScores[c.id] != null ? (
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                        matchScores[c.id]! >= 0.75 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                        matchScores[c.id]! >= 0.5 ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                      }`}>
+                        {(matchScores[c.id]! * 100).toFixed(0)}%
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
+                )}
                 <td className="py-3 pr-4 text-muted-foreground">
                   {c.current_title}
                   {c.current_company && (

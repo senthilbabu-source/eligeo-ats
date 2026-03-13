@@ -163,6 +163,88 @@ export async function NextBestAction({
     }
   }
 
+  // H6-3: Fetch enriched signals for all 6 NBA rules
+  // Match scores from ai_match_explanations
+  const matchScoreByApp: Record<string, number> = {};
+  if (appIds.length > 0) {
+    const { data: matches } = await supabase
+      .from("ai_match_explanations")
+      .select("application_id, match_score")
+      .in("application_id", appIds)
+      .eq("organization_id", orgId);
+    for (const m of matches ?? []) {
+      if (m.match_score != null) matchScoreByApp[m.application_id] = m.match_score;
+    }
+  }
+
+  // Interviews per application
+  const interviewByApp: Record<string, boolean> = {};
+  if (appIds.length > 0) {
+    const { data: interviews } = await supabase
+      .from("interviews")
+      .select("application_id, status")
+      .in("application_id", appIds)
+      .eq("organization_id", orgId)
+      .is("deleted_at", null);
+    for (const iv of interviews ?? []) {
+      if (["scheduled", "confirmed", "completed"].includes(iv.status)) {
+        interviewByApp[iv.application_id] = true;
+      }
+    }
+  }
+
+  // Scorecard submissions per application (via interviews)
+  const allScorecardsInByApp: Record<string, boolean> = {};
+  if (appIds.length > 0) {
+    const { data: interviews } = await supabase
+      .from("interviews")
+      .select("id, application_id, status")
+      .in("application_id", appIds)
+      .eq("organization_id", orgId)
+      .eq("status", "completed")
+      .is("deleted_at", null);
+
+    if (interviews && interviews.length > 0) {
+      const interviewIds = interviews.map((i) => i.id);
+      const { data: scorecards } = await supabase
+        .from("scorecard_submissions")
+        .select("interview_id, submitted_at")
+        .in("interview_id", interviewIds)
+        .is("deleted_at", null);
+
+      // Group by application: all completed interviews must have a submitted scorecard
+      const interviewsByApp: Record<string, string[]> = {};
+      for (const iv of interviews) {
+        if (!interviewsByApp[iv.application_id]) interviewsByApp[iv.application_id] = [];
+        interviewsByApp[iv.application_id]!.push(iv.id);
+      }
+      const submittedInterviewIds = new Set(
+        (scorecards ?? []).filter((s) => s.submitted_at).map((s) => s.interview_id)
+      );
+      for (const [appId, ivIds] of Object.entries(interviewsByApp)) {
+        allScorecardsInByApp[appId] = ivIds.every((ivId) => submittedInterviewIds.has(ivId));
+      }
+    }
+  }
+
+  // Offers per application
+  const offerStatusByApp: Record<string, { hasApproved: boolean; sent: boolean }> = {};
+  if (appIds.length > 0) {
+    const { data: offers } = await supabase
+      .from("offers")
+      .select("application_id, status")
+      .in("application_id", appIds)
+      .eq("organization_id", orgId)
+      .is("deleted_at", null);
+    for (const o of offers ?? []) {
+      if (!offerStatusByApp[o.application_id]) {
+        offerStatusByApp[o.application_id] = { hasApproved: false, sent: false };
+      }
+      if (o.status === "approved") offerStatusByApp[o.application_id]!.hasApproved = true;
+      if (["sent", "signed"].includes(o.status)) offerStatusByApp[o.application_id]!.sent = true;
+    }
+  }
+
   const nowMs = new Date().getTime();
 
   const activeApps: ActiveApp[] = (apps ?? []).map((app) => {
@@ -170,11 +252,17 @@ export async function NextBestAction({
     const job = (Array.isArray(jobRaw) ? jobRaw[0] : jobRaw) as { title: string } | null;
     const stageRaw = app.pipeline_stages as unknown;
     const stage = (Array.isArray(stageRaw) ? stageRaw[0] : stageRaw) as { name: string } | null;
+    const offerStatus = offerStatusByApp[app.id];
     return {
       id: app.id,
       stageEnteredAt: stageEntryByApp[app.id] ?? null,
       stageName: stage?.name ?? null,
       jobTitle: job?.title ?? null,
+      matchScore: matchScoreByApp[app.id] ?? null,
+      hasInterview: interviewByApp[app.id] ?? false,
+      allScorecardsIn: allScorecardsInByApp[app.id] ?? false,
+      hasApprovedOffer: offerStatus?.hasApproved ?? false,
+      offerSent: offerStatus?.sent ?? false,
     };
   });
 
