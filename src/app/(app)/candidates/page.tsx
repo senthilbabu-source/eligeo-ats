@@ -94,7 +94,7 @@ export default async function CandidatesPage({
   let q = supabase
     .from("candidates")
     .select(
-      "id, full_name, email, current_title, current_company, location, source, source_id, skills, tags, created_at, human_review_requested",
+      "id, full_name, email, current_title, current_company, location, source, source_id, skills, tags, created_at",
       { count: "exact" },
     )
     .eq("organization_id", session.orgId)
@@ -153,6 +153,7 @@ export default async function CandidatesPage({
     .order("created_at", { ascending: false })
     .range(params.from, params.to);
 
+
   const meta = buildPaginationMeta(count ?? 0, params);
 
   return (
@@ -185,7 +186,6 @@ type CandidateRow = {
   skills: unknown;
   tags: unknown;
   created_at: string;
-  human_review_requested: boolean | null;
 };
 
 function CandidatesLayout({
@@ -257,17 +257,12 @@ function CandidatesLayout({
             {candidates.map((c) => (
               <tr key={c.id} className="hover:bg-muted/30">
                 <td className="py-3 pr-4">
-                  <div className="flex items-center gap-1.5">
-                    <Link
-                      href={`/candidates/${c.id}`}
-                      className="font-medium text-foreground hover:text-primary"
-                    >
-                      {c.full_name}
-                    </Link>
-                    {c.human_review_requested && (
-                      <span className="text-amber-500" title="Possible duplicate">{"\u26A0"}</span>
-                    )}
-                  </div>
+                  <Link
+                    href={`/candidates/${c.id}`}
+                    className="font-medium text-foreground hover:text-primary"
+                  >
+                    {c.full_name}
+                  </Link>
                   <p className="text-xs text-muted-foreground">{c.email}</p>
                 </td>
                 {hasMatchScores && (

@@ -5,7 +5,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { renderTemplate } from "@/lib/notifications/render-template";
 import logger from "@/lib/utils/logger";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || "re_placeholder");
 
 /**
  * notification/send-email
