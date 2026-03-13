@@ -115,6 +115,14 @@ Documents intentionally excluded from pre-code phase. Each has a specific trigge
 
 ---
 
+## Pre-Phase 6 AI Hardening ✅ COMPLETE
+
+| # | Document | Path | Priority | Status | Description |
+|---|----------|------|----------|--------|-------------|
+| H6 | **AI Hardening Plan** | `docs/PRE-PHASE6-AI-HARDENING.md` | P0 | ✅ Complete | ADR-011 compliance audit + 6 hardening items (H6-1→H6-6). Pipeline board match scores, candidates list AI Fit column, NBA all 6 rules wired, candidate profile match card + embedding freshness + duplicate warning, offers form AI buttons (suggest/band check/generate terms), command bar 5 new intents. Tests: 1242 Vitest (+39 net). |
+
+---
+
 ## Phase 5 — Billing ✅ COMPLETE
 
 | Wave | Deliverable | Tests | Status |
