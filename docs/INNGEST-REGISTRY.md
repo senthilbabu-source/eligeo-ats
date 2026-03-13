@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **65 functions across 14 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
+This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **68 functions across 15 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, data migration, screening, and portal.
 
 Every background job in the system runs through Inngest. There are no Supabase Edge Functions (ADR-002). Cron jobs are Inngest cron triggers, not Next.js Route Handlers — Inngest manages scheduling, retries, and observability.
 
@@ -174,14 +174,13 @@ Functions only override these defaults when documented in the registry table bel
 |---|-------------|---------|---------|-------------|------|
 | 62 | `jobs/batch-shortlist` | `ats/job.shortlist-requested` | 3 | 2 per org | Yes (**✅ Shipped** — P6-5) |
 
-### 4.13 Screening (4 functions) — Phase 6
+### 4.13 Screening (3 functions) — Phase 6
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
-| 57 | `screening/invite-candidate` | `ats/application.stage-entered` (where stage has screening config) | default (3) | 5 per org | Yes |
-| 58 | `screening/process-response` | `ats/screening.response-submitted` | default (3) | — | Yes |
-| 59 | `screening/generate-summary` | `ats/screening.all-answered` | 2 | 3 per org | Yes |
-| 60 | `screening/send-reminder` | Delayed: 48h after invite | default (3) | — | Yes |
+| 57 | `screening/invite-candidate` | `ats/application.stage-entered` (where stage has screening config) | default (3) | 1 per application | Yes (**✅ Shipped** — P6-4) |
+| 59 | `screening/generate-summary` | `ats/screening.all-answered` | default (3) | 3 per org | Yes (**✅ Shipped** — P6-4) |
+| 60 | `screening/send-reminder` | `ats/screening.reminder-due` (delayed 48h) | 2 | — | Yes (**✅ Shipped** — P6-4) |
 
 ### 4.14 Portal (1 function) — Phase 6
 
@@ -189,7 +188,7 @@ Functions only override these defaults when documented in the registry table bel
 |---|-------------|---------|---------|-------------|------|
 | 61 | `portal/resume-parse` | `portal/application-submitted` | 3 | 1 per candidate | Yes |
 
-> **Note:** 65 registered function IDs across 14 modules. Phase 6 adds 5 new functions (4 screening + 1 portal) + 1 new `jobs/batch-shortlist` (P6-5) + upgrades 3 existing stubs to real implementations (P6-3: offers/send-esign → real Dropbox Sign, offers/esign-webhook → `processEsignWebhook` real event processing, offers/withdraw → real Dropbox Sign cancel). (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
+> **Note:** 68 registered function IDs across 15 modules. Phase 6 adds 4 new functions (3 screening + 1 portal) + 1 new `jobs/batch-shortlist` (P6-5) + upgrades 3 existing stubs to real implementations (P6-3: offers/send-esign → real Dropbox Sign, offers/esign-webhook → `processEsignWebhook` real event processing, offers/withdraw → real Dropbox Sign cancel). P6-4: 3 screening functions shipped (invite-candidate, generate-summary, send-reminder). `screening/process-response` was merged into the answer API endpoint (no separate Inngest function needed). (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
 
 ## 5. Cron Schedule Summary
 
@@ -233,12 +232,14 @@ Rules:
 | `offers/check-expiry` | 1 | Singleton — prevents double-expiry race conditions |
 | `offers/approval-notify` | 10 per org | Prevent approval notification storms during bulk submissions |
 | `offers/approval-advanced` | 10 per org | Matches approval-notify to keep pipeline consistent |
+| `screening/invite-candidate` | 1 per application | Prevent duplicate screening sessions per application (P6-4) |
+| `screening/generate-summary` | 3 per org | Limit concurrent OpenAI summary calls per org (P6-4) |
 
 Concurrency keys use `org_id` when the limit is "per org". Global limits apply across all orgs.
 
 ## 8. v1.0 Scope
 
-### Ships in v1.0 (43 functions)
+### Ships in v1.0 (48 functions)
 
 | Module | Count | Shipped | Notes |
 |--------|-------|---------|-------|
@@ -252,11 +253,11 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 | Compliance | 4 | 0 | All pending. |
 | Analytics | 2 | 3 | `generate-briefing` (Wave 3) + `generate-candidate-embedding` (AI-Proof) + `refresh-job-embedding` (Phase 5 B5-6, H-04). All shipped. |
 | Jobs | 1 | 1 | `batchShortlist` (P6-5). |
-| Screening | 4 | 0 | All Phase 6 (P6-4). |
+| Screening | 3 | 3 | All 3 shipped (P6-4): `invite-candidate`, `generate-summary`, `send-reminder`. `process-response` merged into API endpoint. |
 | Portal | 1 | 0 | `portal/resume-parse` Phase 6 (P6-1). |
-| **Total** | **49** | **23** | **23 shipped and actively registered** in `/api/inngest/route.ts`. |
+| **Total** | **48** | **26** | **26 shipped and actively registered** in `/api/inngest/route.ts`. |
 
-> Total registry: 65 functions across 14 modules. v1.0 scope: 49 functions. 23 shipped and active. P6-3: +1 (offers/esign-webhook real), +2 upgrades (send-esign real, withdraw real). P6-5: +1 (jobs/batch-shortlist). Remaining 26 ship in Phases 6+.
+> Total registry: 68 functions across 15 modules. v1.0 scope: 48 functions. 26 shipped and active. P6-4: +3 screening shipped (invite-candidate, generate-summary, send-reminder). P6-3: +1 (offers/esign-webhook real), +2 upgrades (send-esign real, withdraw real). P6-5: +1 (jobs/batch-shortlist). Remaining 22 ship in Phases 6+.
 
 ### Deferred
 
@@ -270,4 +271,4 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 ---
 
-*Created: 2026-03-11. Updated: 2026-03-13 — P6-3 build: 3 stub upgrades now real (send-esign, esign-webhook/processEsignWebhook, withdraw → real Dropbox Sign). P6-5 build: +1 new `jobs/batch-shortlist`. Registry: 64→65 functions, v1.0: 48→49, shipped: 20→23. Phase 5: all 7 billing functions shipped, `send-esign` re-registered, `refresh-job-embedding` shipped (H-04 closed). Phase 4 shipped 5 offer functions. Hardening: `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1).*
+*Created: 2026-03-11. Updated: 2026-03-13 — P6-4 build: 3 screening functions shipped (invite-candidate, generate-summary, send-reminder). `process-response` merged into answer API. Registry: 65→68 functions, v1.0: 49→48 (1 removed), shipped: 23→26. P6-3 build: 3 stub upgrades now real (send-esign, esign-webhook/processEsignWebhook, withdraw → real Dropbox Sign). P6-5 build: +1 new `jobs/batch-shortlist`. Phase 5: all 7 billing functions shipped, `send-esign` re-registered, `refresh-job-embedding` shipped (H-04 closed). Phase 4 shipped 5 offer functions. Hardening: `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1).*

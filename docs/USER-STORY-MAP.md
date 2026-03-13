@@ -111,6 +111,11 @@
 | A6 | Plain-language explanation of AI score | ✅ BUILT | Growth+ | "Matched: React, Node. Missing: Kubernetes. 3 yrs vs 5 required." `computeSkillGap()` on `AiMatchPanel` — compares `job_required_skills` vs `candidate.skills` (case-insensitive). Wave D D4. |
 | AF1 | AI score feedback — recruiter thumbs-up/down on match panel | ✅ BUILT | Growth+ | `ai_score_feedback` table (Migration 022) + `submitScoreFeedback()` SA + thumbs up/down buttons on `AiMatchPanel`. Optimistic UI + graceful error when no application exists. Wave D D1. |
 | AF2 | Job embedding staleness detection | ✅ BUILT | All | `embedding_updated_at TIMESTAMPTZ` on `job_openings` (Migration 022). Amber "⚠ Scores may be outdated" badge on `AiMatchPanel` when embedding >7 days stale. `isEmbeddingStale()` pure function. Wave D D3. |
+| AS1 | Configure conversational screening questions per job | ✅ BUILT | All | P6-4: `/jobs/[id]/settings/screening` config builder — add/remove/reorder questions, AI tone instructions, max duration, active toggle. M032 `screening_configs` table. |
+| AS2 | AI-assisted candidate screening with follow-ups (Growth+) | ✅ BUILT | Growth+ | P6-4: Candidate portal via magic link, sequential Q&A, AI evaluates answers and generates follow-ups for vague responses, batch question rephrasing. 4 AI functions. |
+| AS3 | AI screening summary + per-question scores | ✅ BUILT | Growth+ | P6-4: `generateScreeningSummary()` (gpt-4o, 5 credits) produces summary, overall score, per-question breakdown, key signals. Inngest `generate-summary` on completion. |
+| AS4 | Review screening results on candidate profile | ✅ BUILT | All | P6-4: Score badge (green/amber/red), AI summary, per-question breakdown bars, expandable transcript. `screening-results.tsx` + `screening-transcript.tsx`. |
+| AS5 | AI batch shortlisting with 5-dimension scoring | ✅ BUILT | Growth+ | P6-5: `batchShortlist` Inngest function, 5-dimension scoring, tier classification (Strong/Maybe/Weak), EEOC compliance. |
 
 ---
 
