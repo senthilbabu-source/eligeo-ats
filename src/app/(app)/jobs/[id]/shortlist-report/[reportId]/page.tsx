@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 import { can } from "@/lib/constants/roles";
 import { createClient } from "@/lib/supabase/server";
+import { formatInTz, getUserTimezone } from "@/lib/datetime-server";
 import { ShortlistReportClient } from "./report-client";
 
 export default async function ShortlistReportPage({
@@ -13,6 +14,7 @@ export default async function ShortlistReportPage({
   const { id: jobId, reportId } = await params;
   const session = await requireAuth();
   const supabase = await createClient();
+  const tz = await getUserTimezone(session.userId, session.orgId);
 
   // Fetch report
   const { data: report } = await supabase
@@ -88,7 +90,7 @@ export default async function ShortlistReportPage({
         <p className="mt-1 text-sm text-muted-foreground">
           {job?.title ?? "Job"} · Generated{" "}
           {report.completed_at
-            ? new Date(report.completed_at).toLocaleDateString()
+            ? formatInTz(report.completed_at, tz)
             : "processing..."}{" "}
           · {report.total_applications} applications analyzed
         </p>

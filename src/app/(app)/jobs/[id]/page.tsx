@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/constants/roles";
+import { getUserTimezone } from "@/lib/datetime-server";
 import { JobActions } from "./job-actions";
 import { AiMatchPanel } from "./ai-match-panel";
 import { RewritePanel } from "./rewrite-panel";
@@ -48,6 +49,7 @@ export default async function JobDetailPage({
 
   const session = await requireAuth();
   const supabase = await createClient();
+  const tz = await getUserTimezone(session.userId, session.orgId);
 
   const { data: job } = await supabase
     .from("job_openings")
@@ -255,6 +257,7 @@ export default async function JobDetailPage({
           flaggedTerms={meta.bias_check.flaggedTerms}
           suggestions={meta.bias_check.suggestions}
           checkedAt={meta.bias_check.checkedAt}
+          timezone={tz}
         />
       )}
 

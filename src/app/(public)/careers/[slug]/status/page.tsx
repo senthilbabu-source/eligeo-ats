@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getApplicationStatus } from "@/lib/actions/portal-status";
+import { formatInTz } from "@/lib/datetime";
 import { StatusTimeline } from "@/components/portal/status-timeline";
 import { PipelineProgress } from "@/components/portal/pipeline-progress";
 import { WithdrawButton } from "@/components/portal/withdraw-button";
@@ -85,11 +86,7 @@ export default async function StatusPage({
         <p className="mt-1 text-muted-foreground">
           {org?.name ?? "Company"}
           {" · Applied "}
-          {new Date(application.appliedAt).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
+          {formatInTz(application.appliedAt, "UTC", "long")}
         </p>
 
         {/* AI narration (Growth+ only) */}

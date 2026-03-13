@@ -29,6 +29,7 @@ export function OfferActions({
   organizationName,
   isProPlus,
   existingTerms,
+  timezone,
 }: {
   offerId: string;
   status: OfferStatus;
@@ -54,6 +55,7 @@ export function OfferActions({
   organizationName?: string;
   isProPlus?: boolean;
   existingTerms?: string;
+  timezone: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -214,6 +216,7 @@ export function OfferActions({
           organizationName={organizationName ?? ""}
           existingTerms={existingTerms}
           isProPlus={isProPlus ?? false}
+          timezone={timezone}
           onClose={() => setShowSendModal(false)}
           onSent={() => {
             setShowSendModal(false);

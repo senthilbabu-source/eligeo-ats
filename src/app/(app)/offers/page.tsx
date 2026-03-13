@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { parsePagination, buildPaginationMeta } from "@/lib/utils/pagination";
 import { Pagination } from "@/components/pagination";
 import type { OfferStatus } from "@/lib/types/ground-truth";
+import { formatInTz, getUserTimezone } from "@/lib/datetime-server";
 
 export const metadata: Metadata = {
   title: "Offers",
@@ -44,13 +45,7 @@ function formatCurrency(amount: number, currency: string): string {
   }
 }
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+// formatDate replaced by formatInTz — timezone-aware (see inline usage)
 
 export default async function OffersPage({
   searchParams,
@@ -59,6 +54,7 @@ export default async function OffersPage({
 }) {
   const session = await requireAuth();
   const supabase = await createClient();
+  const tz = await getUserTimezone(session.userId, session.orgId);
   const sp = await searchParams;
   const params = parsePagination(sp);
   const statusFilter = typeof sp.status === "string" ? sp.status : undefined;
@@ -178,8 +174,8 @@ export default async function OffersPage({
                       {formatCurrency(comp.base_salary, comp.currency)}/{comp.period ?? "annual"}
                     </span>
                   )}
-                  {offer.start_date && <span>Starts {formatDate(offer.start_date)}</span>}
-                  <span>Created {formatDate(offer.created_at)}</span>
+                  {offer.start_date && <span>Starts {formatInTz(offer.start_date, tz)}</span>}
+                  <span>Created {formatInTz(offer.created_at, tz)}</span>
                 </div>
               </div>
             </Link>

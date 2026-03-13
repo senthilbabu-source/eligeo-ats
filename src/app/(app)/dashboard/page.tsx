@@ -15,6 +15,7 @@ import {
 } from "@/lib/utils/dashboard";
 import { MineToggle } from "./mine-toggle";
 import { DailyBriefingCard } from "./daily-briefing-card";
+import { formatInTz, getUserTimezone } from "@/lib/datetime-server";
 
 export const metadata: Metadata = {
   title: "Dashboard — Eligeo",
@@ -127,6 +128,7 @@ export default async function DashboardPage({
   const supabase = await createClient();
   const cookieStore = await cookies();
   const orgId = session.orgId;
+  const tz = await getUserTimezone(session.userId, session.orgId);
   const params = searchParams ? await searchParams : {};
 
   // SR6 / R13: "mine" mode — URL param takes precedence, falls back to cookie
@@ -138,7 +140,7 @@ export default async function DashboardPage({
   const nowMs = new Date().getTime();
   const oneWeekAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString();
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-  const renderTime = new Date(nowMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const renderTime = formatInTz(new Date(nowMs), tz, "time");
 
   // SR6: when in mine mode, pre-fetch the recruiter's job IDs for filtering
   let recruiterJobIds: string[] | null = null;
@@ -378,7 +380,7 @@ export default async function DashboardPage({
       {/* ── R11: Daily AI Briefing (cache-first, Suspense streaming) ── */}
       <div className="mt-6">
         <Suspense fallback={<div className="h-28 animate-pulse rounded-lg bg-muted" />}>
-          <DailyBriefingCard orgId={orgId} isAdmin={isAdmin} />
+          <DailyBriefingCard orgId={orgId} isAdmin={isAdmin} timezone={tz} />
         </Suspense>
       </div>
 
@@ -526,7 +528,7 @@ export default async function DashboardPage({
                         )}
                         <StatusChip status={app.status} />
                         <span className="text-xs text-muted-foreground">
-                          {new Date(app.applied_at).toLocaleDateString()}
+                          {formatInTz(app.applied_at, tz)}
                         </span>
                       </div>
                     </Link>

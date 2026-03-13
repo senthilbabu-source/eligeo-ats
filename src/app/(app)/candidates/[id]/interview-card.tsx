@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { completeInterview, cancelInterview, markNoShow } from "@/lib/actions/interviews";
 import type { InterviewStatus, InterviewType } from "@/lib/types/ground-truth";
+import { formatInTz } from "@/lib/datetime";
 
 export interface InterviewCardData {
   id: string;
@@ -24,6 +25,7 @@ export interface InterviewCardData {
 interface InterviewCardProps {
   interview: InterviewCardData;
   canEdit: boolean;
+  timezone: string;
   onOpenScorecard?: (interviewId: string) => void;
 }
 
@@ -45,23 +47,14 @@ const STATUS_STYLES: Record<InterviewStatus, string> = {
   no_show: "bg-red-100 text-red-700",
 };
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return "TBD";
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+// formatDateTime replaced by formatInTz — timezone-aware
 
 function isFeedbackOverdue(deadline: string | null, status: InterviewStatus): boolean {
   if (!deadline || status === "cancelled" || status === "no_show") return false;
   return new Date(deadline) < new Date();
 }
 
-export function InterviewCard({ interview, canEdit, onOpenScorecard }: InterviewCardProps) {
+export function InterviewCard({ interview, canEdit, timezone, onOpenScorecard }: InterviewCardProps) {
   const [showActions, setShowActions] = useState(false);
   const [actionState, runAction, isPending] = useActionState(
     async (_prev: unknown, formData: FormData) => {
@@ -103,7 +96,7 @@ export function InterviewCard({ interview, canEdit, onOpenScorecard }: Interview
             )}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {interview.interviewer_name} &middot; {formatDateTime(interview.scheduled_at)}
+            {interview.interviewer_name} &middot; {formatInTz(interview.scheduled_at, timezone, "datetime")}
             {interview.duration_minutes ? ` (${interview.duration_minutes}m)` : ""}
           </p>
           {interview.location && (

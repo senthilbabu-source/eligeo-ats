@@ -4,6 +4,140 @@
 
 ---
 
+## 2026-03-13 — Phase 7 Wave T1: Timezone-Aware Date Formatting
+
+**Scope:** Global timezone plumbing layer — all date/time display in the ATS now uses timezone-aware formatting via `@date-fns/tz`. Interview scheduling converts `datetime-local` input from user's timezone to UTC before storage.
+
+### Core Infrastructure
+- **`src/lib/datetime.ts`** — Client-safe pure formatting functions: `formatInTz()` (4 styles: short/long/datetime/time), `formatForEmail()` (dual timezone), `localInputToUtc()` (datetime-local → UTC), `resolveTimezone()`, `COMMON_TIMEZONES` (31 IANA zones for UI selectors)
+- **`src/lib/datetime-server.ts`** — Server-only: re-exports all from datetime.ts + `getUserTimezone()` (DB fetch: user pref > org default > UTC)
+- **Library:** `@date-fns/tz` v1.4.1 — TZDate class extends Date, works with date-fns v4 `format()`, tree-shakeable, DST-safe
+
+### UI Retrofit (20+ files, zero `toLocaleDateString`/`toLocaleTimeString` remaining)
+- **Server components** (7 files): approvals, dashboard, candidates/[id], offers list, offers/[id], shortlist-report, careers/status — all use `getUserTimezone()` + `formatInTz()`
+- **Client components** (8 files): candidate-notes, pipeline-board, bias-check-banner, interview-card, status-timeline, screening-results, offer-letter-preview-modal, plan-card — timezone passed as prop from parent server component
+- **Server actions** (1 file): interviews.ts — `localInputToUtc()` converts datetime-local values before Supabase insert
+
+### Interview Scheduling Timezone
+- Schedule modal shows timezone indicator next to Date & Time and Feedback Deadline labels
+- Hidden `timezone` field sent with form data
+- Server action uses `localInputToUtc(value, timezone)` for correct UTC storage
+- Falls back to `getUserTimezone()` if no timezone in form data
+
+### Not in T1 scope (future)
+- User profile / org settings timezone selector UI (DB columns exist, plumbing ready)
+- Candidate-facing timezone (portal pages use UTC)
+- Calendar integration timezone sync (Nylas v2.0)
+
+### Tests
+- 19 unit tests for datetime.ts (formatInTz ×7, formatForEmail ×3, localInputToUtc ×3, resolveTimezone ×6)
+- All 1456 Vitest + existing E2E passing, zero failures
+- Clean TypeScript (`npx tsc --noEmit`)
+
+### Key Technical Decisions
+- **`TZDate.tz()` not `new TZDate(string, tz)`** — constructor parses string as local system time, `TZDate.tz()` correctly constructs in given timezone
+- **Client/server split** — `datetime.ts` has no server imports (client-safe), `datetime-server.ts` adds DB fetch
+- **Public pages use UTC** — no auth = no user timezone preference available
+- **Billing dates use UTC** — system-level dates from Stripe, not user-entered
+
+`[PLAYBOOK]` Pattern: timezone plumbing as a horizontal wave, not per-feature. One library, one resolution chain, retrofit all display in one pass.
+
+**Test counts:** 1456 Vitest + 68 E2E = 1524 total (unchanged from A1 — no new tests beyond the 19 datetime tests already counted).
+
+---
+
+## 2026-03-13 — CLAUDE.md Governance Pass (compaction-safe governance sync)
+
+**Scope:** Propagated all governance decisions made in INDEX.md into CLAUDE.md so they survive context compaction. No code changes.
+
+### Changes to CLAUDE.md
+
+**ADR-013 added to resolved architecture table:** `Contractor hiring scope | Side A only (ATS intake → hire event). Side B permanently out of scope: SOW, PO, timesheets, invoices, VMS. | ADR-013` — this is now part of the compaction-safe constitution. Any session starting fresh will know the Phase 8 scope boundary without reading ADR-013 directly.
+
+**Current State updated:** Phase line updated (Wave T1 🟡 in progress, Wave A2 ⬜ next, Phase 8 blocked on Wave T1). Migration count corrected (33 applied, not 34). Documentation count updated (D34 + ADR-013 added). Governance pass noted with INDEX.md R1–R7 active.
+
+**Session Start Protocol updated:** Step 2 now explicitly tells a fresh session what INDEX.md's first 60 lines contain (R1–R7, Live Build Health, Migration Register, Downstream Impact Map) and instructs it to read governance before the document table. Step 4 now requires stating which R1–R7 rules are relevant to the current task.
+
+**Migration gate updated (Before writing ANY migration):** Step 1 is now "Check Migration Register in INDEX.md" — claim number before touching filesystem. Added step 5: update register in same commit as the `.sql` file.
+
+**Task-Based Reading table updated:** `Database migrations` row now lists `INDEX.md Migration Register (claim number first)` as the first mandatory read. Added `Phase 8 tasks` row (ADR-013 required). Updated `Meta/tracking` row to specify "top 2–3 entries" for DEVLOG and "first 60 lines" for INDEX.
+
+**Anti-Drift Rules updated — 4 new rules added:**
+- Numeric claims must be time-stamped (R2 enforcement in code tasks)
+- ADR-013 scope boundary enforced on every Phase 8 task (Side A/B check)
+- Migration number conflicts prevented by register (R5 enforcement)
+- Downstream impact checked before closing any session that touches D01/D02/D03/D24/D29 (R7 enforcement)
+
+### What this ensures
+
+A VS Code session starting fresh after a `/compact` now has the full governance picture from CLAUDE.md alone: ADR-013 side boundary, migration register requirement, numeric claim rule, downstream impact rule, and the correct session start sequence. It does not need to discover these by reading INDEX.md first — they're in the constitution.
+
+**Test counts:** 1508 total (unchanged).
+
+---
+
+## 2026-03-13 — INDEX.md Governance Pass (anti-drift, anti-debt, anti-hallucination)
+
+**Scope:** Comprehensive governance upgrade to INDEX.md. No code changes — documentation infrastructure only.
+
+### Changes Made
+
+**Status vocabulary:** Replaced ambiguous `✅ Complete` with a 7-state precision vocabulary distinguishing `Complete (Audit)` / `Complete (Review)` / `Complete` (governance docs) / `In Progress` / `Spec` / `Not Started` / `Blocked`. Makes "complete" verifiable, not just "written."
+
+**7 governance rules added (R1–R7):** R1 — new ADR requires immediate Depends On update on all in-flight specs. R2 — numeric claims are time-stamped by phase, not timeless. R3 — Complete status doesn't mean current; re-verify against migration count before citing in gate. R4 — phase gate stubs are mandatory and created as ⬜ Not Created at kickoff. R5 — migration register is the authoritative number assignment ledger. R6 — estimates use `~` prefix, removed on ship with verified actuals. R7 — before closing any session that touches D01/D02/D03/D24/D29, check Downstream Impact Map.
+
+**Live Build Health dashboard (new section):** Single-glance block showing test count (1508), migration cursor (33 applied, next = 00034), RLS coverage (33 tables verified, target 57), active Inngest functions (28/69), current phase, next phase gate condition.
+
+**Migration Register (new section):** Full enumerated table of all 33 applied migrations (000–033) with file name, phase/wave, tables, and status. Pre-claimed entries for 00034–00037 (Phase 8 P8-1 × 3, Phase 7 Wave A2 × 1) to prevent parallel session number conflicts.
+
+**Phase Gate stubs added (R4 compliance):** Phase 7 Pre-Start Gate (⬜), Post-Phase-7 Audit (⬜), Phase 8 Pre-Start Gate (⬜ blocked on Wave T1 + Phase 7 audit), Post-Phase-8 Audit (⬜).
+
+**Downstream Impact Map (new section):** Maps each foundational doc (D01, D02, D03, D24, D29, any ADR, Migration Register, MKT-01) to documents that must be re-checked when it changes.
+
+**D34 Depends On fixed:** `ADR-001→012` → `ADR-001→013` (R1 compliance).
+
+**Test counts:** 1508 total (unchanged — no code changes this session).
+
+---
+
+## 2026-03-13 — Phase 8 Sequencing + ADR-013 + Docs Housekeeping
+
+**Scope:** Pre-build sequencing decision for Phase 8 (Contingent Hiring). Created ADR-013. Reorganised Phase 7 Wave T1 spec to correct location. Cleaned up INDEX.md ADR section.
+
+### Sequencing Decision: Phase 8 Build Start Gate
+
+Phase 8 build does NOT wait for all of Phase 7 to ship. Sequencing is:
+
+1. **Wave T1 (Timezone)** — must ship first. ~2h effort, already in progress in VS Code session. Phase 8 has timezone-sensitive surface area (contractor emails, interview cards). T1 outputs `src/lib/datetime.ts` — Phase 8 consumes it from day one rather than retrofitting.
+2. **Phase 8 Waves P8-1 → P8-4** — start immediately after T1 ships. No dependency on Phase 7 Wave A2. Migration sequencing is clean: Phase 8 = 00034–00036, Wave A2 = 00037.
+3. **Phase 8 Wave P8-5 (Contractor Analytics)** — build last, after Wave A2 ships. P8-5 feeds into the same `AnalyticsResponse<T>` envelope and anomaly detection pipeline built in Wave A2.
+4. **Phase 7 Wave A2** — builds in parallel with Phase 8 P8-1 → P8-4 (VS Code session). No conflict.
+
+### ADR-013 Created
+
+- **`docs/ADRs/013-contractor-hiring-boundary.md`** — Contractor Hiring Architecture Boundary
+- Formalises Side A (ATS intake, up to hire event) = in scope permanently
+- Formalises Side B (SOW, PO, timesheets, invoices, VMS) = out of scope permanently
+- The boundary is the hire event. Post-hire contractor operations belong to HR/Finance stack (Deel, Workday, SAP).
+- 4 enforcement rules for Phase 8 PRs
+- Alternatives considered: lightweight VMS (rejected — scope creep guaranteed), VMS as separate product (not now), no contractor hiring (leaves 30-40% of mid-market job volume on table)
+- Related: D34, ADR-006, ADR-007, ADR-011
+- INDEX.md D04 updated to register ADR-013.
+
+### Docs Housekeeping
+
+- **`docs/modules/PHASE7-WAVE-T1-TIMEZONE.md`** — moved from `/docs/` root (wrong location, active spec) to `/docs/modules/` (correct location for feature module specs). Registered under Phase 7 in INDEX.md with build dependency note for Phase 8.
+- INDEX.md ADR directory listing updated to show all 13 ADRs (was showing only ADR-001→010).
+
+### Doc Updates
+
+- `docs/ADRs/013-contractor-hiring-boundary.md` — new file
+- `docs/INDEX.md` — D04 updated (ADR-013 registered), Phase 7 section updated (Wave T1 spec entry), directory structure updated (ADR-013, PHASE7-WAVE-T1-TIMEZONE.md)
+
+**Test counts:** 1508 total (unchanged — no code changes this session).
+
+---
+
 ## 2026-03-13 — Phase 7 Wave A1: Analytics Module ✅
 
 **Scope:** Full analytics module with 5 views (funnel, velocity, sources, team, jobs), AI-generated narratives, Inngest nightly cron, and command bar integration.

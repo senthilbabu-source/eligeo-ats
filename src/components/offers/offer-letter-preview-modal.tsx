@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { sendOffer } from "@/lib/actions/offers";
 import { aiGenerateOfferTerms } from "@/lib/actions/offers";
+import { formatInTz } from "@/lib/datetime";
 
 /**
  * D32 §6.4 — AI Offer Letter Preview Modal.
@@ -19,6 +20,7 @@ export function OfferLetterPreviewModal({
   organizationName,
   existingTerms,
   isProPlus,
+  timezone,
   onClose,
   onSent,
 }: {
@@ -40,6 +42,7 @@ export function OfferLetterPreviewModal({
   organizationName: string;
   existingTerms?: string;
   isProPlus: boolean;
+  timezone: string;
   onClose: () => void;
   onSent: () => void;
 }) {
@@ -153,7 +156,7 @@ export function OfferLetterPreviewModal({
             </p>
             {startDate && (
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Start: {new Date(startDate).toLocaleDateString()}
+                Start: {formatInTz(startDate, timezone)}
               </p>
             )}
           </div>

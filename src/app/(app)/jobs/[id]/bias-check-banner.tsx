@@ -1,26 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import { formatInTz } from "@/lib/datetime";
 
 interface BiasCheckBannerProps {
   flaggedTerms: string[];
   suggestions: Record<string, string>;
   checkedAt: string;
+  timezone: string;
 }
 
 export function BiasCheckBanner({
   flaggedTerms,
   suggestions,
   checkedAt,
+  timezone,
 }: BiasCheckBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed || flaggedTerms.length === 0) return null;
 
-  const checkedDate = new Date(checkedAt).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  const checkedDate = formatInTz(checkedAt, timezone);
 
   return (
     <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/30">

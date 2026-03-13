@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
+import { getUserTimezone } from "@/lib/datetime-server";
 import { PipelineBoard } from "./pipeline-board";
 
 export async function generateMetadata({
@@ -29,6 +30,7 @@ export default async function PipelinePage({
   const { id } = await params;
   const session = await requireAuth();
   const supabase = await createClient();
+  const tz = await getUserTimezone(session.userId, session.orgId);
 
   // Fetch job with pipeline template
   const { data: job } = await supabase
@@ -159,6 +161,7 @@ export default async function PipelinePage({
         jobId={id}
         stages={stages ?? []}
         applicationsByStage={applicationsByStage}
+        timezone={tz}
       />
     </div>
   );

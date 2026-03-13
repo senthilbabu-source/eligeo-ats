@@ -4,6 +4,7 @@
  */
 
 import { UsageMeter } from "./usage-meter";
+import { formatInTz } from "@/lib/datetime";
 import type { FeatureFlags } from "@/lib/types/ground-truth";
 
 interface PlanCardProps {
@@ -71,11 +72,7 @@ export function PlanCard({
       {cancelAtPeriodEnd && currentPeriodEnd && (
         <div className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
           Your plan will be canceled on{" "}
-          {new Date(currentPeriodEnd).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
+          {formatInTz(currentPeriodEnd, "UTC", "long")}
         </div>
       )}
 

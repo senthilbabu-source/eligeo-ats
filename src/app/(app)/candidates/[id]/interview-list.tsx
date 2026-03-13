@@ -14,6 +14,7 @@ interface InterviewListProps {
   currentUserId: string;
   interviewers: Array<{ id: string; full_name: string }>;
   templates: Array<{ id: string; name: string }>;
+  timezone: string;
 }
 
 export function InterviewList({
@@ -25,6 +26,7 @@ export function InterviewList({
   currentUserId,
   interviewers,
   templates,
+  timezone,
 }: InterviewListProps) {
   const [showSchedule, setShowSchedule] = useState(false);
   const [scorecardInterviewId, setScorecardInterviewId] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export function InterviewList({
               key={interview.id}
               interview={interview}
               canEdit={canEdit}
+              timezone={timezone}
               onOpenScorecard={
                 canSubmitScorecard || canEdit
                   ? (id) => setScorecardInterviewId(id)
@@ -76,6 +79,7 @@ export function InterviewList({
           applicationId={applicationId}
           interviewers={interviewers}
           templates={templates}
+          timezone={timezone}
           onClose={() => setShowSchedule(false)}
         />
       )}

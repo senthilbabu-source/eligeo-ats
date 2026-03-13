@@ -8,6 +8,7 @@ interface ScheduleInterviewModalProps {
   applicationId: string;
   interviewers: Array<{ id: string; full_name: string }>;
   templates: Array<{ id: string; name: string }>;
+  timezone: string;
   onClose: () => void;
 }
 
@@ -25,6 +26,7 @@ export function ScheduleInterviewModal({
   applicationId,
   interviewers,
   templates,
+  timezone,
   onClose,
 }: ScheduleInterviewModalProps) {
   const [state, action, isPending] = useActionState(createInterview, null);
@@ -56,6 +58,7 @@ export function ScheduleInterviewModal({
 
         <form action={action} className="mt-4 space-y-4">
           <input type="hidden" name="applicationId" value={applicationId} />
+          <input type="hidden" name="timezone" value={timezone} />
 
           {/* Interviewer */}
           <div>
@@ -103,6 +106,7 @@ export function ScheduleInterviewModal({
             <div>
               <label htmlFor="scheduledAt" className="block text-sm font-medium">
                 Date & Time
+                <span className="ml-1 text-xs font-normal text-muted-foreground">({timezone})</span>
               </label>
               <input
                 id="scheduledAt"
@@ -180,6 +184,7 @@ export function ScheduleInterviewModal({
           <div>
             <label htmlFor="feedbackDeadlineAt" className="block text-sm font-medium">
               Feedback Deadline
+              <span className="ml-1 text-xs font-normal text-muted-foreground">({timezone})</span>
             </label>
             <input
               id="feedbackDeadlineAt"

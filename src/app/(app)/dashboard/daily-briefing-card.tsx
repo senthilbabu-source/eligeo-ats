@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { regenerateBriefing } from "@/lib/actions/dashboard";
 import { isBriefingContent } from "@/inngest/functions/analytics/generate-briefing";
+import { formatInTz } from "@/lib/datetime";
 
 /**
  * DailyBriefingCard — R11
@@ -27,9 +28,11 @@ async function RegenerateButton() {
 export async function DailyBriefingCard({
   orgId,
   isAdmin,
+  timezone,
 }: {
   orgId: string;
   isAdmin: boolean;
+  timezone: string;
 }) {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -58,10 +61,7 @@ export async function DailyBriefingCard({
   }
 
   const { win, blocker, action } = briefing.content;
-  const generatedAt = new Date(briefing.generated_at).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const generatedAt = formatInTz(briefing.generated_at, timezone, "time");
 
   return (
     <div className="rounded-lg border border-border bg-card p-5">

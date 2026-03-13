@@ -1,5 +1,7 @@
 "use client";
 
+import { formatInTz } from "@/lib/datetime";
+
 interface TimelineEvent {
   event: string;
   date: string;
@@ -42,11 +44,7 @@ export function StatusTimeline({ events }: { events: TimelineEvent[] }) {
             />
             <p className="text-sm font-medium">{ev.event}</p>
             <time className="text-xs text-muted-foreground">
-              {new Date(ev.date).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
+              {formatInTz(ev.date, "UTC", "long")}
             </time>
           </li>
         ))}

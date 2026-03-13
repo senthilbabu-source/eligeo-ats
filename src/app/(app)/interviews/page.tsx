@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/constants/roles";
+import { formatInTz, getUserTimezone } from "@/lib/datetime-server";
 
 export const metadata: Metadata = {
   title: "Interviews",
@@ -26,17 +27,7 @@ const TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-function formatDateTime(iso: string | null): string {
-  if (!iso) return "TBD";
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+// formatDateTime is now timezone-aware — see inline usage with formatInTz
 
 export default async function InterviewsPage({
   searchParams,
@@ -144,6 +135,7 @@ export default async function InterviewsPage({
 
   // Check overdue feedback
   const nowMs = new Date().getTime();
+  const tz = await getUserTimezone(session.userId, session.orgId);
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -226,7 +218,7 @@ export default async function InterviewsPage({
                   <span className="font-medium">{jobTitle}</span>
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {formatDateTime(interview.scheduled_at)}
+                  {formatInTz(interview.scheduled_at, tz, "datetime")}
                   {interview.duration_minutes ? ` (${interview.duration_minutes}m)` : ""}
                   {!filterMine && ` — ${interviewerName}`}
                 </p>

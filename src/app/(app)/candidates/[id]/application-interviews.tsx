@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
 import { can } from "@/lib/constants/roles";
+import { getUserTimezone } from "@/lib/datetime-server";
 import { InterviewList } from "./interview-list";
 import type { InterviewCardData } from "./interview-card";
 
@@ -105,6 +106,8 @@ export async function ApplicationInterviews({ applicationId }: ApplicationInterv
     .is("deleted_at", null)
     .order("name");
 
+  const timezone = await getUserTimezone(session.userId, session.orgId);
+
   return (
     <InterviewList
       applicationId={applicationId}
@@ -115,6 +118,7 @@ export async function ApplicationInterviews({ applicationId }: ApplicationInterv
       currentUserId={session.userId}
       interviewers={memberProfiles}
       templates={(templates ?? []).map((t) => ({ id: t.id, name: t.name }))}
+      timezone={timezone}
     />
   );
 }

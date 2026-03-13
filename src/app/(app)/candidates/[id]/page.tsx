@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { can } from "@/lib/constants/roles";
+import { formatInTz, getUserTimezone } from "@/lib/datetime-server";
 import { ApplyToJobForm } from "./apply-to-job-form";
 import { InlineAppActions } from "./inline-app-actions";
 import { NextBestAction } from "./next-best-action";
@@ -43,6 +44,7 @@ export default async function CandidateDetailPage({
   const fromJobId = typeof sp.jobId === "string" ? sp.jobId : null;
   const session = await requireAuth();
   const supabase = await createClient();
+  const tz = await getUserTimezone(session.userId, session.orgId);
 
   const { data: candidate } = await supabase
     .from("candidates")
@@ -520,7 +522,7 @@ export default async function CandidateDetailPage({
                     <p className="font-medium">{job?.title ?? "Unknown Job"}</p>
                     <p className="text-sm text-muted-foreground">
                       Applied{" "}
-                      {new Date(app.applied_at).toLocaleDateString()}
+                      {formatInTz(app.applied_at, tz)}
                     </p>
                   </div>
                   <div className="text-right">
@@ -574,6 +576,7 @@ export default async function CandidateDetailPage({
         }>}
         currentUserId={session.userId}
         isOwnerOrAdmin={can(session.orgRole, "candidates:edit")}
+        timezone={tz}
       />
 
       {/* N1/S6 — AI Email Draft panel (P1-6: with context enrichment) */}

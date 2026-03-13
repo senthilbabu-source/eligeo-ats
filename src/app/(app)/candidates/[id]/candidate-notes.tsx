@@ -2,6 +2,7 @@
 
 import { useActionState, useTransition } from "react";
 import { addCandidateNote, deleteCandidateNote } from "@/lib/actions/candidates";
+import { formatInTz } from "@/lib/datetime";
 
 interface Note {
   id: string;
@@ -16,6 +17,7 @@ interface CandidateNotesProps {
   notes: Note[];
   currentUserId: string;
   isOwnerOrAdmin: boolean;
+  timezone: string;
 }
 
 export function CandidateNotes({
@@ -23,6 +25,7 @@ export function CandidateNotes({
   notes,
   currentUserId,
   isOwnerOrAdmin,
+  timezone,
 }: CandidateNotesProps) {
   const [state, formAction, isPending] = useActionState(addCandidateNote, null);
   const [isDeleting, startDelete] = useTransition();
@@ -81,12 +84,7 @@ export function CandidateNotes({
                     </p>
                     <p className="mt-1.5 text-xs text-muted-foreground">
                       {author?.full_name ?? "Unknown"} &middot;{" "}
-                      {new Date(note.created_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
+                      {formatInTz(note.created_at, timezone, "datetime")}
                     </p>
                   </div>
                   {canDelete && (

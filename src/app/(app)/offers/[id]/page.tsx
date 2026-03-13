@@ -7,6 +7,7 @@ import { can } from "@/lib/constants/roles";
 import { validActions } from "@/lib/offers/state-machine";
 import type { OfferStatus, OfferApprovalStatus } from "@/lib/types/ground-truth";
 import { OfferActions } from "./offer-actions";
+import { formatInTz, getUserTimezone } from "@/lib/datetime-server";
 
 export async function generateMetadata({
   params,
@@ -57,23 +58,7 @@ function formatCurrency(amount: number, currency: string): string {
   }
 }
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(date: string): string {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+// formatDate/formatDateTime replaced by formatInTz — timezone-aware
 
 export default async function OfferDetailPage({
   params,
@@ -83,6 +68,7 @@ export default async function OfferDetailPage({
   const { id } = await params;
   const session = await requireAuth();
   const supabase = await createClient();
+  const tz = await getUserTimezone(session.userId, session.orgId);
 
   // Fetch offer
   const { data: offer } = await supabase
@@ -218,6 +204,7 @@ export default async function OfferDetailPage({
           organizationName={org?.name ?? undefined}
           isProPlus={isProPlus}
           existingTerms={typeof offer.terms === "string" ? offer.terms : undefined}
+          timezone={tz}
         />
       </div>
 
@@ -320,30 +307,30 @@ export default async function OfferDetailPage({
               {offer.start_date && (
                 <div>
                   <span className="text-muted-foreground">Start Date</span>
-                  <p>{formatDate(offer.start_date)}</p>
+                  <p>{formatInTz(offer.start_date, tz)}</p>
                 </div>
               )}
               {offer.expiry_date && (
                 <div>
                   <span className="text-muted-foreground">Expires</span>
-                  <p>{formatDate(offer.expiry_date)}</p>
+                  <p>{formatInTz(offer.expiry_date, tz)}</p>
                 </div>
               )}
               {offer.sent_at && (
                 <div>
                   <span className="text-muted-foreground">Sent</span>
-                  <p>{formatDateTime(offer.sent_at)}</p>
+                  <p>{formatInTz(offer.sent_at, tz, "datetime")}</p>
                 </div>
               )}
               {offer.signed_at && (
                 <div>
                   <span className="text-muted-foreground">Signed</span>
-                  <p>{formatDateTime(offer.signed_at)}</p>
+                  <p>{formatInTz(offer.signed_at, tz, "datetime")}</p>
                 </div>
               )}
               <div>
                 <span className="text-muted-foreground">Created</span>
-                <p>{formatDateTime(offer.created_at)}</p>
+                <p>{formatInTz(offer.created_at, tz, "datetime")}</p>
               </div>
             </div>
           </div>
@@ -408,7 +395,7 @@ export default async function OfferDetailPage({
                     </div>
                     {approval.decided_at && (
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {formatDateTime(approval.decided_at)}
+                        {formatInTz(approval.decided_at, tz, "datetime")}
                       </p>
                     )}
                     {approval.notes && (

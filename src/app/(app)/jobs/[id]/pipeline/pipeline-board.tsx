@@ -16,6 +16,7 @@ import {
   type DragOverEvent,
 } from "@dnd-kit/core";
 import { moveStage } from "@/lib/actions/candidates";
+import { formatInTz } from "@/lib/datetime";
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ function DraggableCard({
   onMoveArrow,
   isMoving,
   jobId,
+  timezone,
 }: {
   app: Application;
   stages: Stage[];
@@ -67,6 +69,7 @@ function DraggableCard({
   onMoveArrow: (applicationId: string, toStageId: string) => void;
   isMoving: boolean;
   jobId: string;
+  timezone: string;
 }) {
   const {
     attributes,
@@ -135,7 +138,7 @@ function DraggableCard({
       )}
       <div className="mt-2 flex items-center justify-between">
         <span className="text-[11px] text-muted-foreground">
-          {new Date(app.applied_at).toLocaleDateString()}
+          {formatInTz(app.applied_at, timezone)}
         </span>
         {/* Arrow buttons as fallback (mobile + a11y) */}
         <div className="flex gap-1">
@@ -175,7 +178,7 @@ function DraggableCard({
 
 // ── Overlay Card (shown during drag) ──────────────────────
 
-function OverlayCard({ app }: { app: Application }) {
+function OverlayCard({ app, timezone }: { app: Application; timezone: string }) {
   return (
     <div className="w-64 scale-[1.02] rounded-lg border border-primary/30 bg-background p-3 shadow-xl ring-2 ring-primary/20">
       <p className="text-sm font-medium">
@@ -188,7 +191,7 @@ function OverlayCard({ app }: { app: Application }) {
         </p>
       )}
       <span className="mt-1 block text-[11px] text-muted-foreground">
-        {new Date(app.applied_at).toLocaleDateString()}
+        {formatInTz(app.applied_at, timezone)}
       </span>
     </div>
   );
@@ -205,6 +208,7 @@ function StageColumn({
   onMoveArrow,
   movingAppId,
   jobId,
+  timezone,
 }: {
   stage: Stage;
   apps: Application[];
@@ -214,6 +218,7 @@ function StageColumn({
   onMoveArrow: (applicationId: string, toStageId: string) => void;
   movingAppId: string | null;
   jobId: string;
+  timezone: string;
 }) {
   const { setNodeRef } = useDroppable({ id: stage.id });
 
@@ -244,6 +249,7 @@ function StageColumn({
             onMoveArrow={onMoveArrow}
             isMoving={movingAppId === app.id}
             jobId={jobId}
+            timezone={timezone}
           />
         ))}
         {apps.length === 0 && !isOver && (
@@ -267,10 +273,12 @@ export function PipelineBoard({
   jobId,
   stages,
   applicationsByStage: initialData,
+  timezone,
 }: {
   jobId: string;
   stages: Stage[];
   applicationsByStage: Record<string, Application[]>;
+  timezone: string;
 }) {
   const [appsByStage, setAppsByStage] = useState(initialData);
   const [activeApp, setActiveApp] = useState<Application | null>(null);
@@ -415,6 +423,7 @@ export function PipelineBoard({
               onMoveArrow={handleMoveArrow}
               movingAppId={movingAppId}
               jobId={jobId}
+              timezone={timezone}
             />
           ))}
         </div>
@@ -423,7 +432,7 @@ export function PipelineBoard({
           duration: 300,
           easing: "cubic-bezier(0.2, 0, 0, 1)",
         }}>
-          {activeApp ? <OverlayCard app={activeApp} /> : null}
+          {activeApp ? <OverlayCard app={activeApp} timezone={timezone} /> : null}
         </DragOverlay>
       </DndContext>
     </div>

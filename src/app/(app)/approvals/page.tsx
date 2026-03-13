@@ -2,18 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { formatInTz, getUserTimezone } from "@/lib/datetime-server";
 
 export const metadata: Metadata = {
   title: "Approvals",
 };
-
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 function formatCurrency(amount: number, currency: string): string {
   try {
@@ -30,6 +23,7 @@ function formatCurrency(amount: number, currency: string): string {
 export default async function ApprovalsPage() {
   const session = await requireAuth();
   const supabase = await createClient();
+  const tz = await getUserTimezone(session.userId, session.orgId);
 
   // Find all pending approvals for the current user
   const { data: myApprovals } = await supabase
@@ -167,9 +161,9 @@ export default async function ApprovalsPage() {
                   </span>
                 )}
                 {item.expiryDate && (
-                  <span>Expires {formatDate(item.expiryDate)}</span>
+                  <span>Expires {formatInTz(item.expiryDate, tz)}</span>
                 )}
-                <span>Created {formatDate(item.createdAt)}</span>
+                <span>Created {formatInTz(item.createdAt, tz)}</span>
               </div>
             </div>
             {item.isMyTurn && (

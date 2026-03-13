@@ -9,6 +9,7 @@ import logger from "@/lib/utils/logger";
 import { recordInteraction } from "@/lib/utils/record-interaction";
 import { z } from "zod";
 import type { InterviewType, InterviewStatus } from "@/lib/types/ground-truth";
+import { formatInTz, getUserTimezone, localInputToUtc } from "@/lib/datetime-server";
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -54,13 +55,14 @@ const createInterviewSchema = z.object({
   applicationId: z.string().uuid(),
   interviewerId: z.string().uuid(),
   interviewType: z.enum(INTERVIEW_TYPES as [string, ...string[]]),
-  scheduledAt: z.string().datetime().optional(),
+  scheduledAt: z.string().optional(),
   durationMinutes: z.coerce.number().int().min(15).max(480).default(60),
   location: z.string().max(500).optional(),
   meetingUrl: z.url().optional(),
   scorecardTemplateId: z.string().uuid().optional(),
-  feedbackDeadlineAt: z.string().datetime().optional(),
+  feedbackDeadlineAt: z.string().optional(),
   notes: z.string().max(2000).optional(),
+  timezone: z.string().optional(),
 });
 
 const updateInterviewSchema = z.object({
@@ -95,6 +97,7 @@ export async function createInterview(_prev: unknown, formData: FormData) {
     scorecardTemplateId: formData.get("scorecardTemplateId") || undefined,
     feedbackDeadlineAt: formData.get("feedbackDeadlineAt") || undefined,
     notes: formData.get("notes") || undefined,
+    timezone: formData.get("timezone") || undefined,
   });
 
   if (!parsed.success) {
@@ -102,6 +105,12 @@ export async function createInterview(_prev: unknown, formData: FormData) {
   }
 
   const data = parsed.data;
+
+  // Convert datetime-local values from user's timezone to UTC
+  const tz = data.timezone || await getUserTimezone(session.userId, session.orgId);
+  const scheduledAtUtc = data.scheduledAt ? localInputToUtc(data.scheduledAt, tz).toISOString() : undefined;
+  const feedbackDeadlineUtc = data.feedbackDeadlineAt ? localInputToUtc(data.feedbackDeadlineAt, tz).toISOString() : undefined;
+
   const supabase = await createClient();
 
   // Resolve job_id from application (server-side — never trust client)
@@ -125,12 +134,12 @@ export async function createInterview(_prev: unknown, formData: FormData) {
       job_id: app.job_opening_id,
       interviewer_id: data.interviewerId,
       interview_type: data.interviewType,
-      scheduled_at: data.scheduledAt,
+      scheduled_at: scheduledAtUtc,
       duration_minutes: data.durationMinutes,
       location: data.location,
       meeting_url: data.meetingUrl,
       scorecard_template_id: data.scorecardTemplateId,
-      feedback_deadline_at: data.feedbackDeadlineAt,
+      feedback_deadline_at: feedbackDeadlineUtc,
       notes: data.notes,
       status: "scheduled",
       created_by: session.userId,
@@ -150,7 +159,7 @@ export async function createInterview(_prev: unknown, formData: FormData) {
     organizationId: session.orgId,
     actorId: session.userId,
     type: "interview_scheduled",
-    summary: `${data.interviewType.replace("_", " ")} interview scheduled${data.scheduledAt ? ` for ${new Date(data.scheduledAt).toLocaleDateString()}` : ""}`,
+    summary: `${data.interviewType.replace("_", " ")} interview scheduled${data.scheduledAt ? ` for ${formatInTz(data.scheduledAt, await getUserTimezone(session.userId, session.orgId))}` : ""}`,
   });
 
   revalidatePath(`/candidates`);

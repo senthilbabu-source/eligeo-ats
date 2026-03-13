@@ -5,11 +5,58 @@
 
 ## How to use this index
 
-- **Status key:** `✅ Complete` · `🟡 In Progress` · `⬜ Not Started` · `🔴 Blocked`
+### Status vocabulary (precise — not interchangeable)
+
+| Status | Meaning |
+|--------|---------|
+| `✅ Complete (Audit)` | Post-build audit run and passed (AI-RULES §13). Test count verified actuals on record. No open FAILs. |
+| `✅ Complete (Review)` | Document written and internally reviewed. Feature built and tests passing. Audit not yet formally run. |
+| `✅ Complete` | Foundational/governance doc — not a feature spec, no build audit required. |
+| `🟡 In Progress` | Actively being built. A VS Code session or Cowork session owns this. |
+| `⬜ Spec` | Spec written, build not started. Ready for build gate. |
+| `⬜ Not Started` | No spec, no build. |
+| `🔴 Blocked` | Depends on unresolved upstream item. Cannot proceed. |
+
 - **Priority:** `P0` = Blocks all development · `P1` = Blocks feature area · `P2` = Pre-launch · `P3` = Post-MVP
 - Every document change MUST be logged in [DEVLOG.md](DEVLOG.md)
 - Cross-document gaps tracked in [GAPS.md](GAPS.md) — check before starting any doc
 - Writing standards are in [AI-RULES.md](AI-RULES.md)
+
+### Governance rules (anti-drift, anti-debt, anti-hallucination)
+
+**R1 — New ADR → update Depends On immediately.** When a new ADR is created, every in-flight phase spec's `Depends On` column must be updated in the same session. No ADR may be cited as "governing" a phase if it isn't in that phase's dependency chain.
+
+**R2 — Numeric claims are time-stamped, not timeless.** Any count in a description (tests, endpoints, tables, Inngest functions) must note the phase/wave it was verified at, e.g. `38 tests (verified Phase 7 A1)`. Unqualified numbers in descriptions older than one phase boundary are treated as estimates, not facts.
+
+**R3 — `✅ Complete` does not mean current.** A document marked Complete was accurate when audited. If a migration has been added, a table changed, or an endpoint modified since the last verification date, the document is stale until explicitly re-audited. Before citing a Complete doc in a pre-task gate, check its last-verified context against current migration count.
+
+**R4 — Phase gate stubs are mandatory.** Every phase must have a Pre-Start Gate row and a Post-Build Audit row in the Phase Gate Documents table before build starts. A phase with no gate stub can silently skip §21 and §13. Gate rows must be created as `⬜ Not Created` at phase kickoff — not left absent.
+
+**R5 — Migration register is the authoritative assignment ledger.** Before writing any migration file, check the Migration Register below and claim the next number. Never assume the next number — always verify. Parallel sessions (VS Code + Cowork) must coordinate via this register.
+
+**R6 — Estimates vs actuals must be visually distinct.** Planned test counts in specs use `~` prefix (e.g., `~197 new tests`). Once a phase ships, the Description must be updated with the verified actual count, and the `~` removed. A `~` in a shipped phase's description is a debt marker.
+
+**R7 — Downstream impact awareness.** Before closing a session that modifies any foundational document (D01, D02, D03, D24, D29), check the Downstream Impact Map below and flag any secondary documents that have become stale. Log them in GAPS.md if not immediately resolved.
+
+---
+
+## Live Build Health
+
+> Single-glance project state. Update this block at every phase boundary and whenever a session changes any of these numbers.
+
+| Metric | Value | Last Updated |
+|--------|-------|-------------|
+| **Total tests** | 1437 Vitest + 71 E2E = **1508** | Phase 7 Wave A1 |
+| **All tests passing** | ✅ Yes | Phase 7 Wave A1 |
+| **Migrations applied** | **33** (000–033). Next = `00034` | Phase 7 Wave A1 |
+| **Active Inngest functions** | **28 shipped** / 69 registered in D29 | Phase 7 Wave A1 |
+| **RLS coverage** | **33 tables** verified in D24 matrix (Phase 6). Δ: `analytics_snapshots` added M033 — tests written (5 RLS). **Target: all 57 tables.** | Phase 7 Wave A1 |
+| **Open gaps** | See [GAPS.md](GAPS.md) | — |
+| **ADRs** | 013 active | 2026-03-13 |
+| **Current phase** | **Phase 7** (Wave A1 ✅, Wave T1 ✅, Wave A2 ⬜ next) | 2026-03-13 |
+| **Next phase** | **Phase 8** (⬜ Spec ready — start gate: Wave A2 or Phase 7 completion) | 2026-03-13 |
+
+> **Rule:** If any value in this table was set more than one phase ago and the codebase has changed in that area, treat it as stale and re-verify before using it in a pre-task gate.
 
 ---
 
@@ -30,7 +77,7 @@
 | D01 | **Complete Database Schema** | `docs/DATABASE-SCHEMA.md` | P0 | ✅ Complete (Review) | S3, ADR-001→010 | 49 tables across 9 clusters (39 base + `org_daily_briefings` M021 + `ai_score_feedback` M022 + `offer_templates`/`offers`/`offer_approvals` M028 + `ai_match_explanations` M029 + `candidate_merges`/`resume_parsed_data` M030 + `ai_shortlist_reports`/`ai_shortlist_candidates` M031 + `screening_configs`/`screening_sessions` M032). Full DDL, RLS (all 4 ops), indexes, triggers, functions, JSONB interfaces, volume estimates. |
 | D02 | **API Specification** | `docs/API-SPECIFICATION.md` | P0 | ✅ Complete (Review) | D01 | 13 sections: auth (JWT + API key), RBAC, URL conventions, cursor pagination, RFC 9457 errors, rate limiting (4 plan tiers), idempotency, webhook outbound/inbound, Zod→OpenAPI 3.1. 50+ endpoints in `docs/api/ENDPOINTS.md`. Post-build audit passed. |
 | D03 | **Billing & Subscription Architecture** | `docs/modules/BILLING.md` | P0 | ✅ Complete (Review) | D01 | 4 plan tiers (starter/growth/pro/enterprise), feature matrix (16 features), Stripe Checkout + Customer Portal, subscription lifecycle (6 states), seat-based pricing with overage, AI credit metering + overage billing, 6 Inngest webhook handlers, dunning flow, downgrade rules. Post-build audit passed (3 FAILs fixed). |
-| D04 | **Architecture Decision Records** | `docs/ADRs/` | P0 | ✅ Complete | S3 | ✅ ADR-001→012 complete. ADR-011: AI-first build pivot. ADR-012 (2026-03-11): Domain architecture — `eligeo.io` (marketing) + `app.eligeo.io` (app), career portal bridge pattern, CMS for blog/content. Remaining: formal ADRs for STACK-1→6 (non-blocking). |
+| D04 | **Architecture Decision Records** | `docs/ADRs/` | P0 | ✅ Complete | S3 | ✅ ADR-001→013 complete. ADR-011: AI-first build pivot. ADR-012 (2026-03-11): Domain architecture — `eligeo.io` (marketing) + `app.eligeo.io` (app), career portal bridge pattern, CMS for blog/content. **ADR-013 (2026-03-13):** Contractor Hiring Architecture Boundary — Side A (ATS intake, ends at hire event) permanently in scope; Side B (SOW, PO, timesheets, invoices, VMS) permanently out of scope. Formalises Phase 8 scope boundary. Remaining: formal ADRs for STACK-1→6 (non-blocking). |
 | D05 | **Design System** | `docs/DESIGN-SYSTEM.md` | P0 | ✅ Complete (Review) | D01 | Color palette (HSL tokens, light + dark), Inter + Geist Mono typography, spacing scale, shadcn/ui component specs (16 base + 10 ATS-specific), responsive breakpoints, WCAG 2.1 AA (all contrasts verified), animation tokens, career page theming, file organization. Post-build audit passed. |
 
 ---
@@ -57,7 +104,7 @@
 | D14 | **Observability & Monitoring** | `docs/OBSERVABILITY.md` | P2 | ✅ Complete (Review) | D02, D08 | Three-pillar observability (Pino logging + Sentry errors + Vercel/custom metrics), PII redaction, 3 health endpoints (shallow/deep/admin), 9 SLOs with error budget, 4-severity alerting via Slack/PagerDuty, request ID tracing, Inngest dead-letter handling, admin system dashboard. Post-build audit: 7/7 PASS. |
 | D15 | **CI/CD Pipeline** | `docs/CI-CD.md` | P2 | ✅ Complete (Review) | D04, D14 | 4-environment strategy (dev/preview/staging/prod), GitHub Actions (PR checks + staging + production deploys), Supabase migration strategy (backward-compatible only), preview environments, Dependabot, rollback procedures (Vercel instant + DB PITR), release management with semver, branch protection, security controls. Post-build audit: 7/7 PASS. |
 | D16 | **Performance & Caching** | `docs/PERFORMANCE.md` | P2 | ✅ Complete (Review) | D01, D10, D11, D14 | Performance targets (9 operation types), Redis caching (cache-aside + invalidation), no-cache for PII, connection pooling (transaction mode), query optimization rules, ISR for career pages, Inngest concurrency limits, Realtime event batching, k6 load testing (6 scenarios), frontend performance budget, bundle analysis. Post-build audit: 7/7 PASS. |
-| D17 | **Analytics & Reporting** | `docs/modules/ANALYTICS.md` | P2 | ✅ Complete (Review) | D01, D12, D13 | 7 pipeline metrics + 6 volume metrics + 4 source metrics, materialized views (daily pipeline + monthly hiring — Phase 3 targets), time-in-stage window functions. §3.1/§5 updated 2026-03-11: current implementation uses `applications.current_stage_id` (stage snapshot) — passthrough funnel via `application_stage_history` is Phase 3. §9 widget table fully reconciled with build plan (Waves 1–3 + Phase 3/4 gates). 3 Inngest functions (adds `analytics/generate-briefing` v1.0). |
+| D17 | **Analytics & Reporting** | `docs/modules/ANALYTICS.md` | P2 | ✅ Complete (Review) — expanded 2026-03-13 | D01, D02, D03, D08, D12, D13, D24 | **Full industry-standard scope.** 10 analytics views (V01 Pipeline Funnel, V02 Stage Velocity, V03 Source Attribution, V04 Team Performance, V05 Job Health, V06 Offer Analytics, V07 Rejection Analysis, V08 Hiring Plan vs Actual, V09 Interviewer Performance, V10 Candidate Experience). 3 new tables (`hiring_plans`, `analytics_saved_views`, `analytics_report_schedules`). 5 new materialized views (`mv_rejection_analysis`, `mv_source_quality`, `mv_interviewer_performance`, `mv_offer_analytics`, `mv_job_health`). Period-over-period comparison, dimension filters, drill-down, CSV/Excel export, scheduled report delivery. AI anomaly detection (z-score, 2σ threshold), AI recommendations engine, predictive fill forecast. 8 new Inngest functions total. 19 new API endpoints. Migration 00037. Wave A1 ✅ built (D33). Wave A2 spec complete — ready to build (~140 new tests). Wave A3 deferred (custom report builder, DEI full activation, candidate experience). |
 | D18 | **Security Runbooks** | `docs/runbooks/SECURITY-RUNBOOKS.md` | P2 | ✅ Complete (Review) | D14, D15 | 6 runbooks (service outage, DB restoration, security incident, secret rotation, deployment rollback, third-party failure), degradation matrix, escalation path (L1-L4), post-incident review template. Post-build audit: 7/7 PASS. |
 
 ---
@@ -154,6 +201,7 @@ Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening) → 1339 Vi
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
 | D33 | **Analytics Module** | `docs/modules/ANALYTICS-MODULE.md` | P1 | ✅ Complete (Review) | D01, D17, D24, D29 | 5 analytics views (funnel, velocity, sources, team, jobs) with AI-generated narratives (ADR-011). Pure compute library, Inngest nightly cron, 6 API routes, CSS-only charts, command bar `analytics_view` intent. Migration 033 (`analytics_snapshots`). `reports:view` permission for team analytics (owner/admin only). 38 tests (33 unit + 5 RLS) + 3 E2E. |
+| — | **Phase 7 Wave T1: Timezone Support** | `docs/modules/PHASE7-WAVE-T1-TIMEZONE.md` | P1 | ✅ Complete | D01, D07, D08, D21 | Retrofits all 26+ UI date display locations to honour org/user timezone preference. `src/lib/datetime.ts` (client-safe) + `src/lib/datetime-server.ts` (server fetch). `formatInTz`, `formatForEmail`, `localInputToUtc`, `resolveTimezone`, `getUserTimezone`. Uses `@date-fns/tz` v1.4.1. 20+ files patched (zero `toLocaleDateString` remaining). Interview scheduling: timezone indicator + UTC conversion via `localInputToUtc`. No new migrations. 19 unit tests. Timezone selector UI deferred (DB columns ready). |
 
 ---
 
@@ -161,7 +209,7 @@ Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening) → 1339 Vi
 
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
-| D34 | **Phase 8: Contingent Hiring Pipeline** | `docs/modules/PHASE8-CONTINGENT-HIRING.md` | P1 | ⬜ Spec (Ready for Build) | D01, D02, D03, D05, D06, D08, D09, D10, D12, D17, D24, D25, D27, D29, ADR-001→012 | 5 waves — Contractor/contingent role type (Side A ATS intake only, no VMS). 3 new tables (`vendors`, `vendor_submissions`, `candidate_contract_profiles`), rate intelligence cache, `role_type` CHECK on `job_openings`, 7 Inngest functions, 12 new API endpoints, contractor fit score (availability + rate + skills + contract type + clearance), AI rate band suggestion, AI vendor submission ranking, AI rate check assist, AI engagement summary PDF, 8 command bar intents. Migrations 00034–00036. ~197 new tests. Plan gate: Growth+. |
+| D34 | **Phase 8: Contingent Hiring Pipeline** | `docs/modules/PHASE8-CONTINGENT-HIRING.md` | P1 | ⬜ Spec (Ready for Build) | D01, D02, D03, D05, D06, D08, D09, D10, D12, D17, D24, D25, D27, D29, ADR-001→013 | 5 waves — Contractor/contingent role type (Side A ATS intake only, no VMS). 3 new tables (`vendors`, `vendor_submissions`, `candidate_contract_profiles`), rate intelligence cache, `role_type` CHECK on `job_openings`, 7 Inngest functions, 12 new API endpoints, contractor fit score (availability + rate + skills + contract type + clearance), AI rate band suggestion, AI vendor submission ranking, AI rate check assist, AI engagement summary PDF, 8 command bar intents. Migrations 00034–00036. ~197 new tests. Plan gate: Growth+. |
 
 ---
 
@@ -169,10 +217,84 @@ Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening) → 1339 Vi
 
 Mandatory governance artifacts produced at phase boundaries per AI-RULES §13 and §21.
 
+> **R4 enforcement:** Every phase MUST have a Pre-Start Gate row and a Post-Build Audit row in this table. Rows are created as `⬜ Not Created` at phase kickoff — not left absent. A missing row means the gate was silently skipped, which is a rule violation (CLAUDE.md Gate Violation Protocol).
+
 | Document | Path | Gate | Status | Summary |
 |----------|------|------|--------|---------|
 | Phase 5 Pre-Start Gate | `docs/PHASE5-PRE-GATE.md` | §21 G1–G6 | ✅ PASSED 2026-03-12 | All 6 gates passed. Critical finding: V-3 `createUsageRecord()` deprecated → resolved to `stripe.billing.meterEvents.create()`. ~193 tests planned across 5 categories. |
 | Post-Phase-5 Audit | `docs/POST-PHASE5-AUDIT.md` | §13 A1–A7 | ✅ PASSED 2026-03-12 | 0 critical failures, 9 warnings. W-03 resolved (subscription_status column confirmed in M002). D01/D03 synced. GAPS.md updated. Phase 6 unblocked. |
+| Phase 7 Pre-Start Gate | `docs/PHASE7-PRE-GATE.md` | §21 G1–G6 | ⬜ Not Created | Required before Phase 7 Wave A2 build starts. Wave A1 shipped without formal gate (Wave A1 was small and self-contained). Wave A2 scope (~140 new tests, 3 new tables, 5 materialized views, 8 Inngest functions) requires a gate. |
+| Post-Phase-7 Audit | `docs/POST-PHASE7-AUDIT.md` | §13 A1–A7 | ⬜ Not Created | Required before Phase 8 build start gate. Must verify: D17 Wave A2 actuals vs estimates, RLS coverage for `hiring_plans`/`analytics_saved_views`/`analytics_report_schedules`, Inngest registry updated (D29), migration 00037 documented. |
+| Phase 8 Pre-Start Gate | `docs/PHASE8-PRE-GATE.md` | §21 G1–G6 | ⬜ Not Created | Blocked until: (1) Phase 7 Wave T1 ships, (2) Post-Phase-7 Audit passes. Gate must verify ADR-013 enforced, Side A/B boundary understood, migration 00034 claimed, D34 dependency chain complete (ADR-001→013). |
+| Post-Phase-8 Audit | `docs/POST-PHASE8-AUDIT.md` | §13 A1–A7 | ⬜ Not Created | Created at Phase 8 completion. Must verify: ~197 test estimate vs actuals, all 3 new tables have RLS tests (4 ops × 2 tenants), ADR-013 not violated by any shipped code, contractor analytics feeds correctly into Wave A2 infrastructure. |
+
+---
+
+## Migration Register
+
+> **Authoritative assignment ledger.** Before writing any `.sql` migration file, claim the next number here. Parallel sessions (VS Code + Cowork) must coordinate via this table. Never assume the next number — always verify.
+>
+> **Rule (R5):** If a session adds a migration, this register must be updated in the same commit. A migration file without a register entry is undocumented debt.
+
+| # | File | Phase / Wave | Tables / Changes | Status |
+|---|------|-------------|-----------------|--------|
+| 000 | `00001_extensions_and_functions.sql` | Bootstrap | `uuid-ossp`, `pgcrypto`, `vector` extensions. `update_updated_at()` trigger func | ✅ Applied |
+| 001 | `00001_extensions_and_functions.sql` | Bootstrap | Extensions + generic functions | ✅ Applied |
+| 002 | `00002_core_tenancy_tables.sql` | Phase 0 | `orgs`, `org_members`, `roles`, `role_permissions` | ✅ Applied |
+| 003 | `00003_rls_helper_functions.sql` | Phase 0 | `get_my_org_id()`, `get_my_role()`, JWT hook | ✅ Applied |
+| 004 | `00004_audit_logs.sql` | Phase 0 | `audit_logs` (append-only, partitioned monthly) | ✅ Applied |
+| 005 | `00005_rls_policies_and_triggers.sql` | Phase 0 | RLS on `orgs`, `org_members`. `audit_trigger_func()` | ✅ Applied |
+| 006 | `00006_lookup_tables.sql` | Phase 0 | `candidate_sources`, `rejection_reasons` | ✅ Applied |
+| 007 | `00007_pipeline_tables.sql` | Phase 0 | `pipeline_templates`, `pipeline_stages` | ✅ Applied |
+| 008 | `00008_job_openings.sql` | Phase 0 | `job_openings` | ✅ Applied |
+| 009 | `00009_candidates.sql` | Phase 0 | `candidates` | ✅ Applied |
+| 010 | `00010_skills.sql` | Phase 0 | `skills`, `candidate_skills`, `job_required_skills` | ✅ Applied |
+| 011 | `00011_applications.sql` | Phase 0 | `applications`, `stage_history` | ✅ Applied |
+| 012 | `00012_talent_pools.sql` | Phase 0 | `talent_pools`, `talent_pool_members` | ✅ Applied |
+| 013 | `00013_phase2_crosscut_fixes.sql` | Phase 2 | Cross-cut analysis fixes (118-issue audit) | ✅ Applied |
+| 014 | `00014_performance_indexes.sql` | Phase 2 | Pagination + filtered query indexes | ✅ Applied |
+| 015 | `00015_ai_infrastructure.sql` | Phase 2.5 | `candidate_embeddings`, `job_embeddings`, pgvector HNSW indexes | ✅ Applied |
+| 016 | `00016_fix_applications_candidate_index.sql` | Hotfix | Fix `idx_applications_candidate` index collision | ✅ Applied |
+| 017 | `00017_fix_jwt_hook_search_path.sql` | Hotfix | Fix JWT hook `search_path` for GoTrue compatibility | ✅ Applied |
+| 018 | `00018_fix_members_insert_policy.sql` | Hotfix | Fix overly permissive `members_insert` RLS policy | ✅ Applied |
+| 019 | `00019_add_description_previous.sql` | Phase 2.6 | `description_previous` on `job_openings` (non-destructive AI rewrites) | ✅ Applied |
+| 020 | `00020_add_pronouns_to_candidates.sql` | Phase 2.7 | `pronouns` column on `candidates` | ✅ Applied |
+| 021 | `00021_org_daily_briefings.sql` | Phase 2.7 | `org_daily_briefings` — daily AI briefing cache per org | ✅ Applied |
+| 022 | `00022_ai_proof_wave_a.sql` | AI-Proof Wave A | `ai_score_feedback`. Embedding staleness tracking columns | ✅ Applied |
+| 023 | `00023_candidate_embedding_updated_at.sql` | AI-Proof Wave A | `embedding_updated_at` on `candidates` | ✅ Applied |
+| 024 | `00024_reorder_stages_rpc.sql` | Phase 3 | `reorder_pipeline_stages()` atomic RPC | ✅ Applied |
+| 025 | `00025_candidate_notes.sql` | Phase 3 | `candidate_notes` | ✅ Applied |
+| 026 | `00026_interviews.sql` | Phase 3 | `interviews`, `interview_scorecard_templates`, `interview_scorecards` | ✅ Applied |
+| 027 | `00027_email_templates_notifications.sql` | Wave F | `email_templates`, `notification_preferences` | ✅ Applied |
+| 028 | `00028_offers.sql` | Phase 4 | `offer_templates`, `offers`, `offer_approvals` | ✅ Applied |
+| 029 | `00029_hardening.sql` | Pre-Phase 5 Hardening | `ai_match_explanations`, `candidate_merges`, `resume_parsed_data`. Atomic stage move RPC, fuzzy dedup, approval locking | ✅ Applied |
+| 030 | `00030_phase6_foundation.sql` | Phase 6 (P6-1, P6-2) | `candidate_merges` (ext), `resume_parsed_data` (ext). Resume parse infra, candidate merge UI | ✅ Applied |
+| 031 | `00031_ai_shortlist_reports.sql` | Phase 6 (P6-5) | `ai_shortlist_reports`, `ai_shortlist_candidates` | ✅ Applied |
+| 032 | `00032_phase6_screening.sql` | Phase 6 (P6-4) | `screening_configs`, `screening_sessions` | ✅ Applied |
+| 033 | `00033_analytics_snapshots.sql` | Phase 7 Wave A1 | `analytics_snapshots` — pre-computed daily analytics | ✅ Applied |
+| **034** | `00034_*.sql` | **Phase 8 P8-1** | `vendors`, RLS, audit trigger | ⬜ Planned (Phase 8 start gate: Wave T1 must ship) |
+| **035** | `00035_*.sql` | **Phase 8 P8-1** | `vendor_submissions`, `candidate_contract_profiles` | ⬜ Planned |
+| **036** | `00036_*.sql` | **Phase 8 P8-1** | `contract_rate_intelligence_cache`, `job_openings.role_type` CHECK + `contract_details` JSONB | ⬜ Planned |
+| **037** | `00037_*.sql` | **Phase 7 Wave A2** | `hiring_plans`, `analytics_saved_views`, `analytics_report_schedules`. 5 new materialized views | ⬜ Planned |
+
+> **Total applied:** 33 (000–033). **Next available:** `00034`. **Claimed:** 034–037 (see above).
+
+---
+
+## Downstream Impact Map
+
+> When you modify a foundational document, every document in its downstream row must be checked for staleness. If stale, log in GAPS.md immediately (R7).
+
+| If you change... | Must re-check these documents |
+|-----------------|-------------------------------|
+| **D01** (Database Schema) — table added, column changed, RLS policy changed | D02 (API spec), D24 (RLS matrix + test fixtures), D29 (Inngest registry if table triggers change), relevant module spec for that table |
+| **D02** (API Specification) — endpoint added, contract changed | D26 (error taxonomy if new error codes), D24 (API integration tests), D29 (if Inngest jobs call affected endpoints) |
+| **D03** (Billing) — plan tier changed, feature gate added/removed | D06 (Offers), D07 (Interviews), D09 (Candidate Portal), D10 (Search), D17 (Analytics), D28 (env vars if new Stripe vars), D34 (Phase 8 plan gates) |
+| **D24** (Testing Strategy) — RLS matrix updated, fixture changed | All active phase specs that declare test plans (D32, D33, D34) — their declared test counts may be wrong |
+| **D29** (Inngest Registry) — function added, cron changed | D14 (Observability — dead-letter handling), D15 (CI/CD if new env vars), D28 (env vars) |
+| **Any ADR** | Every in-flight phase spec `Depends On` column (R1). CLAUDE.md ADR table if it's a resolved architecture decision |
+| **Migration Register** (row added or number claimed) | Notify the other active session (VS Code or Cowork). Check for number conflicts before committing any `.sql` file |
+| **MKT-01** (Marketing Intelligence) | MKT-02 checklist — run the checklist. Required at every phase boundary (CLAUDE.md Pre-Commit Protocol) |
 
 ---
 
@@ -214,7 +336,10 @@ docs/
 │   ├── 007-audit-log-architecture.md
 │   ├── 008-enum-strategy.md
 │   ├── 009-file-storage-pattern.md
-│   └── 010-gdpr-erasure-crypto-shredding.md
+│   ├── 010-gdpr-erasure-crypto-shredding.md
+│   ├── 011-ai-first-build-pivot.md
+│   ├── 012-domain-architecture.md
+│   └── 013-contractor-hiring-boundary.md  ← ADR-013 (2026-03-13)
 │
 ├── modules/                          ← Feature module specifications
 │   ├── BILLING.md
@@ -225,11 +350,23 @@ docs/
 │   ├── SEARCH.md
 │   ├── REALTIME.md
 │   ├── WORKFLOW.md
-│   ├── ANALYTICS.md
+│   ├── ANALYTICS.md                  ← D17 (expanded 2026-03-13)
+│   ├── ANALYTICS-MODULE.md           ← D33: Phase 7 Wave A1 implementation
+│   ├── PHASE7-WAVE-T1-TIMEZONE.md    ← Phase 7 Wave T1: timezone support (✅ complete)
 │   ├── ONBOARDING.md
 │   ├── WHITE-LABEL.md
 │   ├── I18N.md
-│   └── PHASE6-CANDIDATE-INTELLIGENCE.md
+│   ├── PHASE6-CANDIDATE-INTELLIGENCE.md
+│   └── PHASE8-CONTINGENT-HIRING.md   ← D34: Phase 8 spec
+│
+├── archive/                          ← Superseded drafts + spec prompts (history preserved, not active)
+│   ├── PHASE6-SPEC-PROMPT.md
+│   ├── PHASE6b-CANDIDATE-INTELLIGENCE.md
+│   ├── PHASE7-ANALYTICS-SPEC-PROMPT.md
+│   ├── PHASE7-DEI-COMPLIANCE-SPEC-PROMPT.md
+│   ├── PHASE8-CONTINGENT-HIRING.md   ← duplicate of D34, superseded
+│   ├── WAVE-P6-3-ESIGN-SPEC-PROMPT.md
+│   └── WAVE-P6-5-SHORTLIST-SPEC-PROMPT.md
 │
 ├── runbooks/                         ← Operational runbooks
 │   ├── disaster-recovery.md

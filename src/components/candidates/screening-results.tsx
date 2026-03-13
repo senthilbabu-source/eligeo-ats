@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/session";
+import { formatInTz, getUserTimezone } from "@/lib/datetime-server";
 import type { ScreeningQuestion, ScreeningTurn, ScoreBreakdown } from "@/lib/types/ground-truth";
 import { ScreeningTranscript } from "./screening-transcript";
 
@@ -14,6 +15,7 @@ interface Props {
 export async function ScreeningResultsCard({ candidateId }: Props) {
   const session = await requireAuth();
   const supabase = await createClient();
+  const tz = await getUserTimezone(session.userId, session.orgId);
 
   const { data: sessions } = await supabase
     .from("screening_sessions")
@@ -67,7 +69,7 @@ export async function ScreeningResultsCard({ candidateId }: Props) {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {s.status === "completed"
-                    ? `Completed ${new Date(s.completed_at).toLocaleDateString()}`
+                    ? `Completed ${formatInTz(s.completed_at, tz)}`
                     : `Status: ${s.status}`}
                 </p>
               </div>
