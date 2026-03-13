@@ -23,11 +23,11 @@ These survive compaction. Every ADR is in `docs/ADRs/`.
 
 ## Current State
 
-- **Phase:** Build — **Phase 5 ✅ → H6 AI Hardening ✅ → Phase 6 (D32 spec written, build next).**
-- **Build order:** Phase 0 ✅ → Phase 1 ✅ → Phase 2 ✅ → Phase 2.5 ✅ → Phase 2.6 ✅ → Phase 2.7 ✅ → Phase 3 ✅ → Wave F ✅ → Phase 4 ✅ → Hardening ✅ → **Phase 5 ✅** → **H6 AI Hardening ✅** → **Phase 6 (D32 spec ✅, build ← NEXT)**
-- **Documentation:** ALL 30 docs + D32 (Phase 6 Candidate Intelligence) ✅. Post-Phase 5 doc sync complete (2026-03-12).
-- **Test count:** 1242 Vitest + 68 E2E = 1310 total. **All passing — zero failures.**
-- **Migrations:** 29 total (000–029). No new migration for H6 (all tables already exist). Next migration = `00030_*.sql`.
+- **Phase:** Build — **Phase 6 ✅ COMPLETE → Phase 7 (seed-demo.sql + smoke test → Wave A1 Analytics ← NEXT).**
+- **Build order:** Phase 0 ✅ → Phase 1 ✅ → Phase 2 ✅ → Phase 2.5 ✅ → Phase 2.6 ✅ → Phase 2.7 ✅ → Phase 3 ✅ → Wave F ✅ → Phase 4 ✅ → Hardening ✅ → **Phase 5 ✅** → **H6 AI Hardening ✅** → **Phase 6 ✅ (P6-1 ✅ P6-2a ✅ P6-2b ✅ P6-5 ✅ P6-3 ✅ P6-4 ✅)**
+- **Documentation:** ALL 30 docs + D32 (Phase 6 Candidate Intelligence) ✅. Post-Phase 6 audit complete (2026-03-13).
+- **Test count:** 1399 Vitest + 68 E2E = 1467 total. **All passing — zero failures.**
+- **Migrations:** 33 total (000–032). Next migration = `00033_analytics_snapshots.sql` (Phase 7 Wave A1).
 - **Key rule:** Every new feature ships with AI-assisted mode from Day 1. No more "AI deferred to v2.0."
 - **Rules:** 90 rules in `docs/AI-RULES.md` (§1-§21)
 - **Governance:** Post-build audit (§13), pre-start gate (§21), downstream impact (§14)

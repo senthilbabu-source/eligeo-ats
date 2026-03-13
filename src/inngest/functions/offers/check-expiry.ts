@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { inngest } from "@/inngest/client";
 import { createServiceClient } from "@/lib/supabase/server";
+import { cancelSignatureEnvelope } from "@/lib/esign/dropbox-sign";
 import logger from "@/lib/utils/logger";
 
 /**
@@ -9,7 +10,7 @@ import logger from "@/lib/utils/logger";
  * Cron: Runs hourly. Finds sent offers past their expiry_date,
  * transitions them to 'expired', and notifies the recruiter.
  *
- * Per D06 §6: Also voids e-sign envelope if one exists (stub for now).
+ * Per D06 §6: Also voids e-sign envelope if one exists (P6-3 real integration).
  *
  * Concurrency: 1 (single cron worker). Retries: 2.
  */
@@ -64,15 +65,26 @@ export const offerCheckExpiry = inngest.createFunction(
       }
     });
 
-    // ── Step 3: Void e-sign envelopes (stub) ─────────────
+    // ── Step 3: Void e-sign envelopes (Dropbox Sign) ─────
     const offersWithEsign = expiredOffers.filter((o) => o.esign_envelope_id);
     if (offersWithEsign.length > 0) {
       await step.run("void-esign-envelopes", async () => {
-        // TODO (Phase 5): Integrate Dropbox Sign API to void envelopes
-        logger.info(
-          { count: offersWithEsign.length },
-          "E-sign envelope voiding — stub (Dropbox Sign integration pending)",
-        );
+        for (const offer of offersWithEsign) {
+          try {
+            await cancelSignatureEnvelope(offer.esign_envelope_id!);
+            logger.info(
+              { offerId: offer.id, envelopeId: offer.esign_envelope_id },
+              "E-sign envelope voided on offer expiry",
+            );
+          } catch (err) {
+            // Log but don't fail expiry — envelope may already be cancelled or signed
+            Sentry.captureException(err);
+            logger.warn(
+              { offerId: offer.id, envelopeId: offer.esign_envelope_id, error: err },
+              "Failed to void e-sign envelope on expiry — continuing",
+            );
+          }
+        }
       });
     }
 

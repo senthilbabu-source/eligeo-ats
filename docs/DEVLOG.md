@@ -4,6 +4,53 @@
 
 ---
 
+## 2026-03-13 — Post-Phase 6 §13 Audit ✅ + W-01 Bug Fix
+
+**Scope:** Full §13 post-build audit across 7 categories (A1–A7). Phase 6 declared complete.
+
+### Audit Results
+
+| Category | Result |
+|----------|--------|
+| A1 Cross-reference consistency | ✅ PASS |
+| A2 Decision contradictions | ✅ PASS |
+| A3 Schema consistency | ✅ PASS — M030–M032 sequential, all 5 Phase 6 tables confirmed |
+| A4 Completeness | ⚠️ W-01 found + fixed (see below) |
+| A5 Tracking accuracy | ✅ PASS — INDEX.md, DEVLOG, test counts all accurate |
+| A6 Template compliance | ✅ PASS |
+| A7 Regression check | ✅ PASS — 1399 Vitest + 68 E2E all passing |
+
+### W-01 Bug Fix — `check-expiry.ts` e-sign void was still stubbed
+
+`src/inngest/functions/offers/check-expiry.ts` — Step 3 (void e-sign envelopes) was a no-op stub left over from before P6-3. Expired offers with live Dropbox Sign envelopes would not have been voided.
+
+**Fix:** Replaced stub with real `cancelSignatureEnvelope()` calls (same pattern as `withdraw.ts`). Non-fatal — logs warn and continues if cancellation fails (envelope may already be signed/cancelled).
+
+### W-02 — `withdraw.ts` stale comment fixed
+
+Comment said "stub for now" but code was already real (added in P6-3). Updated comment to reflect reality.
+
+### W-03 — Spec prompt files committed
+
+4 spec files committed that were previously untracked:
+- `docs/WAVE-P6-5-SHORTLIST-SPEC-PROMPT.md`
+- `docs/WAVE-P6-3-ESIGN-SPEC-PROMPT.md`
+- `docs/PHASE7-ANALYTICS-SPEC-PROMPT.md`
+- `docs/PHASE7-DEI-COMPLIANCE-SPEC-PROMPT.md`
+
+### W-04 — CLAUDE.md current state updated
+
+Phase, test count, migration count, next step all updated to reflect Phase 6 completion.
+
+### Current State Post-Audit
+
+- **Phase 6:** 100% complete. All 6 waves shipped + audited.
+- **Tests:** 1399 Vitest + 68 E2E = 1467 total. All passing.
+- **Migrations:** 33 total (M000–M032).
+- **Next:** `seed-demo.sql` (rich demo data for both tenants) → smoke test → Phase 7 Wave A1 (Analytics).
+
+---
+
 ## 2026-03-13 — Phase 6 Final Doc Sync: All Build Waves Complete ✅
 
 **Scope:** Post-P6-4 documentation consistency audit. Discovered P6-1 (Resume Extraction) was already fully built and registered but not reflected in docs.

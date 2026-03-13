@@ -8,7 +8,7 @@ import logger from "@/lib/utils/logger";
  * offers/withdraw
  *
  * Triggered when an offer is withdrawn. Handles:
- * 1. Void e-sign envelope if one was sent (stub for now)
+ * 1. Void e-sign envelope if one was sent (P6-3 real integration)
  * 2. Send cancellation notification to the recruiter
  *
  * Concurrency: 5 per org. Retries: 3.
