@@ -1,7 +1,7 @@
 # Eligeo — Documentation Index
 
 > Master registry of all documentation. Every document has a status, owner, and dependency chain.
-> **Last updated:** 2026-03-12
+> **Last updated:** 2026-03-13
 
 ## How to use this index
 
@@ -39,7 +39,7 @@
 
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
-| D06 | **Offer Management** | `docs/modules/OFFERS.md` | P1 | ✅ Complete (Review) | D01, D02, D03, D05 | 8-state machine (draft→withdrawn, `send` transition re-activated Phase 5 B5-6), sequential approval chain with auto-skip (G-022), e-sign `send-esign` re-registered, offer templates, expiry cron, compensation editor, AI comp suggestion + salary band check + offer letter draft. **Phase 4 + Phase 5: 105 offer tests (47 state machine + 14 AI + 16 intent + 34 SA + 15 Inngest) + 44 RLS tests.** |
+| D06 | **Offer Management** | `docs/modules/OFFERS.md` | P1 | ✅ Complete (Review) | D01, D02, D03, D05 | 8-state machine (draft→withdrawn, `send` transition active), sequential approval chain with auto-skip (G-022), **Dropbox Sign fully integrated (P6-3):** real envelope creation/cancellation, HMAC webhook, AI offer letter preview (Pro+), `send_offer` command bar intent. Offer templates, expiry cron, compensation editor, AI comp suggestion + salary band check + offer letter draft. **Phase 4 + Phase 5 + P6-3: 123 offer tests (47 state machine + 14 AI + 16 intent + 34 SA + 17 Inngest + 16 e-sign) + 44 RLS tests.** |
 | D07 | **Interview Scheduling** | `docs/modules/INTERVIEW-SCHEDULING.md` | P1 | ✅ Complete (Review) | D01, D02, D03, D05 | 5-state interview machine, manual + panel + self-scheduling, Nylas calendar two-way sync, scorecard templates with snapshot-on-assign versioning, blind review (auto-reveal after own submission), AI scorecard summarization (Pro+), weighted score aggregation, 18 API endpoints, 7 Inngest functions. Post-build audit: 7/7 PASS. |
 | D08 | **Notification System** | `docs/modules/NOTIFICATIONS.md` | P1 | ✅ Complete (Review) | D01, D02, D03, D05 | Unified notification dispatch (in-app + email + webhook), 22 event types, Supabase Realtime for in-app, React Email + Resend for transactional email, Handlebars template variables, @mention via Inngest, webhook outbound with auto-disable, user preferences per event, digest mode, 17 API endpoints, 7 Inngest functions. Post-build audit: 7/7 PASS. |
 | D09 | **Candidate Portal** | `docs/modules/CANDIDATE-PORTAL.md` | P1 | ✅ Complete (Review) | D01, D05, D07, D08, D10, D11 | Magic link auth (stateless signed JWT, 3 scopes), career page with org branding + fallback defaults (G-020), Typesense public job search with scoped API keys (G-029), application form with resume upload + GDPR consent, adaptive polling for status updates (G-030), self-scheduling UI (G-023), candidate email delivery (G-026), rate limiting (G-013), GDPR erasure with 48h cooling period, 12 API endpoints, 3 Inngest functions. Post-build audit: 7/7 PASS. |
@@ -79,13 +79,13 @@
 | D00 | **Competitive Analysis & Market Positioning** | `docs/COMPETITIVE-ANALYSIS.md` | P0 | ✅ Complete (Review) | — | 17 products analyzed (5 modern, 5 legacy, 7 mid-market/niche). 20 pain points mapped to architecture. Pricing validated against market. 7 gaps identified (2 post-MVP flags). Positioning strategy with battlecards. |
 | D22 | **Security Threat Model** | `docs/SECURITY-THREAT-MODEL.md` | P1 | ✅ Complete (Review) | D01, D02, D13 | STRIDE analysis (30+ threats, 6 categories), attack surface inventory (11 surfaces), PII data flow diagram with classification, 35+ attack-vector-to-control mappings, 7 gaps identified (all low-medium), 40-case penetration test plan, security headers spec, PR security checklist. |
 | D23 | **Data Migration & Import Strategy** | `docs/DATA-MIGRATION.md` | P1 | ✅ Complete (Review) | D01, D19 | 7-stage migration pipeline, staging table schema (6 tables), competitor field mapping (Greenhouse, Lever, Ashby, BambooHR, Workable), Zod validation pipeline, dedup rules, error thresholds (warn 10%/abort 30%), metadata-tagged rollback, data quality assessment, CSV enhancements, 5 test fixtures, 7 Inngest functions. |
-| D24 | **Consolidated Testing Strategy** | `docs/TESTING-STRATEGY.md` | P1 | ✅ Complete (Review) | D04 (ADR-004), D01 | Vitest + Playwright config, golden tenant fixture (2 tenants, 5 roles, full entity graph), MSW mock registry (9 services), ~348-case RLS test matrix (adds offer_templates/offers/offer_approvals from P4, ai_match_explanations from M029), 20 E2E scenarios + 5 failure scenarios, CI parallelization. §5.1 adds Offers module row (P4). |
+| D24 | **Consolidated Testing Strategy** | `docs/TESTING-STRATEGY.md` | P1 | ✅ Complete (Review) | D04 (ADR-004), D01 | Vitest + Playwright config, golden tenant fixture (2 tenants, 5 roles, full entity graph), MSW mock registry (11 services, 15 handlers), ~348-case RLS test matrix (adds offer_templates/offers/offer_approvals from P4, ai_match_explanations from M029, ai_shortlist_reports/candidates from P6-5), 20 E2E scenarios + 5 failure scenarios, CI parallelization. §5.1 adds Offers module row (P4). |
 | D25 | **User Personas & Journey Maps** | `docs/USER-PERSONAS.md` | P2 | ✅ Complete (Review) | D00, D06–D12 | 5 persona profiles with goals/frequency/frustration thresholds. 4 journey maps (recruiter daily, hiring manager, candidate, admin setup). Notification priority matrix (5 personas × 15 events). Dashboard widgets by persona. Role-based navigation spec. |
 | D26 | **Error Taxonomy & Recovery Patterns** | `docs/ERROR-TAXONOMY.md` | P2 | ✅ Complete (Review) | D02, D14 | ATS-XXXX error code scheme (12 categories, 60+ codes), RFC 9457 response format with `code` extension, Server Action error pattern, graceful degradation matrix (7 services), circuit breaker pattern, retry strategies (6 failure types), React error boundary design (4 placement levels), user-facing message guidelines. |
 | D27 | **Product Roadmap & Release Strategy** | `docs/PRODUCT-ROADMAP.md` | P0 | ✅ Complete (Review) | D00, D03, D25, all modules | 5 release versions (v1.0–v3.0). v1.0: 26 features, 6 build phases over 12 weeks, 10 notification events, launch criteria checklist. Feature-to-plan mapping. Revenue projections ($540 MRR launch → $125K MRR at v3.0). Risk mitigation. Decision log (12 scope decisions). Determines ALL build order. |
-| D28 | **Environment Variables** | `docs/ENVIRONMENT-VARIABLES.md` | P0 | ✅ Complete (Review) | D01, D02, D03, D14, D15 | 30 env vars across 10 services. Public/secret classification, v1.0 vs v2.0+ required, `.env.example` template, security rules. |
-| D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 59 Inngest functions across 11 modules. v1.0 scope: 43 functions. **20 shipped** (all active). Phase 5: 7 billing + send-esign re-registered + refresh-job-embedding. Modules: billing, offers, interviews, notifications, workflow, candidates, search, analytics, onboarding, compliance, migration. 8 cron schedules. |
-| D30 | **User Story Map** | `docs/USER-STORY-MAP.md` | P1 | ✅ Complete | D27, ADR-011 | 184 user stories across 28 sections. Phase 2.7 all ✅ BUILT. Dashboard Waves 1–3 ✅. AI-Proof A/B/C ✅. Wave F ✅. **Phase 4 offers: O1, O2, O5, O6 ✅ BUILT. O3 partial (e-sign stub). O4 v2.0.** |
+| D28 | **Environment Variables** | `docs/ENVIRONMENT-VARIABLES.md` | P0 | ✅ Complete (Review) | D01, D02, D03, D14, D15 | 33 env vars across 11 services. Public/secret classification, v1.0 vs v2.0+ required, `.env.example` template, security rules. P6-3: +3 Dropbox Sign vars. |
+| D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 65 Inngest functions across 14 modules. v1.0 scope: 49 functions. **23 shipped** (all active). P6-3: 3 stub→real upgrades (send-esign, esign-webhook, withdraw). P6-5: +1 batchShortlist. Modules: billing, offers, interviews, notifications, workflow, candidates, search, analytics, onboarding, compliance, migration, jobs, screening, portal. 8 cron schedules. |
+| D30 | **User Story Map** | `docs/USER-STORY-MAP.md` | P1 | ✅ Complete | D27, ADR-011 | 184 user stories across 28 sections. Phase 2.7 all ✅ BUILT. Dashboard Waves 1–3 ✅. AI-Proof A/B/C ✅. Wave F ✅. **Phase 4 offers: O1, O2, O5, O6 ✅ BUILT. O3 ✅ BUILT (P6-3 real Dropbox Sign). O4 partial (signed/declined tracked, opened/viewed v2.0).** |
 | D31 | **Brand Guide** | `docs/BRAND.md` | P3 | ✅ Complete | ADR-012 | Logo narrative (3-candidate selection metaphor), brand voice guidelines, marketing copy for `/about` page, technical logo specs, animated variant plan. |
 
 ---
@@ -135,7 +135,7 @@ Documents intentionally excluded from pre-code phase. Each has a specific trigge
 | B5-6 | Offer send re-activation + refresh-job-embedding (H-04 closed) | 8 | ✅ Complete |
 | **Total** | | **154** | **All passing** |
 
-Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening). 68 E2E unchanged. **1310 total.** No new migration. 20 Inngest functions active.
+Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening) → 1339 Vitest (P6-2a/P6-2b/P6-5/P6-3). 68 E2E unchanged. **1407 total.** Migrations: 031 (P6-5 ai_shortlist). 23 Inngest functions active.
 
 ---
 
@@ -143,7 +143,7 @@ Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening). 68 E2E unc
 
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
-| D32 | **Phase 6: Candidate Intelligence Layer** | `docs/modules/PHASE6-CANDIDATE-INTELLIGENCE.md` | P0 | ✅ Complete (Review) | D01, D03, D06, D08, D09, D10, D24, D29 | 4 waves: P6-1 Resume extraction (hybrid pdf-parse + OpenAI vision), P6-2a Candidate status portal (AI narration), P6-2b Merge UI (AI confidence scoring), P6-3 Dropbox Sign full integration, P6-4 Conversational AI screening v1 (structured, EU AI Act compliant). 3 new tables (`candidate_merges`, `screening_configs`, `screening_sessions`), 5 new Inngest functions + 3 stub replacements, 13 API endpoints, ~134 new tests. Migrations 030–031. |
+| D32 | **Phase 6: Candidate Intelligence Layer** | `docs/modules/PHASE6-CANDIDATE-INTELLIGENCE.md` | P0 | ✅ Complete (Review) | D01, D03, D06, D08, D09, D10, D24, D29 | 5 waves: P6-2a ✅ Candidate status portal, P6-2b ✅ Merge UI, P6-3 ✅ Dropbox Sign full integration, P6-5 ✅ AI Batch Shortlisting, P6-4 Conversational AI screening (NEXT). 4 new tables (`candidate_merges`, `ai_shortlist_reports`, `ai_shortlist_candidates`, `screening_configs`/`screening_sessions`), 6 new Inngest functions + 3 stub replacements, 13+ API endpoints. Migrations 030–031. |
 
 ---
 

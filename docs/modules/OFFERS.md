@@ -3,7 +3,7 @@
 > **ID:** D06
 > **Status:** Review
 > **Priority:** P1
-> **Last updated:** 2026-03-12
+> **Last updated:** 2026-03-13
 > **Depends on:** D01 (schema — `offers`, `offer_templates`, `offer_approvals`), D02 (API patterns), D03 (billing — plan gating), D05 (design — status badges)
 > **Depended on by:** D08 (Candidate Portal — offer acceptance), D19 (Migration — offer data import)
 > **Last validated against deps:** 2026-03-10
@@ -18,7 +18,7 @@ Offer Management covers the full lifecycle of employment offers: drafting from t
 **Scope:**
 - In scope: Offer CRUD, templates, approval chain, e-sign delivery, status tracking, expiry cron, offer analytics, AI compensation suggestion, salary band checking, offer letter drafting.
 - Out of scope: Background checks (separate module), onboarding kickoff (separate trigger).
-- **Build status (2026-03-12):** Phase 4 complete (5 waves). State machine, server actions, AI layer, Inngest functions, UI pages all shipped. Dropbox Sign e-sign integration stubbed (Phase 5). Manual "mark signed" available now.
+- **Build status (2026-03-13):** Phase 4 complete (5 waves) + P6-3 complete. State machine, server actions, AI layer, Inngest functions, UI pages all shipped. **Dropbox Sign e-sign fully integrated (P6-3):** real envelope creation/cancellation, HMAC-verified webhook, AI offer letter preview (Pro+), `send_offer` command bar intent. Manual "mark signed" also available as fallback.
 
 ## 2. User Stories
 
@@ -112,7 +112,7 @@ interface OfferCompensation {
 | `pending_approval` | `approved` | All approvers approved (`sequence_order` complete) | System (auto) |
 | `pending_approval` | `withdrawn` | — | Recruiter, Admin |
 | `pending_approval` | `draft` | Any approver rejected (resets all approvals) | System (auto) |
-| `approved` | `signed` | Candidate signs (manual or e-sign in Phase 5) | Recruiter |
+| `approved` | `signed` | Candidate signs (manual mark or Dropbox Sign e-sign) | Recruiter |
 | `approved` | `declined` | Candidate declines | Recruiter |
 | `approved` | `expired` | `expiry_date < NOW()` | System (cron) |
 | `approved` | `withdrawn` | — | Recruiter, Admin |
@@ -149,7 +149,7 @@ Recruiter creates offer (draft)
 
 ### 4.2 E-Sign Integration (Dropbox Sign)
 
-> **Current state (Phase 5):** The `send` transition (`approved → sent`) and `offerSendEsign` Inngest function are re-activated. The `sendOffer()` Server Action validates the transition via state machine (guarded by `hasEsignProvider`), dispatches `ats/offer.send-requested` to Inngest, and records the interaction on the candidate timeline. The Inngest function creates an e-sign envelope (Dropbox Sign stub), updates offer status to `sent`, and notifies the recruiter. Manual PDF signing remains available via `markOfferSigned()` from either `approved` or `sent` status.
+> **Current state (P6-3 complete):** The `send` transition (`approved → sent`) and `offerSendEsign` Inngest function are fully integrated with Dropbox Sign. The `sendOffer()` Server Action validates the transition via state machine (guarded by `hasEsignProvider`), dispatches `ats/offer.send-requested` to Inngest. The Inngest function: (1) fetches offer context, (2) generates AI offer letter content for Pro+/Enterprise via `generateOfferLetterDraft()`, (3) creates a real Dropbox Sign envelope via `createSignatureEnvelope()`, (4) updates offer to `sent` with `esign_envelope_id`, (5) notifies the recruiter. Webhook at `/api/webhooks/dropbox-sign` receives signed/declined/canceled events via HMAC-verified callbacks → dispatches to `processEsignWebhook` Inngest function → updates offer status. Manual PDF signing remains available via `markOfferSigned()` from either `approved` or `sent` status.
 
 **Decision (G-010 resolved):** When Dropbox Sign is unavailable, the offer stays in `approved`. The send action is retried via Inngest. If all retries fail, the recruiter is notified and can fall back to manual PDF signing.
 
@@ -175,7 +175,7 @@ Recruiter creates offer (draft)
 | POST | `/api/v1/offers/:id/submit` | JWT | Submit for approval |
 | POST | `/api/v1/offers/:id/approve` | JWT | Approve (current approver) |
 | POST | `/api/v1/offers/:id/reject` | JWT | Reject (current approver, with notes) |
-| POST | `/api/v1/offers/:id/send` | JWT | Send for e-signature **(Phase 5 — not active)** |
+| POST | `/api/v1/offers/:id/send` | JWT | Send for e-signature via Dropbox Sign **✅ Active (P6-3)** |
 | POST | `/api/v1/offers/:id/withdraw` | JWT | Withdraw offer |
 | GET | `/api/v1/offer-templates` | JWT/Key | List templates |
 | POST | `/api/v1/offer-templates` | JWT | Create template |
@@ -231,10 +231,10 @@ const OfferResponse = z.object({
 |-------------|---------------|-------|-------------|------------|
 | `offers/approval-notify` | `ats/offer.submitted` | 1. Find next pending approver 2. Fetch offer context 3. Send email + in-app notification | 10/org | 20/min/org | **✅ Shipped** |
 | `offers/approval-advanced` | `ats/offer.approval-decided` | 1. Check chain status 2. If all approved: advance to `approved` 3. If more pending: notify next (with G-022 auto-skip) 4. If rejected: notify recruiter | 10/org | 20/min/org | **✅ Shipped** |
-| `offers/send-esign` | `ats/offer.send-requested` | 1. Fetch offer 2. Create e-sign envelope 3. Update to `sent` 4. Notify recruiter | 5 | 10/min/org | **Deregistered** (H4-2 — stub removed, re-add in Phase 5) |
-| `offers/esign-webhook` | `dropboxsign/webhook.received` | 1. Verify event 2. Update offer status 3. Notify recruiter | 10 | — | Phase 5 |
-| `offers/check-expiry` | Cron: `0 * * * *` (hourly) | 1. Find expired offers 2. Mark expired 3. Void e-sign (stub) 4. Notify recruiters | 1 | — | **✅ Shipped** |
-| `offers/withdraw` | `ats/offer.withdrawn` | 1. Void e-sign envelope (stub) 2. Notify recruiter | 5/org | 10/min/org | **✅ Shipped** |
+| `offers/send-esign` | `ats/offer.send-requested` | 1. Fetch offer + context 2. Generate AI letter (Pro+) 3. Create Dropbox Sign envelope 4. Update to `sent` 5. Notify recruiter | 5 | 10/min/org | **✅ Shipped** (Phase 5 B5-6 re-registered, P6-3 real Dropbox Sign) |
+| `offers/esign-webhook` (`processEsignWebhook`) | `dropboxsign/webhook.received` | 1. Validate offer exists + status=sent 2. Update offer status (signed/declined/withdrawn) 3. Set signed_at for signed events 4. Notify recruiter | 5 | — | **✅ Shipped** (P6-3 real Dropbox Sign webhook) |
+| `offers/check-expiry` | Cron: `0 * * * *` (hourly) | 1. Find expired offers 2. Mark expired 3. Void e-sign envelope 4. Notify recruiters | 1 | — | **✅ Shipped** |
+| `offers/withdraw` | `ats/offer.withdrawn` | 1. Void e-sign envelope via `cancelSignatureEnvelope()` 2. Notify recruiter | 5/org | 10/min/org | **✅ Shipped** (P6-3 real Dropbox Sign cancel) |
 
 ## 7. UI Components
 
@@ -243,7 +243,8 @@ const OfferResponse = z.object({
 | `OfferForm` | `/offers/new?applicationId=X` | Full compensation editor (base, currency, period, bonus, equity, sign-on), offer details (start/expiry/terms), approver selector with sequence ordering. **✅ Built** |
 | Offer list page | `/offers` | Status filter tabs (8 statuses), pagination, status badges, currency formatting. **✅ Built** |
 | Offer detail page | `/offers/:id` | Compensation breakdown, details card, approval timeline with colored dots, action buttons via `offer-actions.tsx`. **✅ Built** |
-| `OfferActions` | `/offers/:id` | Client component: Submit, Approve, Reject (with notes), Mark Signed, Withdraw. Uses `validActions()` from state machine. **✅ Built** |
+| `OfferActions` | `/offers/:id` | Client component: Submit, Approve, Reject (with notes), Mark Signed, Send for E-Sign (opens preview modal), Withdraw. Uses `validActions()` from state machine. **✅ Built** |
+| `OfferLetterPreviewModal` | `/offers/:id` | AI offer letter preview + edit modal (Pro+ only). Generate via `aiGenerateOfferTerms()`, editable textarea, compensation summary. Growth users see upgrade prompt. **✅ Built (P6-3)** |
 | `ApprovalInbox` | `/approvals` | Pending approvals for current user, "your turn" indicator, candidate/job context. **✅ Built** |
 | `OfferTemplateList` | `/settings/offer-templates` | Template management CRUD. Phase 5. |
 
@@ -268,8 +269,8 @@ const OfferResponse = z.object({
 - [x] Interviewers have no offer access (RLS excludes `interviewer` role)
 - [x] Candidate never sees compensation details in ATS — only the PDF via e-sign
 - [x] `esign_envelope_id` is opaque — no Dropbox Sign API keys exposed to client
-- [x] Dropbox Sign webhook verified via HMAC signature [VERIFY]
-- [x] Offer withdrawal voids e-sign envelope server-side — candidate link becomes invalid
+- [x] Dropbox Sign webhook verified via HMAC signature (SHA-256 `crypto.timingSafeEqual`) ✅ Implemented P6-3
+- [x] Offer withdrawal voids e-sign envelope server-side via `cancelSignatureEnvelope()` — candidate link becomes invalid
 - [x] Rate limiting on e-sign send (prevent mass sending)
 
 ## 10. Testing Strategy
@@ -280,7 +281,10 @@ const OfferResponse = z.object({
 | Unit | `src/__tests__/offer-ai.test.ts` | 14 tests: AI comp suggestion, offer letter draft, salary band check | **✅ Built** |
 | Unit | `src/__tests__/offer-intent-patterns.test.ts` | 16 tests: create_offer/check_offer patterns, navigation, preserved patterns | **✅ Built** |
 | Unit | `src/__tests__/offer-actions.test.ts` | 34 tests: Server action CRUD, state transitions, permission checks | **✅ Built** |
-| Unit | `src/__tests__/offer-inngest.test.ts` | 15 tests: 5 Inngest functions (approval notify/advanced, expiry, withdraw, send-esign). send-esign re-registered Phase 5 B5-6. | **✅ Built** |
+| Unit | `src/__tests__/offer-inngest.test.ts` | 17 tests: 5 Inngest functions (approval notify/advanced, expiry, withdraw, send-esign). send-esign real Dropbox Sign P6-3 (+2: Pro+ AI letter, Growth skip). | **✅ Built** |
+| Unit | `src/__tests__/esign/dropbox-sign-hmac.test.ts` | 8 tests: HMAC verification (4) + event mapping (4). | **✅ Built (P6-3)** |
+| Unit | `src/__tests__/esign/process-esign-webhook.test.ts` | 4 tests: Signed/declined events, skip non-sent, skip missing metadata. | **✅ Built (P6-3)** |
+| Unit | `src/__tests__/esign/send-offer-intent.test.ts` | 4 tests: send_offer intent patterns (send/dispatch). | **✅ Built (P6-3)** |
 | RLS | `src/__tests__/rls/offer-templates.rls.test.ts` | 15 tests: 4 ops × roles × 2 tenants | **✅ Built** |
 | RLS | `src/__tests__/rls/offers.rls.test.ts` | 15 tests: 4 ops × roles × 2 tenants | **✅ Built** |
 | RLS | `src/__tests__/rls/offer-approvals.rls.test.ts` | 14 tests: 4 ops × roles × 2 tenants | **✅ Built** |
@@ -292,4 +296,4 @@ const OfferResponse = z.object({
 
 ---
 
-*Changelog: Created 2026-03-10. Updated 2026-03-12 — Phase 4 build complete (5 waves). Reconciled §6 Inngest with shipped code, §7 UI with actual pages, §10 testing with actual test files and counts. H4-2: removed `send` transition and `sent` state from active state machine (Phase 5 deferred), deregistered `send-esign` Inngest stub, updated transition table/diagram/edge cases.*
+*Changelog: Created 2026-03-10. Updated 2026-03-13 — P6-3 build complete: Dropbox Sign full integration (real envelope creation/cancellation, HMAC webhook, AI offer letter preview Pro+, send_offer command bar intent, 18 new tests). All 6 Inngest offer functions shipped and active. Updated §1 build status, §3.3 transition table, §4.2 e-sign architecture, §5 endpoint status, §6 Inngest table, §7 UI components (+OfferLetterPreviewModal), §9 security (HMAC verified), §10 testing (+16 P6-3 tests). Prior: Phase 4 build complete (5 waves), H4-2 send transition deferred then re-activated Phase 5 B5-6.*

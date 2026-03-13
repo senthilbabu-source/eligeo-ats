@@ -4,6 +4,20 @@
 
 ---
 
+## 2026-03-13 — Post-P6-3/P6-5 Documentation Consistency Audit ✅
+
+**Scope:** Sync 5 docs + INDEX + MEMORY after P6-3 (Dropbox Sign) and P6-5 (AI Shortlist) builds completed.
+
+### Drift Items Fixed (12 total)
+1. **D29 (Inngest Registry):** "20 shipped" → "23 shipped". Added `jobs/batch-shortlist` (P6-5) as new §4.12. Marked `send-esign`, `esign-webhook`/`processEsignWebhook`, `withdraw` as real (not stub). Registry: 64→65 functions, 14 modules.
+2. **D06 (Offers):** Removed 5+ "stub" / "Phase 5 pending" references. Updated §1 build status, §3.3 transition table, §4.2 e-sign architecture (full Dropbox Sign flow), §5 send endpoint → active, §6 Inngest table (all 6 shipped), §7 UI (+OfferLetterPreviewModal), §9 security (HMAC verified), §10 testing (+16 P6-3 tests).
+3. **D28 (Env Vars):** Added Dropbox Sign section (DROPBOX_SIGN_API_KEY, DROPBOX_SIGN_WEBHOOK_SECRET, DROPBOX_SIGN_TEMPLATE_ID). Total: 30→33 vars, v1.0 required: 24→26.
+4. **D30 (User Story Map):** O3 "partial (e-sign stub)" → "P4 + P6-3 ✅ BUILT". O4 partial (signed/declined tracked, opened/viewed v2.0).
+5. **INDEX.md:** Updated last-updated date, test counts (1339 Vitest + 68 E2E = 1407), Inngest counts (23 active, 65 registry, 14 modules), D32 wave statuses (P6-2a/2b/5/3 ✅), D06/D28/D29/D30 descriptions.
+6. **MEMORY.md:** Phase 6 progress, test count 1339, Inngest 23 active, migration count 31, next step P6-4.
+
+---
+
 ## 2026-03-13 — Phase 6 Wave P6-3: Dropbox Sign Full Integration ✅
 
 **Scope:** Replace all e-sign stubs with real Dropbox Sign API integration. AI offer letter preview (Pro+), webhook receiver, envelope lifecycle management.

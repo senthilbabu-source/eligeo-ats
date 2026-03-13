@@ -3,7 +3,7 @@
 > **ID:** D29
 > **Status:** Review
 > **Priority:** P0
-> **Last updated:** 2026-03-12
+> **Last updated:** 2026-03-13
 > **Depends on:** D03, D06–D12, D13, D17, D19, D23
 > **Depended on by:** Infrastructure setup (Phase 0)
 
@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **64 functions across 13 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
+This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **65 functions across 14 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
 
 Every background job in the system runs through Inngest. There are no Supabase Edge Functions (ADR-002). Cron jobs are Inngest cron triggers, not Next.js Route Handlers — Inngest manages scheduling, retries, and observability.
 
@@ -59,8 +59,8 @@ Functions only override these defaults when documented in the registry table bel
 |---|-------------|---------|---------|-------------|------|
 | 8 | `offers/approval-notify` | `ats/offer.submitted` | default (3) | 10 per org | Yes |
 | 9 | `offers/approval-advanced` | `ats/offer.approval-decided` | default (3) | 10 per org | Yes |
-| 10 | `offers/send-esign` | `ats/offer.send-requested` | 5 | 5 per org | Yes (**✅ Shipped** — re-registered Phase 5 B5-6) |
-| 11 | `offers/esign-webhook` | `dropboxsign/webhook.received` | default (3) | 5 | Yes |
+| 10 | `offers/send-esign` | `ats/offer.send-requested` | 5 | 5 per org | Yes (**✅ Shipped** — re-registered Phase 5 B5-6, upgraded to real Dropbox Sign P6-3) |
+| 11 | `offers/esign-webhook` | `dropboxsign/webhook.received` | default (3) | 5 | Yes (**✅ Shipped** — P6-3 `processEsignWebhook`, real Dropbox Sign webhook) |
 | 12 | `offers/check-expiry` | Cron: `0 * * * *` (hourly) | default (3) | 1 | Yes |
 | 13 | `offers/withdraw` | `ats/offer.withdrawn` | default (3) | 5 per org | Yes |
 
@@ -168,7 +168,13 @@ Functions only override these defaults when documented in the registry table bel
 | 55 | `migration/rollback` | `ats/migration.rollback-requested` | 3 | — | No (v2.1) |
 | 56 | `migration/file-download` | `ats/migration.file-download-requested` | 3 | — | No (v2.1) |
 
-### 4.12 Screening (4 functions) — Phase 6
+### 4.12 Jobs (1 function) — Phase 6
+
+| # | Function ID | Trigger | Retries | Concurrency | v1.0 |
+|---|-------------|---------|---------|-------------|------|
+| 62 | `jobs/batch-shortlist` | `ats/job.shortlist-requested` | 3 | 2 per org | Yes (**✅ Shipped** — P6-5) |
+
+### 4.13 Screening (4 functions) — Phase 6
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
@@ -177,13 +183,13 @@ Functions only override these defaults when documented in the registry table bel
 | 59 | `screening/generate-summary` | `ats/screening.all-answered` | 2 | 3 per org | Yes |
 | 60 | `screening/send-reminder` | Delayed: 48h after invite | default (3) | — | Yes |
 
-### 4.13 Portal (1 function) — Phase 6
+### 4.14 Portal (1 function) — Phase 6
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
 | 61 | `portal/resume-parse` | `portal/application-submitted` | 3 | 1 per candidate | Yes |
 
-> **Note:** 64 registered function IDs across 13 modules. Phase 6 adds 5 new functions (4 screening + 1 portal) + upgrades 3 existing stubs (offers/send-esign → real Dropbox Sign, offers/esign-webhook → real event processing, offers/withdraw → real Dropbox Sign cancel). (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
+> **Note:** 65 registered function IDs across 14 modules. Phase 6 adds 5 new functions (4 screening + 1 portal) + 1 new `jobs/batch-shortlist` (P6-5) + upgrades 3 existing stubs to real implementations (P6-3: offers/send-esign → real Dropbox Sign, offers/esign-webhook → `processEsignWebhook` real event processing, offers/withdraw → real Dropbox Sign cancel). (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
 
 ## 5. Cron Schedule Summary
 
@@ -218,8 +224,8 @@ Rules:
 | Scope | Limit | Reason |
 |-------|-------|--------|
 | **Default** | No limit | Inngest manages worker concurrency internally |
-| `offers/send-esign` | 5 | Dropbox Sign API rate limit (re-registered Phase 5 B5-6) |
-| `offers/esign-webhook` | 5 | Matches send-esign to prevent backpressure |
+| `offers/send-esign` | 5 | Dropbox Sign API rate limit (re-registered Phase 5 B5-6, real P6-3) |
+| `offers/esign-webhook` | 5 | Matches send-esign to prevent backpressure (real P6-3) |
 | `interviews/auto-summarize` | 3 per org | Prevent duplicate summarization per org (H3-3) |
 | `candidates/refresh-stale-embedding` | 1 per candidate | One embedding regeneration at a time (H2-1) |
 | `analytics/refresh-job-embedding` | 1 per job | One job embedding regeneration at a time (Phase 5 B5-6, H-04) |
@@ -237,7 +243,7 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 | Module | Count | Shipped | Notes |
 |--------|-------|---------|-------|
 | Billing | 7 | 7 | All shipped (Phase 5 B5-2). 7 webhook/cron handlers. |
-| Offers | 6 | 5 | `send-esign` re-registered (Phase 5 B5-6). `esign-webhook` pending (Dropbox Sign integration). 5/6 active. |
+| Offers | 6 | 6 | All 6 shipped. `send-esign` real Dropbox Sign (P6-3). `esign-webhook` → `processEsignWebhook` real (P6-3). `withdraw` real cancel (P6-3). |
 | Interviews | 8 | 2 | `interview-reminder` + `auto-summarize` (H3-3) shipped. `nylas-event-sync` is a stub. Rest are Phase 3+. |
 | Notifications | 7 | 2 | `dispatch`, `send-email` shipped (Wave F). Rest pending. |
 | Workflow | 6 | 0 | All pending. `application-withdrawn` deferred to v1.1. |
@@ -245,11 +251,12 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 | Onboarding | 2 | 0 | `csv-import` and `demo-seed` pending. `merge-sync` is v2.1. |
 | Compliance | 4 | 0 | All pending. |
 | Analytics | 2 | 3 | `generate-briefing` (Wave 3) + `generate-candidate-embedding` (AI-Proof) + `refresh-job-embedding` (Phase 5 B5-6, H-04). All shipped. |
+| Jobs | 1 | 1 | `batchShortlist` (P6-5). |
 | Screening | 4 | 0 | All Phase 6 (P6-4). |
 | Portal | 1 | 0 | `portal/resume-parse` Phase 6 (P6-1). |
-| **Total** | **48** | **20** | **20 shipped and actively registered** in `/api/inngest/route.ts`. |
+| **Total** | **49** | **23** | **23 shipped and actively registered** in `/api/inngest/route.ts`. |
 
-> Total registry: 64 functions across 13 modules. v1.0 scope: 48 functions. 20 shipped and active. Remaining 28 ship in Phases 6+.
+> Total registry: 65 functions across 14 modules. v1.0 scope: 49 functions. 23 shipped and active. P6-3: +1 (offers/esign-webhook real), +2 upgrades (send-esign real, withdraw real). P6-5: +1 (jobs/batch-shortlist). Remaining 26 ship in Phases 6+.
 
 ### Deferred
 
@@ -263,4 +270,4 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 ---
 
-*Created: 2026-03-11. Updated: 2026-03-12 — Phase 6 spec (D32): +5 new functions (4 screening + 1 portal) + 3 stub upgrades (send-esign, esign-webhook, withdraw). Registry: 59→64 functions, v1.0: 43→48, shipped: 20 (unchanged). Phase 5: all 7 billing functions shipped, `send-esign` re-registered, `refresh-job-embedding` shipped (H-04 closed). Phase 4 shipped 5 offer functions. Hardening: `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1).*
+*Created: 2026-03-11. Updated: 2026-03-13 — P6-3 build: 3 stub upgrades now real (send-esign, esign-webhook/processEsignWebhook, withdraw → real Dropbox Sign). P6-5 build: +1 new `jobs/batch-shortlist`. Registry: 64→65 functions, v1.0: 48→49, shipped: 20→23. Phase 5: all 7 billing functions shipped, `send-esign` re-registered, `refresh-job-embedding` shipped (H-04 closed). Phase 4 shipped 5 offer functions. Hardening: `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1).*

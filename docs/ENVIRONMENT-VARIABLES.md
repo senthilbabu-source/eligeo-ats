@@ -3,7 +3,7 @@
 > **ID:** D28
 > **Status:** Review
 > **Priority:** P0
-> **Last updated:** 2026-03-11
+> **Last updated:** 2026-03-13
 > **Depends on:** D01, D02, D03, D14, D15
 > **Depended on by:** Infrastructure setup (Phase 0)
 > **Architecture decisions assumed:** ADR-001, ADR-002
@@ -80,6 +80,16 @@ Complete manifest of every environment variable the application requires. All se
 
 ---
 
+## Dropbox Sign (E-Signature) — v1.0 (P6-3+)
+
+| Variable | Visibility | Purpose | Required |
+|----------|-----------|---------|----------|
+| `DROPBOX_SIGN_API_KEY` | Secret | API key for Dropbox Sign envelope creation and cancellation | Yes |
+| `DROPBOX_SIGN_WEBHOOK_SECRET` | Secret | HMAC-SHA256 webhook signature verification | Yes |
+| `DROPBOX_SIGN_TEMPLATE_ID` | Secret | Default template ID for offer letter envelopes (optional — can be per-org) | No |
+
+---
+
 ## OpenAI (AI Features) — v1.0 (Phase 2.6+)
 
 | Variable | Visibility | Purpose | Required |
@@ -147,12 +157,12 @@ Set automatically by the platform — do not configure manually.
 | Category | Count | v1.0 Required |
 |----------|-------|---------------|
 | Public (`NEXT_PUBLIC_`) | 5 | 3 (Supabase URL, anon key, Sentry DSN) |
-| Server secrets | 15 | 11 (Supabase, Stripe, Inngest, Resend, Sentry, Redis, OpenAI, candidate token, app domain) |
+| Server secrets | 18 | 13 (Supabase, Stripe, Inngest, Resend, Sentry, Redis, OpenAI, Dropbox Sign ×2, candidate token, app domain) |
 | CI/CD only | 7 | 7 |
 | Auto-set by platform | 3 | 3 |
-| **Total** | **30** | **24** |
+| **Total** | **33** | **26** |
 
-v2.0+ variables (Typesense, Nylas) are not required for v1.0 launch. OpenAI is v1.0 required per ADR-011.
+v2.0+ variables (Typesense, Nylas) are not required for v1.0 launch. OpenAI is v1.0 required per ADR-011. Dropbox Sign is v1.0 required for e-sign (P6-3).
 
 ---
 
@@ -187,6 +197,11 @@ UPSTASH_REDIS_REST_TOKEN=
 # OpenAI (v1.0 required — ADR-011)
 OPENAI_API_KEY=
 
+# Dropbox Sign (v1.0 required — P6-3)
+DROPBOX_SIGN_API_KEY=
+DROPBOX_SIGN_WEBHOOK_SECRET=
+DROPBOX_SIGN_TEMPLATE_ID=
+
 # Application
 CANDIDATE_TOKEN_SECRET=
 NEXT_PUBLIC_APP_DOMAIN=eligeo.io
@@ -213,4 +228,4 @@ LOG_LEVEL=info
 
 ---
 
-*Created: 2026-03-11*
+*Created: 2026-03-11. Updated: 2026-03-13 — Added Dropbox Sign variables (P6-3): DROPBOX_SIGN_API_KEY, DROPBOX_SIGN_WEBHOOK_SECRET, DROPBOX_SIGN_TEMPLATE_ID. Total: 30→33 vars, v1.0 required: 24→26.*
