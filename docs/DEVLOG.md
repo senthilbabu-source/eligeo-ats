@@ -4,6 +4,66 @@
 
 ---
 
+## 2026-03-13 — Interviews Page Filter Fix + seed-demo.sql Idempotency ✅
+
+**Scope:** Two bugs causing empty screens for owner/admin logins after loading demo data.
+
+### Root Causes
+1. **Interviews page "Mine" default filter** — `filterMine = sp.filter !== "all"` always defaulted to `true`, scoping interviews to `interviewer_id = session.userId`. Since Senthil (owner) is not assigned as interviewer on any interview, the page showed 0 results even with 12 interviews in the database.
+2. **seed-demo.sql not idempotent** — a single multi-row `INSERT INTO candidates` fails atomically on duplicate email if run without `db:reset` first (unique constraint `(organization_id, email)`). Any row conflict silently aborts the whole INSERT, leaving 0 demo candidates.
+
+### Changes
+
+**`src/app/(app)/interviews/page.tsx`**
+- Role-aware default filter: owners and admins now default to org-wide view (`defaultAll = orgRole === "owner" || session.orgRole === "admin"`). HMs, recruiters, and interviewers still default to "mine".
+- `filterMine = defaultAll ? sp.filter === "mine" : sp.filter !== "all"`
+- Computed `filterParam` preserves mine/all state across Past/Upcoming toggles.
+- Toggle button now gated on `interviews:view` (was `interviews:create` — excluded interviewers).
+
+**`supabase/seed-demo.sql`**
+- Added `ON CONFLICT DO NOTHING` to all 22 INSERT blocks (16 Tenant A + 6 Tenant B), making the file fully idempotent.
+- Candidates tables use `ON CONFLICT (organization_id, email) DO NOTHING`; all PK-based tables use `ON CONFLICT (id) DO NOTHING`; `candidate_merges` (no explicit `id` col) uses `ON CONFLICT DO NOTHING`.
+
+### TypeScript
+- `npx tsc --noEmit` — clean, no errors.
+
+---
+
+## 2026-03-13 — seed.sql: Demo Login Fix + npm db:demo Script ✅
+
+**Scope:** Fixed `supabase/seed.sql` so the default Senthil (owner) login shows meaningful data in all nav sections immediately after `supabase db reset`. Added `npm run db:demo` for the full rich-data reset.
+
+### Root Cause
+Three separate issues caused empty Approvals / sparse data on fresh reset:
+1. Alice's offer had `status = 'draft'` — the Approvals page filters for `pending_approval`, so Jordan's existing approval record was orphaned and never visible to anyone.
+2. No `offer_approvals` row was assigned to Senthil (owner) — Approvals is user-scoped, so even after loading `seed-demo.sql`, the owner login saw nothing.
+3. `seed-demo.sql` required a separate manual step with no npm shortcut.
+
+### Changes
+**`supabase/seed.sql`**
+- Alice's offer: `status` changed `'draft'` → `'pending_approval'`. Added `start_date` / `expiry_date` so offer cards render correctly.
+- New Bob offer inserted (`11111111-8001-4000-a000-000000000002`) in `pending_approval` state.
+- `offer_approvals` block expanded from 1 row to 3:
+  - Alice / Jordan = sequence 1 / pending → Jordan sees "Your turn"
+  - Alice / Senthil = sequence 2 / pending → Senthil sees "Waiting 2 of 2"
+  - Bob / Senthil = sequence 1 / pending → Senthil sees "Your turn"
+
+**`package.json`**
+- Added `"db:demo": "supabase db reset && psql \"$(supabase db url)\" -f supabase/seed-demo.sql"`
+
+### Demo Login Matrix (post-fix)
+| Login | Email | Approvals inbox |
+|-------|-------|----------------|
+| Owner | senthil@itecbrains.com | Bob (Your turn) + Alice (Waiting 2 of 2) |
+| Hiring Manager | hm@itecbrains.com | Alice (Your turn) |
+| Recruiter | roshelle@itecbrains.com | — (recruiters create, not approve) |
+
+### Reset Commands
+- `npm run db:reset` — base fixtures only (fast, for test runs)
+- `npm run db:demo` — full demo dataset: 20+ candidates, all offer states, interviews, screening sessions, AI shortlist reports
+
+---
+
 ## 2026-03-13 — seed-demo.sql: Comprehensive Demo Data ✅
 
 **Scope:** `supabase/seed-demo.sql` created — runs on top of `seed.sql` after `supabase db reset` to provide rich demo data for manual smoke testing of all Phase 6 features and as the analytics baseline for Phase 7.

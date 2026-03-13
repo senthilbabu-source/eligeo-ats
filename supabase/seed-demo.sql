@@ -283,7 +283,8 @@ INSERT INTO candidates (
    NULL,
    ARRAY['TypeScript', 'Node.js', 'React', 'PostgreSQL'],
    ARRAY['early-career'], 'Career Page',
-   '11111111-6003-4000-a000-000000000003');
+   '11111111-6003-4000-a000-000000000003')
+ON CONFLICT (organization_id, email) DO NOTHING;
 
 -- ============================================================
 -- SECTION 3: TENANT_A — Applications + Stage History
@@ -430,7 +431,8 @@ INSERT INTO applications (
    '11111111-6002-4000-a000-000000000001', -- Applied
    'active', 'Career Page',
    NOW() - INTERVAL '1 week', NOW() - INTERVAL '1 week',
-   NULL, NULL, NULL);
+   NULL, NULL, NULL)
+ON CONFLICT (id) DO NOTHING;
 
 -- ── Stage history for key candidates (analytics backbone) ───
 
@@ -605,7 +607,8 @@ INSERT INTO interviews (
    '11111111-d003-4000-a000-000000000004', '11111111-d002-4000-a000-000000000001',
    '11111111-1001-4000-a000-000000000004', 'final',
    NOW() + INTERVAL '5 days', 120, 'confirmed',
-   '11111111-7003-4000-a000-000000000001', '11111111-1001-4000-a000-000000000003');
+   '11111111-7003-4000-a000-000000000001', '11111111-1001-4000-a000-000000000003')
+ON CONFLICT (id) DO NOTHING;
 
 -- Scorecard submissions for completed interviews
 INSERT INTO scorecard_submissions (
@@ -646,7 +649,8 @@ INSERT INTO scorecard_submissions (
   ('11111111-d005-4000-a000-000000000006', '11111111-2001-4000-a000-000000000001',
    '11111111-d004-4000-a000-000000000008', '11111111-d003-4000-a000-000000000017',
    '11111111-1001-4000-a000-000000000005', 'yes',
-   'Solid full-stack skills. Java background is different from our stack but she picks up quickly. Good communicator.');
+   'Solid full-stack skills. Java background is different from our stack but she picks up quickly. Good communicator.')
+ON CONFLICT (id) DO NOTHING;
 
 -- Scorecard ratings for Emma phone screen (detailed)
 INSERT INTO scorecard_ratings (id, submission_id, attribute_id, organization_id, rating, notes) VALUES
@@ -658,7 +662,8 @@ INSERT INTO scorecard_ratings (id, submission_id, attribute_id, organization_id,
    5, 'Mentioned open source contributions and test-driven development practices'),
   ('11111111-d006-4000-a000-000000000003', '11111111-d005-4000-a000-000000000001',
    '11111111-7005-4000-a000-000000000003', '11111111-2001-4000-a000-000000000001',
-   5, 'Extremely clear, structured answers. No filler words.');
+   5, 'Extremely clear, structured answers. No filler words.')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- SECTION 5: TENANT_A — Offers (all 8 states)
@@ -774,7 +779,8 @@ INSERT INTO offers (
    (CURRENT_DATE + INTERVAL '14 days')::date,
    NULL, NULL, NULL, NULL, NULL,
    '11111111-1001-4000-a000-000000000003',
-   NOW() - INTERVAL '1 week');
+   NOW() - INTERVAL '1 week')
+ON CONFLICT (id) DO NOTHING;
 
 -- Offer approvals for pending + approved offers
 INSERT INTO offer_approvals (id, organization_id, offer_id, approver_id, sequence_order, status, decided_at) VALUES
@@ -795,7 +801,8 @@ INSERT INTO offer_approvals (id, organization_id, offer_id, approver_id, sequenc
   -- Victoria's offer: already approved before sending
   ('11111111-d00a-4000-a000-000000000004', '11111111-2001-4000-a000-000000000001',
    '11111111-d007-4000-a000-000000000003', '11111111-1001-4000-a000-000000000004',
-   1, 'approved', NOW() - INTERVAL '5 days');
+   1, 'approved', NOW() - INTERVAL '5 days')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- SECTION 6: TENANT_A — Screening Configs + Sessions
@@ -840,7 +847,8 @@ INSERT INTO screening_configs (
     ]'::jsonb,
     'Looking for applied ML experience, not pure research. Ask for concrete metrics.',
     20, TRUE, '11111111-1001-4000-a000-000000000003'
-  );
+  )
+ON CONFLICT (id) DO NOTHING;
 
 -- Screening sessions
 INSERT INTO screening_sessions (
@@ -914,7 +922,8 @@ INSERT INTO screening_sessions (
     '[]'::jsonb,
     NULL, NULL, NULL,
     FALSE, NULL, NULL
-  );
+  )
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- SECTION 7: TENANT_A — AI Shortlist Reports
@@ -946,7 +955,8 @@ INSERT INTO ai_shortlist_reports (
     'Emma Davis (hired) and Maya Patel are the strongest candidates for Frontend Engineer. Emma''s hire validated the AI ranking. Maya is progressing well. James Taylor needs technical validation — hold pending screening. Quinn Thompson showed weak technical depth.',
     'Emma was a great hire. Fast-track Maya to final round.',
     NOW() - INTERVAL '3 months 22 days'
-  );
+  )
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO ai_shortlist_candidates (
   id, organization_id, report_id, application_id, candidate_id,
@@ -1035,7 +1045,8 @@ INSERT INTO ai_shortlist_candidates (
    'reject', 0.512, 0.53, 0.52, 0.48, 0.51, 0.52,
    ARRAY['Frontend basics covered'],
    ARRAY['No TypeScript listed', 'Vue listed but React is primary', 'Weak signal on production scale'],
-   NULL);
+   NULL)
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- SECTION 8: TENANT_A — Talent Pools + Members
@@ -1050,7 +1061,8 @@ INSERT INTO talent_pools (id, organization_id, name, description, created_by) VA
   ('11111111-d010-4000-a000-000000000002', '11111111-2001-4000-a000-000000000001',
    'Data & AI Talent',
    'Data scientists, ML engineers, and data engineers for future AI initiatives',
-   '11111111-1001-4000-a000-000000000003');
+   '11111111-1001-4000-a000-000000000003')
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO talent_pool_members (id, organization_id, talent_pool_id, candidate_id, added_by, notes) VALUES
   ('11111111-d011-4000-a000-000000000001', '11111111-2001-4000-a000-000000000001',
@@ -1076,7 +1088,8 @@ INSERT INTO talent_pool_members (id, organization_id, talent_pool_id, candidate_
   ('11111111-d011-4000-a000-000000000005', '11111111-2001-4000-a000-000000000001',
    '11111111-d010-4000-a000-000000000002', '11111111-d001-4000-a000-000000000018', -- Victoria
    '11111111-1001-4000-a000-000000000003',
-   'Offer sent. If she signs, great. If not, keep in pool — strong senior profile.');
+   'Offer sent. If she signs, great. If not, keep in pool — strong senior profile.')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- SECTION 9: TENANT_A — Candidate Notes
@@ -1106,7 +1119,8 @@ INSERT INTO candidate_notes (id, organization_id, candidate_id, content, created
   ('11111111-d014-4000-a000-000000000005', '11111111-2001-4000-a000-000000000001',
    '11111111-4001-4000-a000-000000000001', -- Alice
    'Alice is progressing well through the pipeline. Technical interview scheduled. Screening AI score was 0.88 — one of our highest. Jordan flagged her as top priority.',
-   '11111111-1001-4000-a000-000000000003', NOW() - INTERVAL '3 days');
+   '11111111-1001-4000-a000-000000000003', NOW() - INTERVAL '3 days')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- SECTION 10: TENANT_A — AI Match Explanations
@@ -1154,7 +1168,8 @@ INSERT INTO ai_match_explanations (
    'Paul Roberts is a strong match for the Engineering Manager role. 12 years of engineering with director-level leadership experience directly aligns. Go and Python background matches our backend stack. OKR familiarity signals strategic thinking.',
    ARRAY['Team Leadership', 'System Design', 'Go', 'Python', 'OKRs', 'Enterprise experience'],
    ARRAY['No SaaS startup experience', 'Enterprise background may require adjustment to pace'],
-   0.878);
+   0.878)
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- SECTION 11: TENANT_A — Candidate Merge (William → Emma)
@@ -1171,7 +1186,8 @@ INSERT INTO candidate_merges (
   '11111111-1001-4000-a000-000000000001', -- merged by Senthil (owner)
   0.94,
   'Same employer (DesignFlow Inc), same location (Austin TX), very similar skill set and email domains. AI confidence 94%.'
-);
+)
+ON CONFLICT DO NOTHING;
 
 -- Soft-delete William Garcia (secondary candidate after merge)
 UPDATE candidates
@@ -1212,7 +1228,8 @@ INSERT INTO job_openings (
     '22222222-1001-4000-a000-000000000002',
     1,
     NULL
-  );
+  )
+ON CONFLICT (id) DO NOTHING;
 
 -- Five new candidates for Globex
 INSERT INTO candidates (
@@ -1242,7 +1259,8 @@ INSERT INTO candidates (
   ('22222222-e001-4000-a000-000000000005', '22222222-2001-4000-a000-000000000001',
    'Isla Pierce', 'isla.pierce@example.com', '+1-555-2005',
    'Software Engineer', 'Remote',
-   ARRAY['Python', 'JavaScript', 'React'], 'Direct');
+   ARRAY['Python', 'JavaScript', 'React'], 'Direct')
+ON CONFLICT (organization_id, email) DO NOTHING;
 
 -- Applications for Globex
 INSERT INTO applications (
@@ -1283,7 +1301,8 @@ INSERT INTO applications (
    '22222222-6002-4000-a000-000000000001', -- Applied (rejected)
    'rejected', 'Direct',
    NOW() - INTERVAL '5 weeks', NOW() - INTERVAL '5 weeks',
-   NULL, NOW() - INTERVAL '4 weeks');
+   NULL, NOW() - INTERVAL '4 weeks')
+ON CONFLICT (id) DO NOTHING;
 
 -- Globex interview (Eve)
 INSERT INTO interviews (
@@ -1307,7 +1326,8 @@ INSERT INTO interviews (
    'final',
    NOW() + INTERVAL '4 days', 60, 'scheduled',
    NULL,
-   '22222222-1001-4000-a000-000000000002');
+   '22222222-1001-4000-a000-000000000002')
+ON CONFLICT (id) DO NOTHING;
 
 -- Globex offer (Gia — sent)
 INSERT INTO offers (
@@ -1326,7 +1346,8 @@ INSERT INTO offers (
    'dropbox_sign', 'mock-envelope-gia-001',
    NOW() - INTERVAL '2 days',
    '22222222-1001-4000-a000-000000000002',
-   NOW() - INTERVAL '3 days');
+   NOW() - INTERVAL '3 days')
+ON CONFLICT (id) DO NOTHING;
 
 -- Globex screening session (Eve — completed)
 INSERT INTO screening_sessions (
@@ -1349,7 +1370,8 @@ INSERT INTO screening_sessions (
     '{"q1": 0.62}'::jsonb,
     NOW() - INTERVAL '5 weeks',
     NOW() - INTERVAL '5 weeks' + INTERVAL '8 minutes'
-  );
+  )
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
 -- End of demo seed data

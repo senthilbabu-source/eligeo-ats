@@ -264,19 +264,48 @@ export const TENANT_A = {
     },
   },
   offers: {
+    // Key kept as "aliceDraft" for backward compat — tests mock statuses independently.
+    // Actual seed.sql status: pending_approval (demo login visibility).
     aliceDraft: {
-      id: '11111111-8001-0001-0001-000000000001',
-      application_id: '11111111-5001-0001-0001-000000000001',
-      candidate_id: '11111111-4001-0001-0001-000000000001', // Alice
-      job_opening_id: '11111111-3001-0001-0001-000000000001',
-      status: 'draft',
-      created_by: '11111111-0001-0001-0001-000000000003', // recruiter
-      compensation: {
-        base_salary: 120000,
-        currency: 'USD',
-        equity: '0.05%',
-        signing_bonus: 5000,
-      },
+      id: '11111111-8001-4000-a000-000000000001',
+      application_id: '11111111-5001-4000-a000-000000000001',
+      candidate_id: '11111111-4001-4000-a000-000000000001', // Alice
+      job_id: '11111111-3001-4000-a000-000000000001',
+      template_id: '11111111-8002-4000-a000-000000000001',
+      status: 'pending_approval',
+      compensation: { base_salary: 120000, currency: 'USD', period: 'annual' },
+    },
+    bobPendingApproval: {
+      id: '11111111-8001-4000-a000-000000000002',
+      application_id: '11111111-5001-4000-a000-000000000002',
+      candidate_id: '11111111-4001-4000-a000-000000000002', // Bob
+      job_id: '11111111-3001-4000-a000-000000000001',
+      template_id: '11111111-8002-4000-a000-000000000001',
+      status: 'pending_approval',
+      compensation: { base_salary: 130000, currency: 'USD', period: 'annual' },
+    },
+  },
+  offerApprovals: {
+    aliceApprovalHM: {
+      id: '11111111-8003-4000-a000-000000000001',
+      offer_id: '11111111-8001-4000-a000-000000000001',
+      approver_id: '11111111-1001-4000-a000-000000000004', // Jordan (HM) — step 1
+      sequence_order: 1,
+      status: 'pending',
+    },
+    aliceApprovalOwner: {
+      id: '11111111-8003-4000-a000-000000000002',
+      offer_id: '11111111-8001-4000-a000-000000000001',
+      approver_id: '11111111-1001-4000-a000-000000000001', // Senthil (owner) — step 2
+      sequence_order: 2,
+      status: 'pending',
+    },
+    bobApprovalOwner: {
+      id: '11111111-8003-4000-a000-000000000003',
+      offer_id: '11111111-8001-4000-a000-000000000002',
+      approver_id: '11111111-1001-4000-a000-000000000001', // Senthil (owner) — sole approver
+      sequence_order: 1,
+      status: 'pending',
     },
   },
   notes: {

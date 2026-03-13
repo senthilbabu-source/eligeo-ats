@@ -55,8 +55,19 @@ export default async function InterviewsPage({
     );
   }
 
-  // Filter: "mine" shows only current user's interviews, "all" shows org-wide
-  const filterMine = sp.filter !== "all";
+  // Filter: owners and admins default to org-wide ("all") — their view should
+  // show the full picture on first load. HMs, recruiters, and interviewers
+  // default to "mine" — they care about their own schedule.
+  const defaultAll = session.orgRole === "owner" || session.orgRole === "admin";
+  const filterMine = defaultAll ? sp.filter === "mine" : sp.filter !== "all";
+
+  // URL param to preserve current filter state across Past/Upcoming toggles.
+  // Only append when overriding the role default.
+  const filterParam = filterMine && defaultAll
+    ? "filter=mine"
+    : !filterMine && !defaultAll
+    ? "filter=all"
+    : "";
 
   // Build query
   let query = supabase
@@ -139,16 +150,24 @@ export default async function InterviewsPage({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Interviews</h1>
         <div className="flex items-center gap-2">
-          {can(session.orgRole, "interviews:create") && (
+          {can(session.orgRole, "interviews:view") && (
             <Link
-              href={`/interviews?filter=${filterMine ? "all" : "mine"}`}
+              href={[
+                "/interviews",
+                "?filter=", filterMine ? "all" : "mine",
+                showPast ? "&show=past" : "",
+              ].join("")}
               className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
             >
               {filterMine ? "Show All" : "Show Mine"}
             </Link>
           )}
           <Link
-            href={`/interviews?show=${showPast ? "" : "past"}${filterMine ? "" : "&filter=all"}`}
+            href={[
+              "/interviews",
+              "?show=", showPast ? "" : "past",
+              filterParam ? `&${filterParam}` : "",
+            ].join("")}
             className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
           >
             {showPast ? "Upcoming" : "Past"}

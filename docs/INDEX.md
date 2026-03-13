@@ -87,6 +87,8 @@
 | D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 68 Inngest functions across 15 modules. v1.0 scope: 48 functions. **27 shipped** (all active). P6-1: +1 portal/resume-parse. P6-4: +3 screening (invite-candidate, generate-summary, send-reminder). P6-3: 3 stub→real upgrades. P6-5: +1 batchShortlist. 15 modules. 8 cron schedules. |
 | D30 | **User Story Map** | `docs/USER-STORY-MAP.md` | P1 | ✅ Complete | D27, ADR-011 | 184 user stories across 28 sections. Phase 2.7 all ✅ BUILT. Dashboard Waves 1–3 ✅. AI-Proof A/B/C ✅. Wave F ✅. **Phase 4 offers: O1, O2, O5, O6 ✅ BUILT. O3 ✅ BUILT (P6-3 real Dropbox Sign). O4 partial (signed/declined tracked, opened/viewed v2.0).** |
 | D31 | **Brand Guide** | `docs/BRAND.md` | P3 | ✅ Complete | ADR-012 | Logo narrative (3-candidate selection metaphor), brand voice guidelines, marketing copy for `/about` page, technical logo specs, animated variant plan. |
+| MKT-01 | **Marketing Intelligence** | `docs/MARKETING-INTELLIGENCE.md` | P1 | ✅ Complete (Living) | D00, D27, D31 | Competitive differentiators, taglines, feature copy, segment messaging, objection handling, proof points, comparison tables. **Must be updated at every phase boundary** — see `docs/MARKETING-UPDATE-CHECKLIST.md`. Last updated: Phase 6 (2026-03-13). |
+| MKT-02 | **Marketing Update Checklist** | `docs/MARKETING-UPDATE-CHECKLIST.md` | P1 | ✅ Complete (Protocol) | MKT-01 | 6-section checklist for keeping MKT-01 current. Enforced in CLAUDE.md Pre-Commit Protocol. Run at every phase boundary and whenever a new AI feature ships. |
 
 ---
 

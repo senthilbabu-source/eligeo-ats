@@ -76,6 +76,7 @@ These gates MUST be completed BEFORE writing any code. State each gate's result 
 2. **Run §13 post-build audit** if completing a phase or major feature.
 3. **DEVLOG entry** for significant changes.
 4. **State test counts** — before vs after. Test count must not decrease.
+5. **Marketing Intelligence update** — if completing a phase OR shipping any new AI feature OR a competitive gap closes: open `docs/MARKETING-UPDATE-CHECKLIST.md`, run the checklist, and update `docs/MARKETING-INTELLIGENCE.md` if any section is stale. This is non-blocking for small fixes but REQUIRED at every phase boundary.
 
 ### Gate Violation Protocol
 
@@ -123,6 +124,7 @@ ATS is the source of real-world lessons. Tag DEVLOG entries with `[PLAYBOOK]` wh
 Every commit:
 - [ ] DEVLOG.md — new entry at top (for significant changes)
 - [ ] Commit message format: `<type>(<scope>): <summary>` with `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
+- [ ] **At phase boundary only:** run `docs/MARKETING-UPDATE-CHECKLIST.md` and update `docs/MARKETING-INTELLIGENCE.md`
 
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`
 Scopes: `auth`, `jobs`, `candidates`, `pipeline`, `interviews`, `offers`, `billing`, `notifications`, `search`, `workflow`, `compliance`, `infra`, `meta`

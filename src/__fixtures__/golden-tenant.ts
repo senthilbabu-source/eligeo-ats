@@ -197,21 +197,46 @@ export const TENANT_A = {
     },
   },
   offers: {
+    // Key name kept as "aliceDraft" for backward compat — tests mock their own statuses.
+    // Actual seed.sql status is pending_approval (changed for demo login visibility).
     aliceDraft: {
       id: "11111111-8001-4000-a000-000000000001",
       application_id: "11111111-5001-4000-a000-000000000001",
       candidate_id: "11111111-4001-4000-a000-000000000001",
       job_id: "11111111-3001-4000-a000-000000000001",
       template_id: "11111111-8002-4000-a000-000000000001",
-      status: "draft" as const,
+      status: "pending_approval" as const,
       compensation: { base_salary: 120000, currency: "USD", period: "annual" as const },
+    },
+    bobPendingApproval: {
+      id: "11111111-8001-4000-a000-000000000002",
+      application_id: "11111111-5001-4000-a000-000000000002",
+      candidate_id: "11111111-4001-4000-a000-000000000002",
+      job_id: "11111111-3001-4000-a000-000000000001",
+      template_id: "11111111-8002-4000-a000-000000000001",
+      status: "pending_approval" as const,
+      compensation: { base_salary: 130000, currency: "USD", period: "annual" as const },
     },
   },
   offerApprovals: {
     aliceApprovalHM: {
       id: "11111111-8003-4000-a000-000000000001",
       offer_id: "11111111-8001-4000-a000-000000000001",
-      approver_id: "11111111-1001-4000-a000-000000000004", // Jordan (HM)
+      approver_id: "11111111-1001-4000-a000-000000000004", // Jordan (HM) — step 1
+      sequence_order: 1,
+      status: "pending" as const,
+    },
+    aliceApprovalOwner: {
+      id: "11111111-8003-4000-a000-000000000002",
+      offer_id: "11111111-8001-4000-a000-000000000001",
+      approver_id: "11111111-1001-4000-a000-000000000001", // Senthil (owner) — step 2
+      sequence_order: 2,
+      status: "pending" as const,
+    },
+    bobApprovalOwner: {
+      id: "11111111-8003-4000-a000-000000000003",
+      offer_id: "11111111-8001-4000-a000-000000000002",
+      approver_id: "11111111-1001-4000-a000-000000000001", // Senthil (owner) — sole approver
       sequence_order: 1,
       status: "pending" as const,
     },

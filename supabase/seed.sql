@@ -725,7 +725,7 @@ INSERT INTO offer_templates (id, organization_id, name, department, compensation
 
 -- ─── Offers (Phase 4) ────────────────────────────────────
 
-INSERT INTO offers (id, organization_id, application_id, candidate_id, job_id, template_id, status, compensation, created_by) VALUES
+INSERT INTO offers (id, organization_id, application_id, candidate_id, job_id, template_id, status, compensation, start_date, expiry_date, created_by) VALUES
   (
     '11111111-8001-4000-a000-000000000001',
     '11111111-2001-4000-a000-000000000001',
@@ -733,8 +733,26 @@ INSERT INTO offers (id, organization_id, application_id, candidate_id, job_id, t
     '11111111-4001-4000-a000-000000000001',  -- Alice
     '11111111-3001-4000-a000-000000000001',  -- Senior Engineer
     '11111111-8002-4000-a000-000000000001',  -- Engineering template
-    'draft',
+    'pending_approval',                      -- was 'draft' — must be pending_approval for approvals page
     '{"base_salary": 120000, "currency": "USD", "period": "annual"}'::jsonb,
+    (CURRENT_DATE + INTERVAL '30 days')::date,
+    (CURRENT_DATE + INTERVAL '60 days')::date,
+    '11111111-1001-4000-a000-000000000003'   -- Roshelle (recruiter)
+  );
+
+-- Bob's offer — pending_approval, Senthil is step-1 approver (demo: owner sees "Your turn")
+INSERT INTO offers (id, organization_id, application_id, candidate_id, job_id, template_id, status, compensation, start_date, expiry_date, created_by) VALUES
+  (
+    '11111111-8001-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-5001-4000-a000-000000000002',  -- Bob's application
+    '11111111-4001-4000-a000-000000000002',  -- Bob
+    '11111111-3001-4000-a000-000000000001',  -- Senior Engineer
+    '11111111-8002-4000-a000-000000000001',  -- Engineering template
+    'pending_approval',
+    '{"base_salary": 130000, "currency": "USD", "period": "annual"}'::jsonb,
+    (CURRENT_DATE + INTERVAL '21 days')::date,
+    (CURRENT_DATE + INTERVAL '45 days')::date,
     '11111111-1001-4000-a000-000000000003'   -- Roshelle (recruiter)
   );
 
@@ -752,13 +770,35 @@ INSERT INTO offers (id, organization_id, application_id, candidate_id, job_id, s
   );
 
 -- ─── Offer Approvals (Phase 4) ────────────────────────────
-
+--
+-- Demo login matrix:
+--   senthil@itecbrains.com  (owner)         → sees Bob (Your turn) + Alice (Waiting 2 of 2)
+--   hm@itecbrains.com       (hiring_manager) → sees Alice (Your turn)
+--
 INSERT INTO offer_approvals (id, organization_id, offer_id, approver_id, sequence_order, status) VALUES
+  -- Alice's offer: Jordan step-1 → Senthil step-2
   (
     '11111111-8003-4000-a000-000000000001',
     '11111111-2001-4000-a000-000000000001',
     '11111111-8001-4000-a000-000000000001',  -- Alice's offer
-    '11111111-1001-4000-a000-000000000004',  -- Jordan (hiring manager)
+    '11111111-1001-4000-a000-000000000004',  -- Jordan (hiring manager) — step 1 / Your turn
+    1,
+    'pending'
+  ),
+  (
+    '11111111-8003-4000-a000-000000000002',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-8001-4000-a000-000000000001',  -- Alice's offer
+    '11111111-1001-4000-a000-000000000001',  -- Senthil (owner) — step 2 / Waiting
+    2,
+    'pending'
+  ),
+  -- Bob's offer: Senthil is sole approver — step 1 / Your turn
+  (
+    '11111111-8003-4000-a000-000000000003',
+    '11111111-2001-4000-a000-000000000001',
+    '11111111-8001-4000-a000-000000000002',  -- Bob's offer
+    '11111111-1001-4000-a000-000000000001',  -- Senthil (owner) — sole approver / Your turn
     1,
     'pending'
   );
