@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **59 functions across 11 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
+This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **64 functions across 13 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
 
 Every background job in the system runs through Inngest. There are no Supabase Edge Functions (ADR-002). Cron jobs are Inngest cron triggers, not Next.js Route Handlers — Inngest manages scheduling, retries, and observability.
 
@@ -168,7 +168,22 @@ Functions only override these defaults when documented in the registry table bel
 | 55 | `migration/rollback` | `ats/migration.rollback-requested` | 3 | — | No (v2.1) |
 | 56 | `migration/file-download` | `ats/migration.file-download-requested` | 3 | — | No (v2.1) |
 
-> **Note:** 59 registered function IDs across 11 modules. The canonical count by module: 7+6+8+7+7+1+4+4+3+4+7 = 58 + `analytics/refresh-job-embedding` (Phase 5 B5-6) = 59. (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
+### 4.12 Screening (4 functions) — Phase 6
+
+| # | Function ID | Trigger | Retries | Concurrency | v1.0 |
+|---|-------------|---------|---------|-------------|------|
+| 57 | `screening/invite-candidate` | `ats/application.stage-entered` (where stage has screening config) | default (3) | 5 per org | Yes |
+| 58 | `screening/process-response` | `ats/screening.response-submitted` | default (3) | — | Yes |
+| 59 | `screening/generate-summary` | `ats/screening.all-answered` | 2 | 3 per org | Yes |
+| 60 | `screening/send-reminder` | Delayed: 48h after invite | default (3) | — | Yes |
+
+### 4.13 Portal (1 function) — Phase 6
+
+| # | Function ID | Trigger | Retries | Concurrency | v1.0 |
+|---|-------------|---------|---------|-------------|------|
+| 61 | `portal/resume-parse` | `portal/application-submitted` | 3 | 1 per candidate | Yes |
+
+> **Note:** 64 registered function IDs across 13 modules. Phase 6 adds 5 new functions (4 screening + 1 portal) + upgrades 3 existing stubs (offers/send-esign → real Dropbox Sign, offers/esign-webhook → real event processing, offers/withdraw → real Dropbox Sign cancel). (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
 
 ## 5. Cron Schedule Summary
 
@@ -230,9 +245,11 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 | Onboarding | 2 | 0 | `csv-import` and `demo-seed` pending. `merge-sync` is v2.1. |
 | Compliance | 4 | 0 | All pending. |
 | Analytics | 2 | 3 | `generate-briefing` (Wave 3) + `generate-candidate-embedding` (AI-Proof) + `refresh-job-embedding` (Phase 5 B5-6, H-04). All shipped. |
-| **Total** | **43** | **20** | **20 shipped and actively registered** in `/api/inngest/route.ts`. |
+| Screening | 4 | 0 | All Phase 6 (P6-4). |
+| Portal | 1 | 0 | `portal/resume-parse` Phase 6 (P6-1). |
+| **Total** | **48** | **20** | **20 shipped and actively registered** in `/api/inngest/route.ts`. |
 
-> Total registry: 59 functions (58 + `analytics/refresh-job-embedding` shipped). v1.0 scope: 43 functions. 20 shipped and active. Remaining 23 ship in Phases 6+.
+> Total registry: 64 functions across 13 modules. v1.0 scope: 48 functions. 20 shipped and active. Remaining 28 ship in Phases 6+.
 
 ### Deferred
 
@@ -246,4 +263,4 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 ---
 
-*Created: 2026-03-11. Updated: 2026-03-12 — Phase 5: all 7 billing functions shipped, `send-esign` re-registered, `refresh-job-embedding` shipped (H-04 closed). Registry: 58→59 functions, v1.0: 43, shipped: 12→20 (all active). Previous: Phase 4 shipped 5 offer functions. Hardening: added `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1).*
+*Created: 2026-03-11. Updated: 2026-03-12 — Phase 6 spec (D32): +5 new functions (4 screening + 1 portal) + 3 stub upgrades (send-esign, esign-webhook, withdraw). Registry: 59→64 functions, v1.0: 43→48, shipped: 20 (unchanged). Phase 5: all 7 billing functions shipped, `send-esign` re-registered, `refresh-job-embedding` shipped (H-04 closed). Phase 4 shipped 5 offer functions. Hardening: `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1).*

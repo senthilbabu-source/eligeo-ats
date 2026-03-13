@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-03-12 — Phase 6 Spec D32 Written: Candidate Intelligence Layer ✅
+
+**Scope:** Write the full Phase 6 specification document (D32) — the authoritative blueprint for the build.
+
+### Document: `docs/modules/PHASE6-CANDIDATE-INTELLIGENCE.md`
+- **16 sections**, ~500 lines covering all 4 waves
+- **Wave P6-1:** Resume extraction pipeline (hybrid pdf-parse + OpenAI vision fallback)
+- **Wave P6-2a:** Candidate status portal with AI-narrated status messages (Growth+)
+- **Wave P6-2b:** Candidate merge UI with AI confidence scoring
+- **Wave P6-3:** Dropbox Sign full integration (replacing stubs)
+- **Wave P6-4:** Conversational AI screening v1 (structured, EU AI Act compliant)
+
+### Key Decisions
+- 3 new tables: `candidate_merges` (immutable audit, ADR-006 exception), `screening_configs`, `screening_sessions`
+- 1 new column: `candidates.resume_parsed_data` JSONB
+- 5 new Inngest functions + 3 stub replacements (send-esign, esign-webhook, withdraw)
+- 13 API endpoints across all waves
+- ~134 new tests planned (1310 → ~1444 target)
+- Migrations 030 (foundation) + 031 (screening)
+- Credit model: resume parse = 2, merge score = 1, screening batch = 1, screening summary = 5
+- EU AI Act: screening is high-risk AI (Article 6) — transparency, human oversight, contestability
+
+### Governance
+- §21 pre-start gate: all 6 checks PASSED
+- §13 post-build audit: 6/7 PASS, A5 FAIL (registration) → fixed in same session
+- 12 mandatory reads completed before writing
+- Registered as D32 in INDEX.md (D30 was already assigned to User Story Map)
+
+### Cross-Doc Updates
+- INDEX.md: D32 registered under new "Phase 6 — Candidate Intelligence" section
+- D29 (INNGEST-REGISTRY): +5 new functions, registry 59→64, v1.0 scope 43→48
+- CLAUDE.md: current state updated
+- MEMORY.md + SESSION-HANDOFF.md: synced
+
+---
+
 ## 2026-03-12 — Pre-Phase 6 AI Hardening: H6-1 through H6-6 Implementation ✅
 
 **Scope:** Implement all 6 ADR-011 compliance hardening items from `PRE-PHASE6-AI-HARDENING.md`. Zero new migrations — all tables already exist.

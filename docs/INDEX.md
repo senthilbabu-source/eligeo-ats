@@ -135,7 +135,15 @@ Documents intentionally excluded from pre-code phase. Each has a specific trigge
 | B5-6 | Offer send re-activation + refresh-job-embedding (H-04 closed) | 8 | ✅ Complete |
 | **Total** | | **154** | **All passing** |
 
-Tests: 1049 → 1203 Vitest. 68 E2E unchanged. **1271 total.** No new migration. 20 Inngest functions active.
+Tests: 1049 → 1203 Vitest (Phase 5) → 1242 Vitest (H6 hardening). 68 E2E unchanged. **1310 total.** No new migration. 20 Inngest functions active.
+
+---
+
+## Phase 6 — Candidate Intelligence
+
+| # | Document | Path | Priority | Status | Depends On | Description |
+|---|----------|------|----------|--------|------------|-------------|
+| D32 | **Phase 6: Candidate Intelligence Layer** | `docs/modules/PHASE6-CANDIDATE-INTELLIGENCE.md` | P0 | ✅ Complete (Review) | D01, D03, D06, D08, D09, D10, D24, D29 | 4 waves: P6-1 Resume extraction (hybrid pdf-parse + OpenAI vision), P6-2a Candidate status portal (AI narration), P6-2b Merge UI (AI confidence scoring), P6-3 Dropbox Sign full integration, P6-4 Conversational AI screening v1 (structured, EU AI Act compliant). 3 new tables (`candidate_merges`, `screening_configs`, `screening_sessions`), 5 new Inngest functions + 3 stub replacements, 13 API endpoints, ~134 new tests. Migrations 030–031. |
 
 ---
 
@@ -202,7 +210,8 @@ docs/
 │   ├── ANALYTICS.md
 │   ├── ONBOARDING.md
 │   ├── WHITE-LABEL.md
-│   └── I18N.md
+│   ├── I18N.md
+│   └── PHASE6-CANDIDATE-INTELLIGENCE.md
 │
 ├── runbooks/                         ← Operational runbooks
 │   ├── disaster-recovery.md
