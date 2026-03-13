@@ -4,6 +4,38 @@
 
 ---
 
+## 2026-03-13 — seed-demo.sql: Comprehensive Demo Data ✅
+
+**Scope:** `supabase/seed-demo.sql` created — runs on top of `seed.sql` after `supabase db reset` to provide rich demo data for manual smoke testing of all Phase 6 features and as the analytics baseline for Phase 7.
+
+### Coverage
+
+**TENANT_A (itecbrains / Pro):**
+- 6 new job openings (Frontend Engineer, DevOps, Data Scientist, UX Designer, Engineering Manager, QA) + 2 existing = 8 jobs
+- 20 new candidates (diverse skills/seniority) + 3 existing = 23 total (1 merged/soft-deleted)
+- 19 new applications + 3 existing = 22 total. All 4 statuses: `active`, `hired`, `rejected`, `withdrawn`
+- Stage history with backdated timestamps across 4 months (Phase 7 analytics baseline)
+- 10 new interviews (completed, scheduled, confirmed, no_show) + 6 scorecard submissions
+- **All 8 offer states** covered: draft (seed), pending_approval, approved, sent, signed, declined, expired, withdrawn
+- 4 offer approvals (pending, approved chains)
+- 3 screening configs (Frontend, DevOps, Data Scientist) + 4 new sessions covering all states: `completed`, `in_progress`, `abandoned`, `skipped`
+- 2 AI shortlist reports (status=`complete`) with 9 scored candidates across all 4 tiers: `shortlist`, `hold`, `reject`, `insufficient_data`
+- 2 new talent pools + 5 members
+- 5 candidate notes + 5 AI match explanations
+- 1 candidate merge (William Garcia → Emma Davis, ai_confidence=0.94)
+
+**TENANT_B (Globex Inc / starter):**
+- 2 new jobs, 5 new candidates, 5 new applications
+- 2 interviews, 1 sent offer (with e-sign envelope), 1 completed screening session
+
+### Technical
+- All PKs verified unique (109 rows checked)
+- All FK references verified (application_id in interviews, offers, shortlist candidates)
+- Parentheses balance: 411/411
+- File: 1,380 lines, 29 INSERT INTO statements
+
+---
+
 ## 2026-03-13 — Post-Phase 6 §13 Audit ✅ + W-01 Bug Fix
 
 **Scope:** Full §13 post-build audit across 7 categories (A1–A7). Phase 6 declared complete.
