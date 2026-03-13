@@ -21,6 +21,7 @@ import { billingPaymentFailed } from "@/inngest/functions/billing/payment-failed
 import { billingTrialEnding } from "@/inngest/functions/billing/trial-ending";
 import { billingReportOverage } from "@/inngest/functions/billing/report-overage";
 import { portalResumeParse } from "@/inngest/functions/portal/resume-parse";
+import { processEsignWebhook } from "@/inngest/functions/offers/process-esign-webhook";
 import { batchShortlist } from "@/inngest/functions/jobs/batch-shortlist";
 
 /**
@@ -41,6 +42,7 @@ export const { GET, POST, PUT } = serve({
     offerCheckExpiry,
     offerWithdraw,
     offerSendEsign,
+    processEsignWebhook,
     interviewAutoSummarize,
     billingCheckoutCompleted,
     billingSubscriptionUpdated,

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["carin-subfastigiate-baggily.ngrok-free.dev"],
   serverExternalPackages: ["pino"],
   headers: async () => [
     {

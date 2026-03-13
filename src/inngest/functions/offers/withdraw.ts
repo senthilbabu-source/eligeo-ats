@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { inngest } from "@/inngest/client";
 import { createServiceClient } from "@/lib/supabase/server";
+import { cancelSignatureEnvelope } from "@/lib/esign/dropbox-sign";
 import logger from "@/lib/utils/logger";
 
 /**
@@ -52,14 +53,23 @@ export const offerWithdraw = inngest.createFunction(
       return { processed: false, reason: "offer_not_found" };
     }
 
-    // ── Step 2: Void e-sign envelope (stub) ──────────────
+    // ── Step 2: Void e-sign envelope via Dropbox Sign ────
     if (offer.esign_envelope_id) {
       await step.run("void-esign-envelope", async () => {
-        // TODO (Phase 5): Integrate Dropbox Sign API to void envelope
-        logger.info(
-          { offerId, envelopeId: offer.esign_envelope_id },
-          "E-sign envelope voiding — stub (Dropbox Sign integration pending)",
-        );
+        try {
+          await cancelSignatureEnvelope(offer.esign_envelope_id!);
+          logger.info(
+            { offerId, envelopeId: offer.esign_envelope_id },
+            "E-sign envelope voided via Dropbox Sign",
+          );
+        } catch (err) {
+          // Log but don't fail withdrawal — envelope may already be cancelled
+          logger.warn(
+            { offerId, envelopeId: offer.esign_envelope_id, error: err },
+            "Failed to void e-sign envelope — continuing with withdrawal",
+          );
+          Sentry.captureException(err);
+        }
       });
     }
 

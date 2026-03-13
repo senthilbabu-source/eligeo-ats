@@ -95,8 +95,8 @@ export default async function OfferDetailPage({
 
   if (!offer) notFound();
 
-  // Parallel fetches: approvals, candidate, job
-  const [{ data: approvals }, { data: candidate }, { data: job }] = await Promise.all([
+  // Parallel fetches: approvals, candidate, job, org
+  const [{ data: approvals }, { data: candidate }, { data: job }, { data: org }] = await Promise.all([
     supabase
       .from("offer_approvals")
       .select("id, approver_id, sequence_order, status, decided_at, notes")
@@ -113,6 +113,11 @@ export default async function OfferDetailPage({
       .from("job_openings")
       .select("id, title, department")
       .eq("id", offer.job_id)
+      .single(),
+    supabase
+      .from("organizations")
+      .select("name, plan")
+      .eq("id", session.orgId)
       .single(),
   ]);
 
@@ -145,6 +150,8 @@ export default async function OfferDetailPage({
   const canCreate = can(session.orgRole, "offers:create");
   const canApprove = can(session.orgRole, "offers:approve");
   const canSubmit = can(session.orgRole, "offers:submit");
+  const orgPlan = (org?.plan as string) ?? "starter";
+  const isProPlus = orgPlan === "pro" || orgPlan === "enterprise";
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -195,6 +202,22 @@ export default async function OfferDetailPage({
                   ),
             ) ?? false
           }
+          candidateName={candidate?.full_name ?? undefined}
+          jobTitle={job?.title ?? undefined}
+          department={job?.department ?? undefined}
+          compensation={comp?.base_salary ? {
+            base_salary: comp.base_salary,
+            currency: comp.currency ?? "USD",
+            period: (comp.period ?? "annual") as "annual" | "monthly" | "hourly",
+            ...(comp.bonus_pct != null ? { bonus_pct: comp.bonus_pct } : {}),
+            ...(comp.equity_shares != null ? { equity_shares: comp.equity_shares, equity_type: comp.equity_type as "options" | "rsu" | "phantom" | undefined } : {}),
+            ...(comp.equity_vesting ? { equity_vesting: comp.equity_vesting } : {}),
+            ...(comp.sign_on_bonus != null ? { sign_on_bonus: comp.sign_on_bonus } : {}),
+          } : undefined}
+          startDate={offer.start_date ?? undefined}
+          organizationName={org?.name ?? undefined}
+          isProPlus={isProPlus}
+          existingTerms={typeof offer.terms === "string" ? offer.terms : undefined}
         />
       </div>
 

@@ -323,6 +323,47 @@ export async function executeCommand(
     };
   }
 
+  // P6-3: Send offer — find approved offers for a candidate
+  if (intent.action === "send_offer") {
+    const candidateName = intent.params.candidate ?? "";
+    if (candidateName) {
+      const supabase = await createClient();
+      const escaped = escapeLikeQuery(candidateName);
+      const { data: candidates } = await supabase
+        .from("candidates")
+        .select("id, full_name")
+        .eq("organization_id", session.orgId)
+        .ilike("full_name", `%${escaped}%`)
+        .is("deleted_at", null)
+        .limit(5);
+
+      if (candidates?.length) {
+        const candidateIds = candidates.map((c) => c.id);
+        const { data: offers } = await supabase
+          .from("offers")
+          .select("id, status, candidate_id")
+          .eq("organization_id", session.orgId)
+          .in("candidate_id", candidateIds)
+          .eq("status", "approved")
+          .is("deleted_at", null)
+          .limit(10);
+
+        const nameMap = Object.fromEntries(candidates.map((c) => [c.id, c.full_name]));
+
+        return {
+          intent,
+          results: (offers ?? []).map((o) => ({
+            id: o.id,
+            title: nameMap[o.candidate_id] ?? "Unknown",
+            subtitle: "Send for E-Sign",
+            href: `/offers/${o.id}`,
+          })),
+        };
+      }
+    }
+    return { intent };
+  }
+
   // P6-5: Shortlist candidates — list open jobs for user to select
   if (intent.action === "shortlist_candidates") {
     const jobTitle = intent.params.job ?? "";

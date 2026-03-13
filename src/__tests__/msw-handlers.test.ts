@@ -13,8 +13,8 @@ describe("MSW handler registry", () => {
 
   it("should have handlers for all 9 D24 services", () => {
     // 9 services: Stripe (2), Resend (1), Nylas (2), Typesense (2),
-    // OpenAI (2), Merge.dev (1), Dropbox Sign (1), Inngest (1), Slack (1)
-    expect(handlers.length).toBe(13);
+    // OpenAI (2), Merge.dev (1), Dropbox Sign (3: send, send_with_template, cancel), Inngest (1), Slack (1)
+    expect(handlers.length).toBe(15);
   });
 
   it("should mock Stripe checkout and billing portal", () => {

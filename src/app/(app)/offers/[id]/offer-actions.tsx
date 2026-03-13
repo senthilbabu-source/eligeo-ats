@@ -9,6 +9,7 @@ import {
   withdrawOffer,
   markOfferSigned,
 } from "@/lib/actions/offers";
+import { OfferLetterPreviewModal } from "@/components/offers/offer-letter-preview-modal";
 import type { OfferStatus } from "@/lib/types/ground-truth";
 import type { TransitionAction } from "@/lib/offers/state-machine";
 
@@ -20,6 +21,14 @@ export function OfferActions({
   canApprove,
   canSubmit,
   isCurrentApprover,
+  candidateName,
+  jobTitle,
+  department,
+  compensation,
+  startDate,
+  organizationName,
+  isProPlus,
+  existingTerms,
 }: {
   offerId: string;
   status: OfferStatus;
@@ -28,12 +37,30 @@ export function OfferActions({
   canApprove: boolean;
   canSubmit: boolean;
   isCurrentApprover: boolean;
+  candidateName?: string;
+  jobTitle?: string;
+  department?: string;
+  compensation?: {
+    base_salary: number;
+    currency: string;
+    period: "annual" | "monthly" | "hourly";
+    bonus_pct?: number;
+    equity_shares?: number;
+    equity_type?: "options" | "rsu" | "phantom";
+    equity_vesting?: string;
+    sign_on_bonus?: number;
+  };
+  startDate?: string;
+  organizationName?: string;
+  isProPlus?: boolean;
+  existingTerms?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
+  const [showSendModal, setShowSendModal] = useState(false);
 
   async function handleAction(action: string) {
     setError(null);
@@ -117,6 +144,17 @@ export function OfferActions({
           </>
         )}
 
+        {/* Send for E-Sign (approved → sent) */}
+        {status === "approved" && actions.includes("send") && canCreate && (
+          <button
+            onClick={() => setShowSendModal(true)}
+            disabled={isPending}
+            className="inline-flex h-9 items-center rounded-md bg-cyan-600 px-4 text-sm font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
+          >
+            Send for E-Sign
+          </button>
+        )}
+
         {/* Mark Signed (manual fallback) */}
         {(status === "approved" || status === "sent") && canCreate && (
           <button
@@ -162,6 +200,26 @@ export function OfferActions({
 
       {error && (
         <p className="text-sm text-red-600">{error}</p>
+      )}
+
+      {/* Send for E-Sign Modal */}
+      {showSendModal && compensation && (
+        <OfferLetterPreviewModal
+          offerId={offerId}
+          candidateName={candidateName ?? "Unknown"}
+          jobTitle={jobTitle ?? "Unknown"}
+          department={department}
+          compensation={compensation}
+          startDate={startDate}
+          organizationName={organizationName ?? ""}
+          existingTerms={existingTerms}
+          isProPlus={isProPlus ?? false}
+          onClose={() => setShowSendModal(false)}
+          onSent={() => {
+            setShowSendModal(false);
+            router.refresh();
+          }}
+        />
       )}
     </div>
   );

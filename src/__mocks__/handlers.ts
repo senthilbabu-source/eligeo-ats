@@ -107,6 +107,26 @@ export const handlers = [
     },
   ),
 
+  http.post(
+    "https://api.hellosign.com/v3/signature_request/send_with_template",
+    () => {
+      return HttpResponse.json({
+        signature_request: {
+          signature_request_id: "sign_template_mock",
+          title: "Offer Letter",
+          signing_url: "https://app.hellosign.com/sign/mock",
+        },
+      });
+    },
+  ),
+
+  http.post(
+    "https://api.hellosign.com/v3/signature_request/cancel/:id",
+    () => {
+      return new HttpResponse(null, { status: 200 });
+    },
+  ),
+
   // ─── Inngest (no-op in tests) ───
   http.post("https://inn.gs/e/*", () => {
     return HttpResponse.json({ ids: ["evt_mock"] });

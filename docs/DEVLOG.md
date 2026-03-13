@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-03-13 — Phase 6 Wave P6-3: Dropbox Sign Full Integration ✅
+
+**Scope:** Replace all e-sign stubs with real Dropbox Sign API integration. AI offer letter preview (Pro+), webhook receiver, envelope lifecycle management.
+
+### New Files
+- `src/lib/esign/dropbox-sign.ts` — Dropbox Sign client, HMAC verification, envelope creation/cancellation, event mapping
+- `src/app/api/webhooks/dropbox-sign/route.ts` — Webhook receiver with HMAC verification (same pattern as Stripe)
+- `src/inngest/functions/offers/process-esign-webhook.ts` — Inngest function for signed/declined/canceled events
+- `src/components/offers/offer-letter-preview-modal.tsx` — AI offer letter preview + edit modal (Pro+)
+- `src/__tests__/esign/dropbox-sign-hmac.test.ts` — HMAC verification + event mapping tests (8)
+- `src/__tests__/esign/process-esign-webhook.test.ts` — Webhook processing tests (4)
+- `src/__tests__/esign/send-offer-intent.test.ts` — Command bar intent tests (4)
+
+### Modified Files
+- `src/inngest/functions/offers/send-esign.ts` — REPLACED stub: real Dropbox Sign API, AI letter generation (Pro+), template custom fields
+- `src/inngest/functions/offers/withdraw.ts` — REPLACED stub: real envelope cancellation via `cancelSignatureEnvelope()`
+- `src/app/api/inngest/route.ts` — Registered `processEsignWebhook` (23 active functions)
+- `src/app/(app)/offers/[id]/offer-actions.tsx` — Added "Send for E-Sign" button, preview modal integration
+- `src/app/(app)/offers/[id]/page.tsx` — Pass org plan, compensation, candidate info to OfferActions
+- `src/lib/ai/intent.ts` — Added `send_offer` intent + quick pattern (send/dispatch offer for/to)
+- `src/lib/actions/command-bar.ts` — `send_offer` handler: finds approved offers for a candidate
+- `src/__mocks__/handlers.ts` — Added `send_with_template` + `cancel` MSW handlers (13 → 15)
+- `.env.example` — Added `DROPBOX_SIGN_TEMPLATE_ID`
+- `package.json` — Added `@dropbox/sign` dependency
+
+### Tests: +18 new (1321 → 1339 Vitest). All passing. TypeScript clean.
+- Unit: HMAC verification (4), event mapping (4), intent patterns (4)
+- Integration: send-esign Inngest (2 new: Pro+ AI letter, Growth skip), process-esign-webhook (4)
+
+### Plan gating
+- **Pro+/Enterprise:** AI-generated offer letter content via `generateOfferLetterDraft()` before envelope creation
+- **Growth:** Static template fields only, no preview modal
+- **Starter:** No e-sign (not plan-gated at API level, gated by UI)
+
+---
+
 ## 2026-03-13 — Phase 6 Wave P6-5: AI Batch Shortlisting Report ✅
 
 **Scope:** 5-dimension AI scoring of all applicants for a job, with tier classification (Shortlist/Hold/Reject), EEOC compliance, and recruiter override.

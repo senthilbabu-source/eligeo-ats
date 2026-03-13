@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ── Hoisted mocks ───────────────────────────────────────
 
@@ -557,10 +557,34 @@ describe("offerWithdraw", () => {
 
 // ── send-esign ──────────────────────────────────────────
 
-describe("offerSendEsign", () => {
-  beforeEach(() => vi.clearAllMocks());
+vi.mock("@/lib/esign/dropbox-sign", () => ({
+  createSignatureEnvelope: vi.fn().mockResolvedValue({
+    signatureRequestId: "sign_mock_001",
+    signingUrl: "https://app.hellosign.com/sign/mock",
+  }),
+  cancelSignatureEnvelope: vi.fn().mockResolvedValue(undefined),
+  getDropboxSignClient: vi.fn(),
+  verifyDropboxSignWebhook: vi.fn(),
+  DROPBOX_SIGN_EVENT_MAP: {},
+}));
 
-  it("should send offer and update status to sent", async () => {
+vi.mock("@/lib/ai/generate", () => ({
+  generateOfferLetterDraft: vi.fn().mockResolvedValue({ text: "AI generated letter content", error: undefined }),
+}));
+
+describe("offerSendEsign", () => {
+  const ORIGINAL_ENV = process.env;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env = { ...ORIGINAL_ENV, DROPBOX_SIGN_TEMPLATE_ID: "tmpl_test_001" };
+  });
+
+  afterEach(() => {
+    process.env = ORIGINAL_ENV;
+  });
+
+  it("should send offer via Dropbox Sign and update status to sent", async () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === "offers") {
         const chain = createChainMock({
@@ -569,8 +593,8 @@ describe("offerSendEsign", () => {
             candidate_id: "cand-1",
             job_id: "job-1",
             created_by: USER_ID,
-            compensation: { base_salary: 150000 },
-            terms: "Standard",
+            compensation: { base_salary: 150000, currency: "USD", period: "annual" },
+            terms: null,
             esign_provider: "dropbox_sign",
             status: "approved",
           },
@@ -585,7 +609,10 @@ describe("offerSendEsign", () => {
         return createChainMock({ data: { full_name: "Alice", email: "alice@test.com" }, error: null });
       }
       if (table === "job_openings") {
-        return createChainMock({ data: { title: "Engineer" }, error: null });
+        return createChainMock({ data: { title: "Engineer", department: "Eng" }, error: null });
+      }
+      if (table === "organizations") {
+        return createChainMock({ data: { name: "TestOrg", plan: "pro", dropbox_sign_template_id: null }, error: null });
       }
       if (table === "user_profiles") {
         return createChainMock({ data: { email: "recruiter@test.com" }, error: null });
@@ -602,13 +629,71 @@ describe("offerSendEsign", () => {
     });
 
     expect(result).toEqual(
-      expect.objectContaining({ sent: true, candidateEmail: "alice@test.com" }),
+      expect.objectContaining({
+        sent: true,
+        envelopeId: "sign_mock_001",
+        candidateEmail: "alice@test.com",
+        aiLetterGenerated: true,
+      }),
     );
+    expect(step.run).toHaveBeenCalledWith("create-esign-envelope", expect.any(Function));
     expect(step.run).toHaveBeenCalledWith("update-offer-sent", expect.any(Function));
     expect(step.sendEvent).toHaveBeenCalledWith(
       "notify-offer-sent",
       expect.objectContaining({
         name: "ats/notification.requested",
+      }),
+    );
+  });
+
+  it("should skip AI letter for growth plan", async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "offers") {
+        const chain = createChainMock({
+          data: {
+            id: OFFER_ID,
+            candidate_id: "cand-1",
+            job_id: "job-1",
+            created_by: USER_ID,
+            compensation: { base_salary: 100000, currency: "USD", period: "annual" },
+            terms: null,
+            esign_provider: "dropbox_sign",
+            status: "approved",
+          },
+          error: null,
+        });
+        chain.update = vi.fn().mockReturnValue(
+          createChainMock({ data: null, error: null }),
+        );
+        return chain;
+      }
+      if (table === "candidates") {
+        return createChainMock({ data: { full_name: "Bob", email: "bob@test.com" }, error: null });
+      }
+      if (table === "job_openings") {
+        return createChainMock({ data: { title: "Designer", department: null }, error: null });
+      }
+      if (table === "organizations") {
+        return createChainMock({ data: { name: "GrowthOrg", plan: "growth", dropbox_sign_template_id: null }, error: null });
+      }
+      if (table === "user_profiles") {
+        return createChainMock({ data: { email: "recruiter@test.com" }, error: null });
+      }
+      return createChainMock();
+    });
+
+    const step = createStepMock();
+    const result = await sendEsignHandler({
+      event: {
+        data: { offerId: OFFER_ID, organizationId: ORG_ID, requestedBy: USER_ID },
+      },
+      step,
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        sent: true,
+        aiLetterGenerated: false,
       }),
     );
   });
@@ -637,5 +722,45 @@ describe("offerSendEsign", () => {
         step,
       }),
     ).rejects.toThrow("Offer must be approved to send");
+  });
+
+  it("should throw if candidate has no email", async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "offers") {
+        return createChainMock({
+          data: {
+            id: OFFER_ID,
+            candidate_id: "cand-1",
+            job_id: "job-1",
+            created_by: USER_ID,
+            compensation: {},
+            terms: null,
+            status: "approved",
+          },
+          error: null,
+        });
+      }
+      if (table === "candidates") {
+        return createChainMock({ data: { full_name: "NoEmail", email: null }, error: null });
+      }
+      if (table === "job_openings") {
+        return createChainMock({ data: { title: "Role", department: null }, error: null });
+      }
+      if (table === "organizations") {
+        return createChainMock({ data: { name: "Org", plan: "starter", dropbox_sign_template_id: null }, error: null });
+      }
+      return createChainMock();
+    });
+
+    const step = createStepMock();
+
+    await expect(
+      sendEsignHandler({
+        event: {
+          data: { offerId: OFFER_ID, organizationId: ORG_ID, requestedBy: USER_ID },
+        },
+        step,
+      }),
+    ).rejects.toThrow("has no email");
   });
 });

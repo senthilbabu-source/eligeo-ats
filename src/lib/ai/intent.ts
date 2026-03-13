@@ -28,6 +28,7 @@ export interface ParsedIntent {
     | "narrate_status"
     | "trigger_screening"
     | "shortlist_candidates"
+    | "send_offer"
     | "unknown";
   params: Record<string, string>;
   confidence: number;
@@ -53,6 +54,7 @@ const intentActions = [
   "narrate_status",
   "trigger_screening",
   "shortlist_candidates",
+  "send_offer",
   "unknown",
 ] as const;
 
@@ -84,6 +86,7 @@ Available actions:
 - narrate_status: Explain a candidate's current application status in natural language. Params: candidate (name)
 - trigger_screening: Start AI screening for a candidate. Params: candidate (name), job (title, optional)
 - shortlist_candidates: AI shortlist/screen all applicants for a job. Params: job (title, optional)
+- send_offer: Send an offer for e-signature. Params: candidate (name)
 - navigate: Go to a page. Params: page (jobs/candidates/dashboard/settings/pipelines/offers/approvals/talent-pools)
 - unknown: Cannot determine intent`;
 
@@ -327,6 +330,18 @@ function matchQuickPatterns(input: string): ParsedIntent | null {
       params: { title, reason: "repost" },
       confidence: 0.95,
       display: `Repost "${title}"`,
+    };
+  }
+
+  // P6-3: Send offer for e-sign
+  const sendOfferMatch = /^(?:send|dispatch)\s+offer\s+(?:for\s+|to\s+)?(.+)$/i.exec(lower);
+  if (sendOfferMatch) {
+    const candidate = (sendOfferMatch[1] ?? "").trim();
+    return {
+      action: "send_offer",
+      params: { candidate },
+      confidence: 0.95,
+      display: `Send offer for e-sign to ${candidate}`,
     };
   }
 
