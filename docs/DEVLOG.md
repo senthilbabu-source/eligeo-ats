@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-03-13 — Phase 6 Final Doc Sync: All Build Waves Complete ✅
+
+**Scope:** Post-P6-4 documentation consistency audit. Discovered P6-1 (Resume Extraction) was already fully built and registered but not reflected in docs.
+
+### Drift Items Fixed (7 items across 5 docs)
+1. **D29 (INNGEST-REGISTRY.md):** Portal module shipped 0 → 1 (`portal/resume-parse` was registered in route.ts but unmarked). Total shipped: 26 → 27.
+2. **D29:** Footer summary updated with P6-1 shipment.
+3. **INDEX.md:** D32 description now lists all 6 waves with P6-1 ✅. D29 shipped count 26 → 27. Phase 5 summary Inngest count 26 → 27.
+4. **D30 (USER-STORY-MAP.md):** Added RE1 (auto resume parsing on submission) and RE2 (PDF + DOCX format support) to §7 AI Screening & Scoring.
+5. **SESSION-HANDOFF.md:** Phase status updated — all build waves complete. P6-1 added to built table. Carry-forward updated (no remaining P6 build waves).
+6. **MEMORY.md:** Phase status, next step, Inngest counts all updated.
+7. **Inngest count correction:** v1.0 scope was 49 → corrected to 48 (process-response merged into API in P6-4).
+
+### Phase 6 Final Status
+All 6 build waves complete: P6-1 ✅ P6-2a ✅ P6-2b ✅ P6-3 ✅ P6-4 ✅ P6-5 ✅
+
+---
+
 ## 2026-03-13 — Phase 6 Wave P6-4: Conversational AI Screening v1 ✅
 
 **Scope:** Full conversational AI screening system. Recruiters configure screening questions per job, candidates answer at their own pace via magic link, AI generates follow-ups and summaries. D32 §7.

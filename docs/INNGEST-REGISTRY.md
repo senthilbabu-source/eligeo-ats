@@ -186,7 +186,7 @@ Functions only override these defaults when documented in the registry table bel
 
 | # | Function ID | Trigger | Retries | Concurrency | v1.0 |
 |---|-------------|---------|---------|-------------|------|
-| 61 | `portal/resume-parse` | `portal/application-submitted` | 3 | 1 per candidate | Yes |
+| 61 | `portal/resume-parse` | `portal/application-submitted` | 3 | 1 per candidate | Yes (**✅ Shipped** — P6-1) |
 
 > **Note:** 68 registered function IDs across 15 modules. Phase 6 adds 4 new functions (3 screening + 1 portal) + 1 new `jobs/batch-shortlist` (P6-5) + upgrades 3 existing stubs to real implementations (P6-3: offers/send-esign → real Dropbox Sign, offers/esign-webhook → `processEsignWebhook` real event processing, offers/withdraw → real Dropbox Sign cancel). P6-4: 3 screening functions shipped (invite-candidate, generate-summary, send-reminder). `screening/process-response` was merged into the answer API endpoint (no separate Inngest function needed). (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
 
@@ -254,10 +254,10 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 | Analytics | 2 | 3 | `generate-briefing` (Wave 3) + `generate-candidate-embedding` (AI-Proof) + `refresh-job-embedding` (Phase 5 B5-6, H-04). All shipped. |
 | Jobs | 1 | 1 | `batchShortlist` (P6-5). |
 | Screening | 3 | 3 | All 3 shipped (P6-4): `invite-candidate`, `generate-summary`, `send-reminder`. `process-response` merged into API endpoint. |
-| Portal | 1 | 0 | `portal/resume-parse` Phase 6 (P6-1). |
-| **Total** | **48** | **26** | **26 shipped and actively registered** in `/api/inngest/route.ts`. |
+| Portal | 1 | 1 | `portal/resume-parse` shipped (P6-1). |
+| **Total** | **48** | **27** | **27 shipped and actively registered** in `/api/inngest/route.ts`. |
 
-> Total registry: 68 functions across 15 modules. v1.0 scope: 48 functions. 26 shipped and active. P6-4: +3 screening shipped (invite-candidate, generate-summary, send-reminder). P6-3: +1 (offers/esign-webhook real), +2 upgrades (send-esign real, withdraw real). P6-5: +1 (jobs/batch-shortlist). Remaining 22 ship in Phases 6+.
+> Total registry: 68 functions across 15 modules. v1.0 scope: 48 functions. 27 shipped and active. P6-4: +3 screening shipped (invite-candidate, generate-summary, send-reminder). P6-3: +1 (offers/esign-webhook real), +2 upgrades (send-esign real, withdraw real). P6-5: +1 (jobs/batch-shortlist). P6-1: +1 (portal/resume-parse). Remaining 21 ship in Phases 6+.
 
 ### Deferred
 
@@ -271,4 +271,4 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 ---
 
-*Created: 2026-03-11. Updated: 2026-03-13 — P6-4 build: 3 screening functions shipped (invite-candidate, generate-summary, send-reminder). `process-response` merged into answer API. Registry: 65→68 functions, v1.0: 49→48 (1 removed), shipped: 23→26. P6-3 build: 3 stub upgrades now real (send-esign, esign-webhook/processEsignWebhook, withdraw → real Dropbox Sign). P6-5 build: +1 new `jobs/batch-shortlist`. Phase 5: all 7 billing functions shipped, `send-esign` re-registered, `refresh-job-embedding` shipped (H-04 closed). Phase 4 shipped 5 offer functions. Hardening: `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1).*
+*Created: 2026-03-11. Updated: 2026-03-13 — Phase 6 doc sync: `portal/resume-parse` marked shipped (P6-1 — was already registered but not reflected in docs). Shipped: 26→27. P6-4 build: 3 screening functions shipped (invite-candidate, generate-summary, send-reminder). `process-response` merged into answer API. Registry: 65→68 functions, v1.0: 49→48 (1 removed), shipped: 23→27. P6-3 build: 3 stub upgrades now real (send-esign, esign-webhook/processEsignWebhook, withdraw → real Dropbox Sign). P6-5 build: +1 new `jobs/batch-shortlist`. P6-1: +1 portal/resume-parse. Phase 5: all 7 billing functions shipped, `send-esign` re-registered, `refresh-job-embedding` shipped (H-04 closed). Phase 4 shipped 5 offer functions. Hardening: `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1).*

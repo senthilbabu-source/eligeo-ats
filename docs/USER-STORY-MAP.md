@@ -116,6 +116,8 @@
 | AS3 | AI screening summary + per-question scores | ✅ BUILT | Growth+ | P6-4: `generateScreeningSummary()` (gpt-4o, 5 credits) produces summary, overall score, per-question breakdown, key signals. Inngest `generate-summary` on completion. |
 | AS4 | Review screening results on candidate profile | ✅ BUILT | All | P6-4: Score badge (green/amber/red), AI summary, per-question breakdown bars, expandable transcript. `screening-results.tsx` + `screening-transcript.tsx`. |
 | AS5 | AI batch shortlisting with 5-dimension scoring | ✅ BUILT | Growth+ | P6-5: `batchShortlist` Inngest function, 5-dimension scoring, tier classification (Strong/Maybe/Weak), EEOC compliance. |
+| RE1 | Automatic resume parsing on application submission | ✅ BUILT | All | P6-1: Hybrid pdf-parse + GPT-4o structured output. Inngest `portal/resume-parse` triggers on `portal/application-submitted`. Extracts skills, experience, education, contact → `candidates.resume_parsed`. |
+| RE2 | Support PDF and DOCX resume formats | ✅ BUILT | All | P6-1: pdf-parse for PDF, mammoth for DOCX conversion. GPT-4o vision fallback for scanned/image PDFs. `resume-extractor.ts` (254 lines). |
 
 ---
 
