@@ -84,6 +84,13 @@ export async function createJob(_prev: unknown, formData: FormData) {
   const session = await requireAuth();
   assertCan(session.orgRole, "jobs:create");
 
+  // Active job limit enforcement (D03 §2.2)
+  const { enforceJobLimit } = await import("@/lib/billing/enforcement");
+  const jobCheck = await enforceJobLimit(session.orgId, session.plan);
+  if (!jobCheck.allowed) {
+    return { error: jobCheck.error };
+  }
+
   const parsed = createJobSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description"),

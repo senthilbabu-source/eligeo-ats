@@ -164,6 +164,13 @@ export async function inviteMember(formData: FormData) {
     return { error: "You don't have permission to invite members" };
   }
 
+  // Seat limit enforcement (D03 §2.2)
+  const { enforceSeatLimit } = await import("@/lib/billing/enforcement");
+  const seatCheck = await enforceSeatLimit(session.orgId, session.plan);
+  if (!seatCheck.allowed) {
+    return { error: seatCheck.error };
+  }
+
   const parsed = inviteSchema.safeParse({
     email: formData.get("email"),
     role: formData.get("role"),

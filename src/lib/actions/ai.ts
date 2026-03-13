@@ -25,6 +25,13 @@ export async function aiParseResume(
   const session = await requireAuth();
   assertCan(session.orgRole, "candidates:create");
 
+  // Feature gate: AI resume parsing requires Growth+ (D03 §2)
+  const { enforceFeature } = await import("@/lib/billing/enforcement");
+  const featureCheck = enforceFeature(session.plan, session.featureFlags, "ai_resume_parsing");
+  if (!featureCheck.allowed) {
+    return { error: featureCheck.error };
+  }
+
   const resumeText = formData.get("resumeText") as string;
   if (!resumeText?.trim()) {
     return { error: "No resume text provided" };
@@ -449,6 +456,13 @@ export async function aiGetMatchExplanation(input: {
 > {
   const session = await requireAuth();
   assertCan(session.orgRole, "candidates:view");
+
+  // Feature gate: AI matching requires Pro+ (D03 §2)
+  const { enforceFeature } = await import("@/lib/billing/enforcement");
+  const featureCheck = enforceFeature(session.plan, session.featureFlags, "ai_matching");
+  if (!featureCheck.allowed) {
+    return { error: featureCheck.error };
+  }
 
   const supabase = await createClient();
 

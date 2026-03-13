@@ -4,6 +4,63 @@
 
 ---
 
+## 2026-03-12 — Phase 5 (Billing) ✅ COMPLETE `[PLAYBOOK]`
+
+**Scope:** Full billing infrastructure — 6 waves (B5-1 through B5-6). Stripe integration, plan enforcement, billing UI, offer send re-activation, and H-04 carry-forward closure.
+
+### Wave B5-1: Foundation (plan config + feature gating)
+- `src/lib/billing/plans.ts` — 4 plan tiers, limits, feature defaults, pricing, `hasFeature()`, `resolveFeatureFlags()`, `getPlanLimits()`
+- `src/lib/billing/credits.ts` — Overage calculation, `hasAvailableCredits()`, `creditUsagePercent()`
+- `src/lib/billing/seats.ts` — `checkSeatLimit()`, `calculateExtraSeats()`, `seatUsagePercent()`
+- `src/lib/billing/stripe.ts` — Stripe client singleton, webhook signature verification
+- `src/lib/billing/errors.ts` — Error hierarchy: `BillingError`, `SeatLimitError`, `JobLimitError`, `CreditExhaustedError`, `FeatureGatedError`
+- `src/lib/billing/types.ts` — Zod schemas for billing API responses
+- **54 tests** (plans 24 + credits 15 + seats 15)
+
+### Wave B5-2: Stripe Webhook + 7 Inngest Functions
+- `src/app/api/webhooks/stripe/route.ts` — Signature verification, event type mapping to 6 Inngest events
+- 7 Inngest functions: `checkout-completed`, `subscription-updated`, `subscription-canceled`, `invoice-paid`, `payment-failed`, `trial-ending`, `report-overage` (daily cron)
+- **22 tests** (webhook 10 + Inngest 12)
+
+### Wave B5-3: 4 Billing API Endpoints
+- `POST /api/v1/billing/checkout-session` — Stripe Checkout (owner-only, CSRF protected)
+- `POST /api/v1/billing/portal-session` — Stripe Customer Portal (owner-only)
+- `GET /api/v1/billing/usage` — AI credit usage breakdown (owner/admin)
+- `GET /api/v1/billing/plan` — Current plan, features, billing cycle (any member)
+- **13 tests**
+
+### Wave B5-4: Enforcement Wired into Server Actions
+- `enforceSeatLimit()` in `inviteMember`, `enforceJobLimit()` in `createJob`
+- `enforceFeature()` for `ai_resume_parsing` and `ai_matching` in AI Server Actions
+- Dynamic `import()` pattern to avoid circular dependencies
+- **20 tests**
+
+### Wave B5-5: Billing Settings UI + Global Banners
+- `/settings/billing` page (server component, owner-only)
+- 6 components: `UsageMeter`, `PlanCard`, `PricingTable`, `TrialBanner`, `UpgradeBanner`, `PaymentFailedBanner`
+- `BillingBanners` async server wrapper in app layout (priority: payment_failed > trial > upgrade)
+- Billing nav item added to settings layout (owner-only via `can("billing:manage")`)
+- **37 tests**
+
+### Wave B5-6: Offer Send Re-activation + H-04 Closure
+- Re-added `send` transition to offer state machine (`approved → sent`, guarded by `hasEsignProvider`)
+- Added `sent` to `WITHDRAWABLE_STATES`
+- Created `sendOffer()` Server Action dispatching `ats/offer.send-requested` Inngest event
+- Re-registered `offerSendEsign` Inngest function (19th active)
+- **H-04 CLOSED:** Created `refreshJobEmbedding` Inngest function (20th active), triggered by `ats/analytics.job-skills-changed`, concurrency 1 per job
+- **8 tests** (state machine updates + refresh-job-embedding)
+
+### Phase 5 Totals
+- **154 new tests** across 6 waves
+- **Test count:** 1049 → 1203 Vitest. 68 E2E unchanged. **1271 total, all passing.**
+- **Inngest functions:** 11 → 20 actively registered. 58 → 59 in registry (added `refresh-job-embedding`).
+- **No new migration** — all billing columns already existed on `organizations` table (migration 00002).
+- **TypeScript:** clean `tsc --noEmit`
+
+**[PLAYBOOK] P-32:** Billing infrastructure benefits from plan-config-as-code (not database). Feature gating via JWT claims avoids DB queries on every request. Stripe Customer Portal eliminates custom payment management UI. Dynamic `import()` in Server Actions prevents circular dependency issues with enforcement modules.
+
+---
+
 ## 2026-03-12 — Pre-Phase 5 Documentation Consistency Audit `[PLAYBOOK]`
 
 **Scope:** Cross-cut audit of all 30+ docs to eliminate drift, contradictions, and stale references before Phase 5 code begins. 12 inconsistencies found and fixed.

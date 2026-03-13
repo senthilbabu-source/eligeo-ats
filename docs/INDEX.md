@@ -39,7 +39,7 @@
 
 | # | Document | Path | Priority | Status | Depends On | Description |
 |---|----------|------|----------|--------|------------|-------------|
-| D06 | **Offer Management** | `docs/modules/OFFERS.md` | P1 | ✅ Complete (Review) | D01, D02, D03, D05 | 7-state machine (draft→withdrawn, `send` transition deferred Phase 5), sequential approval chain with auto-skip (G-022), e-sign stub deregistered (H4-2), offer templates, expiry cron, compensation editor, AI comp suggestion + salary band check + offer letter draft. **Phase 4 + hardening: 97 offer tests (43 state machine + 14 AI + 16 intent + 34 SA + 15 Inngest) + 44 RLS tests.** |
+| D06 | **Offer Management** | `docs/modules/OFFERS.md` | P1 | ✅ Complete (Review) | D01, D02, D03, D05 | 8-state machine (draft→withdrawn, `send` transition re-activated Phase 5 B5-6), sequential approval chain with auto-skip (G-022), e-sign `send-esign` re-registered, offer templates, expiry cron, compensation editor, AI comp suggestion + salary band check + offer letter draft. **Phase 4 + Phase 5: 105 offer tests (47 state machine + 14 AI + 16 intent + 34 SA + 15 Inngest) + 44 RLS tests.** |
 | D07 | **Interview Scheduling** | `docs/modules/INTERVIEW-SCHEDULING.md` | P1 | ✅ Complete (Review) | D01, D02, D03, D05 | 5-state interview machine, manual + panel + self-scheduling, Nylas calendar two-way sync, scorecard templates with snapshot-on-assign versioning, blind review (auto-reveal after own submission), AI scorecard summarization (Pro+), weighted score aggregation, 18 API endpoints, 7 Inngest functions. Post-build audit: 7/7 PASS. |
 | D08 | **Notification System** | `docs/modules/NOTIFICATIONS.md` | P1 | ✅ Complete (Review) | D01, D02, D03, D05 | Unified notification dispatch (in-app + email + webhook), 22 event types, Supabase Realtime for in-app, React Email + Resend for transactional email, Handlebars template variables, @mention via Inngest, webhook outbound with auto-disable, user preferences per event, digest mode, 17 API endpoints, 7 Inngest functions. Post-build audit: 7/7 PASS. |
 | D09 | **Candidate Portal** | `docs/modules/CANDIDATE-PORTAL.md` | P1 | ✅ Complete (Review) | D01, D05, D07, D08, D10, D11 | Magic link auth (stateless signed JWT, 3 scopes), career page with org branding + fallback defaults (G-020), Typesense public job search with scoped API keys (G-029), application form with resume upload + GDPR consent, adaptive polling for status updates (G-030), self-scheduling UI (G-023), candidate email delivery (G-026), rate limiting (G-013), GDPR erasure with 48h cooling period, 12 API endpoints, 3 Inngest functions. Post-build audit: 7/7 PASS. |
@@ -84,7 +84,7 @@
 | D26 | **Error Taxonomy & Recovery Patterns** | `docs/ERROR-TAXONOMY.md` | P2 | ✅ Complete (Review) | D02, D14 | ATS-XXXX error code scheme (12 categories, 60+ codes), RFC 9457 response format with `code` extension, Server Action error pattern, graceful degradation matrix (7 services), circuit breaker pattern, retry strategies (6 failure types), React error boundary design (4 placement levels), user-facing message guidelines. |
 | D27 | **Product Roadmap & Release Strategy** | `docs/PRODUCT-ROADMAP.md` | P0 | ✅ Complete (Review) | D00, D03, D25, all modules | 5 release versions (v1.0–v3.0). v1.0: 26 features, 6 build phases over 12 weeks, 10 notification events, launch criteria checklist. Feature-to-plan mapping. Revenue projections ($540 MRR launch → $125K MRR at v3.0). Risk mitigation. Decision log (12 scope decisions). Determines ALL build order. |
 | D28 | **Environment Variables** | `docs/ENVIRONMENT-VARIABLES.md` | P0 | ✅ Complete (Review) | D01, D02, D03, D14, D15 | 30 env vars across 10 services. Public/secret classification, v1.0 vs v2.0+ required, `.env.example` template, security rules. |
-| D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 58 Inngest functions across 11 modules. v1.0 scope: 43 functions. **12 shipped** (11 active + `send-esign` deregistered). Modules: billing, offers, interviews, notifications, workflow, candidates, search, analytics, onboarding, compliance, migration. 8 cron schedules. |
+| D29 | **Inngest Function Registry** | `docs/INNGEST-REGISTRY.md` | P0 | ✅ Complete (Review) | D03, D06–D12, D13, D17, D19, D23 | 59 Inngest functions across 11 modules. v1.0 scope: 43 functions. **20 shipped** (all active). Phase 5: 7 billing + send-esign re-registered + refresh-job-embedding. Modules: billing, offers, interviews, notifications, workflow, candidates, search, analytics, onboarding, compliance, migration. 8 cron schedules. |
 | D30 | **User Story Map** | `docs/USER-STORY-MAP.md` | P1 | ✅ Complete | D27, ADR-011 | 184 user stories across 28 sections. Phase 2.7 all ✅ BUILT. Dashboard Waves 1–3 ✅. AI-Proof A/B/C ✅. Wave F ✅. **Phase 4 offers: O1, O2, O5, O6 ✅ BUILT. O3 partial (e-sign stub). O4 v2.0.** |
 | D31 | **Brand Guide** | `docs/BRAND.md` | P3 | ✅ Complete | ADR-012 | Logo narrative (3-candidate selection metaphor), brand voice guidelines, marketing copy for `/about` page, technical logo specs, animated variant plan. |
 
@@ -112,6 +112,22 @@ Documents intentionally excluded from pre-code phase. Each has a specific trigge
 | # | Document | Path | Priority | Status | Description |
 |---|----------|------|----------|--------|-------------|
 | H00 | **Hardening Plan** | `docs/HARDENING.md` | P0 | ✅ Complete | 4-wave plan (H1–H4): 12 items implemented. Atomic stage move + approval locking RPCs, fuzzy dedup, email verification, embedding freshness, candidate timeline (recordInteraction), AI match explanations, scorecard auto-trigger, NBA enhancement (6 rules), percentile labels, e-sign cleanup, AI Act compliance. Migration 029. Tests: 1038 Vitest (+3 net). |
+
+---
+
+## Phase 5 — Billing ✅ COMPLETE
+
+| Wave | Deliverable | Tests | Status |
+|------|-------------|-------|--------|
+| B5-1 | Plan config, feature gating, credits, seats, Stripe client, errors | 54 | ✅ Complete |
+| B5-2 | Stripe webhook handler + 7 Inngest billing functions | 22 | ✅ Complete |
+| B5-3 | 4 billing API endpoints (checkout, portal, usage, plan) | 13 | ✅ Complete |
+| B5-4 | Enforcement wired into Server Actions (seats, jobs, features) | 20 | ✅ Complete |
+| B5-5 | Billing settings UI + 3 global banners | 37 | ✅ Complete |
+| B5-6 | Offer send re-activation + refresh-job-embedding (H-04 closed) | 8 | ✅ Complete |
+| **Total** | | **154** | **All passing** |
+
+Tests: 1049 → 1203 Vitest. 68 E2E unchanged. **1271 total.** No new migration. 20 Inngest functions active.
 
 ---
 

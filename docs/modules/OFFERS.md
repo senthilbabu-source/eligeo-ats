@@ -117,7 +117,7 @@ interface OfferCompensation {
 | `approved` | `expired` | `expiry_date < NOW()` | System (cron) |
 | `approved` | `withdrawn` | — | Recruiter, Admin |
 
-> **Note:** The `send` transition (`approved → sent`) and `sent` state are deferred to Phase 5 when Dropbox Sign e-sign integration is activated. Currently, sign/decline/expire transition directly from `approved`. See §4.2.
+> **Note:** The `send` transition (`approved → sent`) was re-activated in Phase 5 B5-6. The state machine supports both paths: direct `approved → signed` (manual PDF) and `approved → sent → signed` (e-sign via Dropbox Sign). The `send` transition is guarded by `hasEsignProvider`. `sent` is withdrawable.
 
 ## 4. Architecture
 
@@ -147,11 +147,9 @@ Recruiter creates offer (draft)
 
 **Decision (G-022 resolved):** When an approver is removed from the organization during an active approval chain, the system auto-skips their step. Rationale: blocking the entire offer on a departed employee is worse than auto-advancing. The skip is logged in `offer_approvals.notes` as "Auto-approved: approver removed from organization" and recorded in `audit_logs`.
 
-### 4.2 E-Sign Integration (Dropbox Sign) — Phase 5
+### 4.2 E-Sign Integration (Dropbox Sign)
 
-> **Current state (Phase 4):** E-sign is a stub. The `send` transition and `sent` state are deferred to Phase 5. Offers transition directly from `approved` to `signed`/`declined`/`expired` via recruiter action or cron. The `offers/send-esign` Inngest function was deregistered in hardening (H4-2).
-
-**Phase 5 plan:** When Dropbox Sign is activated, a `send` transition (`approved → sent`) will be re-added to the state machine and the `send-esign` Inngest function re-registered. The `sent` state will gate sign/decline/expire (candidate interacts via e-sign link).
+> **Current state (Phase 5):** The `send` transition (`approved → sent`) and `offerSendEsign` Inngest function are re-activated. The `sendOffer()` Server Action validates the transition via state machine (guarded by `hasEsignProvider`), dispatches `ats/offer.send-requested` to Inngest, and records the interaction on the candidate timeline. The Inngest function creates an e-sign envelope (Dropbox Sign stub), updates offer status to `sent`, and notifies the recruiter. Manual PDF signing remains available via `markOfferSigned()` from either `approved` or `sent` status.
 
 **Decision (G-010 resolved):** When Dropbox Sign is unavailable, the offer stays in `approved`. The send action is retried via Inngest. If all retries fail, the recruiter is notified and can fall back to manual PDF signing.
 
@@ -282,11 +280,11 @@ const OfferResponse = z.object({
 | Unit | `src/__tests__/offer-ai.test.ts` | 14 tests: AI comp suggestion, offer letter draft, salary band check | **✅ Built** |
 | Unit | `src/__tests__/offer-intent-patterns.test.ts` | 16 tests: create_offer/check_offer patterns, navigation, preserved patterns | **✅ Built** |
 | Unit | `src/__tests__/offer-actions.test.ts` | 34 tests: Server action CRUD, state transitions, permission checks | **✅ Built** |
-| Unit | `src/__tests__/offer-inngest.test.ts` | 15 tests: 4 Inngest functions (approval notify/advanced, expiry, withdraw). send-esign deregistered (H4-2). | **✅ Built** |
+| Unit | `src/__tests__/offer-inngest.test.ts` | 15 tests: 5 Inngest functions (approval notify/advanced, expiry, withdraw, send-esign). send-esign re-registered Phase 5 B5-6. | **✅ Built** |
 | RLS | `src/__tests__/rls/offer-templates.rls.test.ts` | 15 tests: 4 ops × roles × 2 tenants | **✅ Built** |
 | RLS | `src/__tests__/rls/offers.rls.test.ts` | 15 tests: 4 ops × roles × 2 tenants | **✅ Built** |
 | RLS | `src/__tests__/rls/offer-approvals.rls.test.ts` | 14 tests: 4 ops × roles × 2 tenants | **✅ Built** |
-| E2E | `src/__tests__/e2e/offers.spec.ts` | Full flow: create → approve → sign (send deferred to Phase 5). **Planned** |
+| E2E | `src/__tests__/e2e/offers.spec.ts` | Full flow: create → approve → send → sign. **Planned** |
 
 ## 11. Open Questions
 

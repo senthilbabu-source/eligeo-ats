@@ -62,15 +62,14 @@ describe("isTerminal", () => {
 // ── Withdraw eligibility ───────────────────────────────────
 
 describe("canWithdraw", () => {
-  // H4-2: "sent" removed — no path to sent without e-sign (Phase 5)
-  it.each(["draft", "pending_approval", "approved"] as OfferStatus[])(
+  it.each(["draft", "pending_approval", "approved", "sent"] as OfferStatus[])(
     "should allow withdraw from %s",
     (status) => {
       expect(canWithdraw(status)).toBe(true);
     },
   );
 
-  it.each(["signed", "declined", "expired", "withdrawn", "sent"] as OfferStatus[])(
+  it.each(["signed", "declined", "expired", "withdrawn"] as OfferStatus[])(
     "should not allow withdraw from %s",
     (status) => {
       expect(canWithdraw(status)).toBe(false);
@@ -96,8 +95,10 @@ describe("transition — happy paths", () => {
     expect(result).toEqual({ ok: true, to: "draft" });
   });
 
-  // H4-2: send transition removed (Phase 5 — D06 §4.3)
-  // sign/decline/expire now transition from approved directly
+  it("should transition approved -> sent on send", () => {
+    const result = transition("approved", "send", fullCtx());
+    expect(result).toEqual({ ok: true, to: "sent" });
+  });
 
   it("should transition approved -> signed on sign", () => {
     const result = transition("approved", "sign", fullCtx());
@@ -118,7 +119,7 @@ describe("transition — happy paths", () => {
 // ── Withdraw from any non-terminal state ───────────────────
 
 describe("transition — withdraw", () => {
-  it.each(["draft", "pending_approval", "approved"] as OfferStatus[])(
+  it.each(["draft", "pending_approval", "approved", "sent"] as OfferStatus[])(
     "should allow withdraw from %s",
     (status) => {
       const result = transition(status, "withdraw", fullCtx());
@@ -162,6 +163,11 @@ describe("transition — guard failures", () => {
     const result = transition("pending_approval", "reject", fullCtx({ anyRejected: false }));
     expect(result).toEqual({ ok: false, error: "No approver has rejected." });
   });
+
+  it("should reject send without e-sign provider", () => {
+    const result = transition("approved", "send", fullCtx({ hasEsignProvider: false }));
+    expect(result).toEqual({ ok: false, error: "E-sign provider is required to send an offer." });
+  });
 });
 
 // ── Invalid from-state ─────────────────────────────────────
@@ -183,16 +189,15 @@ describe("transition — invalid from-state", () => {
   });
 
   it("should reject all actions from signed (terminal)", () => {
-    for (const action of ["submit", "approve_chain_complete", "reject", "sign", "decline", "expire"] as const) {
+    for (const action of ["submit", "approve_chain_complete", "reject", "send", "sign", "decline", "expire"] as const) {
       const result = transition("signed", action, fullCtx());
       expect(result.ok).toBe(false);
     }
   });
 
-  // H4-2: Verify "send" is no longer a valid action
-  it("should not include send in validActions for approved", () => {
-    const actions = validActions("approved");
-    expect(actions).not.toContain("send");
+  it("should reject send from draft (must be approved)", () => {
+    const result = transition("draft", "send", fullCtx());
+    expect(result.ok).toBe(false);
   });
 });
 
@@ -214,13 +219,20 @@ describe("validActions", () => {
     expect(actions).toHaveLength(3);
   });
 
-  it("should return sign, decline, expire, and withdraw for approved", () => {
+  it("should return send, sign, decline, expire, and withdraw for approved", () => {
     const actions = validActions("approved");
+    expect(actions).toContain("send");
     expect(actions).toContain("sign");
     expect(actions).toContain("decline");
     expect(actions).toContain("expire");
     expect(actions).toContain("withdraw");
-    expect(actions).toHaveLength(4);
+    expect(actions).toHaveLength(5);
+  });
+
+  it("should return withdraw for sent", () => {
+    const actions = validActions("sent");
+    expect(actions).toContain("withdraw");
+    expect(actions).toHaveLength(1);
   });
 
   it("should return empty array for all terminal states", () => {

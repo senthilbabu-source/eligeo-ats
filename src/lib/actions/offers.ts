@@ -493,6 +493,57 @@ export async function rejectOffer(offerId: string, notes: string) {
   return { success: true };
 }
 
+// ── Send Offer for E-Sign ─────────────────────────────────
+
+export async function sendOffer(offerId: string) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "offers:create");
+
+  const supabase = await createClient();
+
+  // Fetch offer
+  const { data: offer, error: fetchErr } = await supabase
+    .from("offers")
+    .select("id, status, esign_provider, candidate_id")
+    .eq("id", offerId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (fetchErr || !offer) {
+    return { error: "Offer not found." };
+  }
+
+  const ctx = await buildTransitionContext(supabase, offerId, session.orgId);
+  const result = transition(offer.status as OfferStatus, "send", ctx);
+
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  // Dispatch to Inngest — the send-esign function handles the actual transition
+  await inngest.send({
+    name: "ats/offer.send-requested",
+    data: {
+      offerId,
+      organizationId: session.orgId,
+      requestedBy: session.userId,
+    },
+  });
+
+  // Record on candidate timeline
+  await recordInteraction(supabase, {
+    candidateId: offer.candidate_id,
+    organizationId: session.orgId,
+    actorId: session.userId,
+    type: "offer_sent",
+    summary: "Offer sent for e-signature",
+  });
+
+  revalidateOfferPaths();
+  return { success: true };
+}
+
 // ── Withdraw Offer ────────────────────────────────────────
 
 export async function withdrawOffer(offerId: string) {

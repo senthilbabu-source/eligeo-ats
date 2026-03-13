@@ -43,6 +43,7 @@ const WITHDRAWABLE_STATES: readonly OfferStatus[] = [
   "draft",
   "pending_approval",
   "approved",
+  "sent",
 ];
 
 // ── Transition Table ─────────────────────────────────────
@@ -51,7 +52,7 @@ type TransitionAction =
   | "submit"
   | "approve_chain_complete"
   | "reject"
-  // E-sign "send" transition: Phase 5 — see D06 §4.3
+  | "send"
   | "sign"
   | "decline"
   | "expire"
@@ -90,8 +91,14 @@ const TRANSITIONS: Record<TransitionAction, TransitionDef> = {
       return null;
     },
   },
-  // E-sign "send" transition removed — Phase 5 (D06 §4.3).
-  // Will be re-added when e-sign provider integration is built.
+  send: {
+    from: "approved",
+    to: "sent",
+    guard: (ctx) => {
+      if (!ctx.hasEsignProvider) return "E-sign provider is required to send an offer.";
+      return null;
+    },
+  },
   sign: {
     from: "approved",
     to: "signed",

@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **58 functions across 11 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
+This document is the single source of truth for all Inngest background functions in the Eligeo ATS platform. It defines **59 functions across 11 modules**, covering billing webhooks, offer workflows, interview scheduling, candidate embedding, notifications, pipeline automation, search indexing, analytics, onboarding, compliance, and data migration.
 
 Every background job in the system runs through Inngest. There are no Supabase Edge Functions (ADR-002). Cron jobs are Inngest cron triggers, not Next.js Route Handlers — Inngest manages scheduling, retries, and observability.
 
@@ -59,7 +59,7 @@ Functions only override these defaults when documented in the registry table bel
 |---|-------------|---------|---------|-------------|------|
 | 8 | `offers/approval-notify` | `ats/offer.submitted` | default (3) | 10 per org | Yes |
 | 9 | `offers/approval-advanced` | `ats/offer.approval-decided` | default (3) | 10 per org | Yes |
-| 10 | `offers/send-esign` | `ats/offer.send-requested` | 5 | 5 per org | Yes (deregistered H4-2 — stub removed, re-add Phase 5) |
+| 10 | `offers/send-esign` | `ats/offer.send-requested` | 5 | 5 per org | Yes (**✅ Shipped** — re-registered Phase 5 B5-6) |
 | 11 | `offers/esign-webhook` | `dropboxsign/webhook.received` | default (3) | 5 | Yes |
 | 12 | `offers/check-expiry` | Cron: `0 * * * *` (hourly) | default (3) | 1 | Yes |
 | 13 | `offers/withdraw` | `ats/offer.withdrawn` | default (3) | 5 per org | Yes |
@@ -123,7 +123,7 @@ Functions only override these defaults when documented in the registry table bel
 | 39 | `analytics/refresh-views` | Cron: `0 2 * * *` (daily 2AM UTC) | default (3) | — | No (v1.1) |
 | 40 | `analytics/export` | `ats/analytics.export-requested` | default (3) | — | No (v1.1) |
 | 41 | `analytics/generate-briefing` | `ats/analytics.briefing-requested` (on-demand per org) | 2 | 1 per org | Yes (Wave 3) |
-| 42 | `analytics/refresh-job-embedding` | `ats/analytics.job-skills-changed` (fired when `job_required_skills` INSERT/UPDATE/DELETE or JD updated) | 2 | 1 per job | Yes (AI-Proof Wave A) |
+| 42 | `analytics/refresh-job-embedding` | `ats/analytics.job-skills-changed` (fired when `job_required_skills` INSERT/UPDATE/DELETE or JD updated) | 3 | 1 per job | Yes (**✅ Shipped** — Phase 5 B5-6, H-04 carry-forward) |
 
 **`analytics/generate-briefing` details:**
 - **Cache-first:** checks `org_daily_briefings WHERE org_id = $1 AND date = CURRENT_DATE`. If row exists, returns cached content — no OpenAI call.
@@ -132,7 +132,7 @@ Functions only override these defaults when documented in the registry table bel
 - **Admin regen:** Server Action sends `ats/analytics.briefing-requested` with `force: true` — bypasses cache check and upserts a fresh row (does NOT delete the existing row; ON CONFLICT DO UPDATE overwrites content).
 - **Concurrency:** `1 per org` — prevents duplicate OpenAI calls if admin hits regen quickly.
 
-**`analytics/refresh-job-embedding` details (planned — AI-Proof Wave A):**
+**`analytics/refresh-job-embedding` details (✅ shipped — Phase 5 B5-6):**
 - **Trigger:** `ats/analytics.job-skills-changed` — dispatched by the `job_required_skills` mutation server actions and `updateJobDescription()` whenever JD or skills change.
 - **Logic:** Re-generates `job_openings.job_embedding` via OpenAI embeddings API → updates `job_embedding` + sets `embedding_updated_at = NOW()`.
 - **Staleness flag:** Before re-embed runs, the calling SA sets `embedding_updated_at = NULL` (stale signal). UI checks `embedding_updated_at` vs `updated_at` to surface "Scores may be outdated" nudge.
@@ -168,7 +168,7 @@ Functions only override these defaults when documented in the registry table bel
 | 55 | `migration/rollback` | `ats/migration.rollback-requested` | 3 | — | No (v2.1) |
 | 56 | `migration/file-download` | `ats/migration.file-download-requested` | 3 | — | No (v2.1) |
 
-> **Note:** 58 registered function IDs across 11 modules. The canonical count by module: 7+6+8+7+7+1+4+4+3+4+7 = 58. (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1.)
+> **Note:** 59 registered function IDs across 11 modules. The canonical count by module: 7+6+8+7+7+1+4+4+3+4+7 = 58 + `analytics/refresh-job-embedding` (Phase 5 B5-6) = 59. (`interviews/auto-summarize` added H3-3, `candidates/refresh-stale-embedding` added H2-1, `analytics/refresh-job-embedding` added Phase 5.)
 
 ## 5. Cron Schedule Summary
 
@@ -203,10 +203,11 @@ Rules:
 | Scope | Limit | Reason |
 |-------|-------|--------|
 | **Default** | No limit | Inngest manages worker concurrency internally |
-| `offers/send-esign` | 5 | Dropbox Sign API rate limit — **deregistered H4-2** (Phase 5) |
+| `offers/send-esign` | 5 | Dropbox Sign API rate limit (re-registered Phase 5 B5-6) |
 | `offers/esign-webhook` | 5 | Matches send-esign to prevent backpressure |
 | `interviews/auto-summarize` | 3 per org | Prevent duplicate summarization per org (H3-3) |
 | `candidates/refresh-stale-embedding` | 1 per candidate | One embedding regeneration at a time (H2-1) |
+| `analytics/refresh-job-embedding` | 1 per job | One job embedding regeneration at a time (Phase 5 B5-6, H-04) |
 | `offers/withdraw` | 5 | Dropbox Sign cancellation API shares rate limit |
 | `offers/check-expiry` | 1 | Singleton — prevents double-expiry race conditions |
 | `offers/approval-notify` | 10 per org | Prevent approval notification storms during bulk submissions |
@@ -220,18 +221,18 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 | Module | Count | Shipped | Notes |
 |--------|-------|---------|-------|
-| Billing | 7 | 0 | Phase 5 |
-| Offers | 6 | 4 | `send-esign` deregistered (H4-2, Phase 5). `esign-webhook` pending (Phase 5). 4/6 active. |
+| Billing | 7 | 7 | All shipped (Phase 5 B5-2). 7 webhook/cron handlers. |
+| Offers | 6 | 5 | `send-esign` re-registered (Phase 5 B5-6). `esign-webhook` pending (Dropbox Sign integration). 5/6 active. |
 | Interviews | 8 | 2 | `interview-reminder` + `auto-summarize` (H3-3) shipped. `nylas-event-sync` is a stub. Rest are Phase 3+. |
 | Notifications | 7 | 2 | `dispatch`, `send-email` shipped (Wave F). Rest pending. |
 | Workflow | 6 | 0 | All pending. `application-withdrawn` deferred to v1.1. |
 | Candidates | 1 | 1 | `refresh-stale-embedding` (H2-1) shipped. |
 | Onboarding | 2 | 0 | `csv-import` and `demo-seed` pending. `merge-sync` is v2.1. |
 | Compliance | 4 | 0 | All pending. |
-| Analytics | 2 | 2 | `generate-briefing` (Wave 3) + `generate-candidate-embedding` (AI-Proof). Both shipped. |
-| **Total** | **43** | **11** | **12 shipped total** (11 active + 1 deregistered send-esign). 11 registered in `/api/inngest/route.ts`. |
+| Analytics | 2 | 3 | `generate-briefing` (Wave 3) + `generate-candidate-embedding` (AI-Proof) + `refresh-job-embedding` (Phase 5 B5-6, H-04). All shipped. |
+| **Total** | **43** | **20** | **20 shipped and actively registered** in `/api/inngest/route.ts`. |
 
-> Total registry: 58 functions. v1.0 scope: 43 functions. 12 shipped (11 active + 1 deregistered send-esign). Remaining 32 ship in Phases 5+.
+> Total registry: 59 functions (58 + `analytics/refresh-job-embedding` shipped). v1.0 scope: 43 functions. 20 shipped and active. Remaining 23 ship in Phases 6+.
 
 ### Deferred
 
@@ -245,4 +246,4 @@ Concurrency keys use `org_id` when the limit is "per org". Global limits apply a
 
 ---
 
-*Created: 2026-03-11. Updated: 2026-03-12 — Phase 4 shipped 5 offer functions, corrected `send-esign` retries to 5 (per D06 §4.2), fixed numbering sequence. Hardening: added `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1), deregistered `offers/send-esign` (H4-2). Registry: 56→58 functions, v1.0: 41→43, shipped: 10→12 (11 active).*
+*Created: 2026-03-11. Updated: 2026-03-12 — Phase 5: all 7 billing functions shipped, `send-esign` re-registered, `refresh-job-embedding` shipped (H-04 closed). Registry: 58→59 functions, v1.0: 43, shipped: 12→20 (all active). Previous: Phase 4 shipped 5 offer functions. Hardening: added `interviews/auto-summarize` (H3-3), `candidates/refresh-stale-embedding` (H2-1).*

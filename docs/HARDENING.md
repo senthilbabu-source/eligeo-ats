@@ -420,8 +420,8 @@ Before declaring hardening complete:
 
 | Item | Target |
 |---|---|
-| H-04: `refresh-job-embedding` Inngest function | Phase 5 |
-| H-06: Extend NBA with `offer_ready` state | Addressed in H3-4 |
+| H-04: `refresh-job-embedding` Inngest function | ✅ **CLOSED** — Phase 5 B5-6 |
+| H-06: Extend NBA with `offer_ready` state | ✅ Addressed in H3-4 |
 | Candidate merge UI (from H1-3 fuzzy dedup) | Phase 5 |
 | Full conversational AI screening | Phase 5/6 |
 | Candidate status portal | Phase 5 |
