@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/nextjs";
 import { inngest } from "@/inngest/client";
 import { createServiceClient } from "@/lib/supabase/server";
 import { extractAndParseResume } from "@/lib/ai/resume-extractor";
