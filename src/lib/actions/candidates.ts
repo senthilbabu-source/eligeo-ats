@@ -438,6 +438,40 @@ export async function requestHumanReview(applicationId: string) {
   return { success: true };
 }
 
+// ── P6-1: Trigger Resume Re-Parse ────────────────────────
+
+export async function triggerResumeParse(candidateId: string) {
+  const session = await requireAuth();
+  assertCan(session.orgRole, "candidates:edit");
+
+  const supabase = await createClient();
+
+  // Verify candidate exists
+  const { data: candidate } = await supabase
+    .from("candidates")
+    .select("id")
+    .eq("id", candidateId)
+    .eq("organization_id", session.orgId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!candidate) {
+    return { error: "Candidate not found" };
+  }
+
+  // Fire event to trigger Inngest resume parse function
+  await inngest.send({
+    name: "ats/candidate.resume-uploaded",
+    data: {
+      candidateId,
+      organizationId: session.orgId,
+    },
+  });
+
+  revalidatePath(`/candidates/${candidateId}`);
+  return { success: true };
+}
+
 export async function deleteCandidateNote(noteId: string, candidateId: string) {
   const session = await requireAuth();
   assertCan(session.orgRole, "candidates:view");

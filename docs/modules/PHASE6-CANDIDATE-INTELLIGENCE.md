@@ -144,7 +144,9 @@ CREATE TABLE screening_sessions (
 
 ```sql
 -- On candidates table (Migration 030)
-ALTER TABLE candidates ADD COLUMN resume_parsed_data JSONB;
+-- NOTE: candidates.resume_parsed JSONB already exists (M009). Reused instead of adding resume_parsed_data.
+-- Added: resume_parsed_at TIMESTAMPTZ (fixes H6-4 phantom reference)
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS resume_parsed_at TIMESTAMPTZ;
 ```
 
 ### 3.3 JSONB Type Definitions

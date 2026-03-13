@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-03-12 — Phase 6 Wave P6-1: Resume Extraction Pipeline ✅
+
+**Scope:** Build the hybrid resume extraction pipeline — PDF/DOCX text extraction + AI structured parsing.
+
+### Infrastructure
+- **Migration 030** (`00030_phase6_foundation.sql`): `candidates.resume_parsed_at` column + `candidate_merges` table + `merge_candidates()` RPC + RLS policies + audit trigger
+- **Packages:** `pdf-parse` (v3) + `mammoth` for text extraction
+- **Schema deviation:** D32 §3.2 specified `resume_parsed_data` JSONB — reused existing `resume_parsed` column (M009) instead. Added `resume_parsed_at` to fix H6-4 phantom reference.
+
+### New Files
+- `src/lib/ai/resume-extractor.ts` — hybrid extraction pipeline: pdf-parse for text PDFs, mammoth for DOCX, vision fallback stub for scanned PDFs
+- `src/inngest/functions/portal/resume-parse.ts` — Inngest function (6 steps: load file → download → extract+parse → store → upsert skills → fire embedding refresh)
+- `src/__tests__/resume-extractor.test.ts` — 18 unit tests
+
+### Wiring
+- Inngest function registered in `/api/inngest/route.ts` (21 active functions)
+- `triggerResumeParse()` server action in `candidates.ts` for manual re-parse
+- Events: `portal/application-submitted`, `ats/candidate.resume-uploaded`
+
+### Tests: +18 new (1242 → 1260 Vitest). All passing. TypeScript clean.
+
+**Files changed:** resume-extractor.ts, portal/resume-parse.ts, inngest/route.ts, candidates.ts, migration 030, resume-extractor.test.ts, package.json
+
+---
+
 ## 2026-03-12 — Phase 6 Spec D32 Written: Candidate Intelligence Layer ✅
 
 **Scope:** Write the full Phase 6 specification document (D32) — the authoritative blueprint for the build.
