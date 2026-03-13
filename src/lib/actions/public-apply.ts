@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { inngest } from "@/inngest/client";
 import { createVerificationToken } from "@/lib/utils/email-verification";
+import { createStatusToken } from "@/lib/utils/candidate-token";
 import { z } from "zod";
 
 const applySchema = z.object({
@@ -145,20 +146,57 @@ export async function submitPublicApplication(
   //    We skip history for public apps — the application record itself is the source of truth
   //    Stage history will be tracked when internal users move the candidate
 
-  // H1-4: Send verification email for new candidates (existing candidates
-  // are considered already verified from their first application)
+  // P6-2a: Generate status portal token (30-day expiry)
+  const statusToken = createStatusToken({
+    applicationId: application.id,
+    candidateId,
+    organizationId: job.organization_id,
+  });
+
+  // Fetch job slug for the status URL
+  const { data: jobSlug } = await supabase
+    .from("job_openings")
+    .select("slug")
+    .eq("id", job.id)
+    .single();
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const statusUrl = `${baseUrl}/careers/${jobSlug?.slug ?? job.id}/status?token=${statusToken}`;
+
+  // H1-4: Send verification + status link email for new candidates
+  // Existing candidates get just the status link
   if (!existingCandidate) {
-    const token = createVerificationToken(candidateId, data.email);
+    const verifyToken = createVerificationToken(candidateId, data.email);
     await inngest.send({
       name: "ats/notification.send-email",
       data: {
         organizationId: job.organization_id,
         to: data.email,
-        subject: "Verify your email — application received",
-        body: `Thank you for applying! Please verify your email by clicking the link below:\n\n${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/verify-email?token=${token}\n\nThis link expires in 24 hours.`,
+        subject: "Application received — verify your email",
+        body: `Thank you for applying! Please verify your email by clicking the link below:\n\n${baseUrl}/api/verify-email?token=${verifyToken}\n\nThis link expires in 24 hours.\n\nTrack your application status anytime:\n${statusUrl}`,
+      },
+    });
+  } else {
+    await inngest.send({
+      name: "ats/notification.send-email",
+      data: {
+        organizationId: job.organization_id,
+        to: data.email,
+        subject: "Application received",
+        body: `Thank you for applying! We have received your application.\n\nTrack your application status anytime:\n${statusUrl}`,
       },
     });
   }
+
+  // P6-1: Trigger resume parsing if resume was uploaded
+  await inngest.send({
+    name: "portal/application-submitted",
+    data: {
+      candidateId,
+      organizationId: job.organization_id,
+      applicationId: application.id,
+    },
+  });
 
   return { success: true, applicationId: application.id };
 }
